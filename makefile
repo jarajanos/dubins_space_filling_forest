@@ -46,7 +46,7 @@ $(OBJDIR)/$(RELDIR)/%.o: src/%.cpp
 
 ############# COMMON ##############	
 prep:
-	@echo "Creating directories.."
+	@echo "Creating directories..."
 	@mkdir -p $(OBJDIR)
 	@mkdir -p $(OBJDIR)/$(DBGDIR)
 	@mkdir -p $(OBJDIR)/$(RELDIR)
@@ -62,6 +62,10 @@ rapid:
 flann:
 	@echo "Installing FLANN..."
 	@cd ./lib/flann; mkdir build; cd build; cmake .. -DCMAKE_INSTALL_PREFIX=../install; make -j4; make install
+
+yaml:
+	@echo "Install YAML-cpp..."
+	@cd ./lib/yaml-cpp; mkdir build; cd build; cmake ..; make; cd ..; rm -r build
 
 clean:
 	@echo "Cleaning..."

@@ -1,3 +1,6 @@
 [submodule "lib/yaml-cpp"]
 	path = lib/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "lib/flann"]
+	path = lib/flann
+	url = https://github.com/flann-lib/flann.git
