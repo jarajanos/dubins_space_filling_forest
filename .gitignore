@@ -3,7 +3,6 @@ debug
 release
 obj
 .vscode
-lib/*
 scripts/*
 tempTsp.result
 output.log
