@@ -22,7 +22,7 @@ RELEXE := $(RELDIR)/$(TARGET)
 RELOBJS := $(addprefix $(OBJDIR)/, $(addprefix $(RELDIR)/, $(OBJECTS)))
 RELFLAGS := $(CXXFLAGS) -O3
 
-.PHONY: all clean debug release prep rapid flann install
+.PHONY: all clean debug release prep rapid flann yaml install
 
 all: release
 
@@ -53,7 +53,7 @@ prep:
 	@mkdir -p $(DBGDIR)
 	@mkdir -p $(RELDIR)
 
-install: rapid flann release
+install: rapid flann yaml release
 
 rapid:
 	@echo "Installing RAPID..."
