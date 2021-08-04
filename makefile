@@ -4,11 +4,12 @@ DBGDIR := debug
 RELDIR := release
 
 SOURCES := $(wildcard src/*.cpp)
+#SOURCES := src/main.cpp src/random-generator.cpp
 SOURCES := $(SOURCES:src/%=%)
 OBJECTS := $(patsubst %.c,%.o, $(patsubst %.cpp,%.o,$(SOURCES)))
 
-INCLUDE := -I. -I./lib/rapid-2.01 -I./lib/ann/ann/include -I./lib/rapidxml
-LIBPATH := -L./lib/ -L./lib/ann/ -L./lib/flann/ -L./lib/rapid-2.01 -L./lib/rapidxml
+INCLUDE := -I. -I./lib/rapid-2.01 -I./lib/ann/ann/include
+LIBPATH := -L./lib/ -L./lib/ann/ -L./lib/flann/ -L./lib/rapid-2.01
 LIBS := -lgmp -lRAPID -llz4 
 
 CXXFLAGS := -std=c++17

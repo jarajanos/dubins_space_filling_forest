@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file main.h
  * @author Jaroslav Janos (janosjar@fel.cvut.cz)
@@ -11,6 +12,13 @@
 
 #ifndef __MAIN_H__
 #define __MAIN_H__
+
+#include <string>
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include "yaml-cpp/yaml.h"
 
 #include "common.h"
 

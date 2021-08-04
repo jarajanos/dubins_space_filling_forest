@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file point-types.h
  * @author Jaroslav Janos (janosjar@fel.cvut.cz)

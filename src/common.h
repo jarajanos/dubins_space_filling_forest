@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file primitives.h
  * @author Jaroslav Janos (janosjar@fel.cvut.cz)
@@ -26,22 +27,47 @@
 #define MIN(X, Y) ((X < Y) ? (X) : (Y))
 #define MAX(X, Y) ((X > Y) ? (X) : (Y))
 
-template<class T, class R> class Node;
-template <class T, class R> struct DistanceHolder;
-template <class T, class R> class Tree;
 struct FileStruct;
-template<class T, class R> class Heap;
 
 int ParseString(std::string &inp, std::string &outp1, std::string &outp2, std::string &delimiter);
 FileStruct PrefixFileName(const FileStruct &path, const std::string &insert);
-template <class T> T NormalizeAngle(T angle);
-template <class T, class R> T AngleDifference(T a1, R a2);
+std::string Ltrim(const std::string &s);
+std::string Rtrim(const std::string &s);
+std::string Trim(const std::string &s);
 
 enum Dimensions {
   D2 = 2,
   D2Dubins = 3,
   D3 = 6,
   D3Dubins = 7
+};
+
+enum FileType {
+  Map,
+  Obj
+};
+
+enum SaveOptions {
+  None = 0,
+  SaveGoals = 1,
+  SaveTree = 2,
+  SaveRaw = 4,
+  SaveSmooth = 8,
+  SaveParams = 16,
+  SaveTSP = 32,
+  SaveFrontiers = 64,
+  Invalid = 128
+};
+
+enum SolverType{
+  SFF,
+  RRT,
+  Lazy
+};
+
+struct FileStruct {
+  std::string fileName;
+  FileType type;
 };
 
 template <class T>
@@ -169,43 +195,6 @@ struct DistanceHolder {
   }
 };
 
-enum FileType {
-  Map,
-  Obj
-};
-
-struct FileStruct {
-  std::string fileName;
-  FileType type;
-};
-
-FileStruct PrefixFileName(const FileStruct &path, const std::string &insert) {
-	FileStruct retVal{path};
-
-	auto pos{retVal.fileName.find_last_of("//")};
-  if (pos != std::string::npos) {
-    retVal.fileName.insert(pos + 1, insert);
-  } else {
-    retVal.fileName.insert(0, insert);
-  }
-
-	return retVal;
-}
-
-std::string Ltrim(const std::string &s) {
-  size_t start{s.find_first_not_of(WHITESPACE)};
-  return (start == std::string::npos) ? "" : s.substr(start);
-}
-
-std::string Rtrim(const std::string &s) {
-  size_t end{s.find_last_not_of(WHITESPACE)};
-  return (end == std::string::npos) ? "" : s.substr(0, end + 1);
-}
-
-std::string Trim(const std::string &s) {
-  return Ltrim(Rtrim(s));
-}
-
 template <typename T> 
 int sgn(T val) {
     return (T(0) < val) - (val < T(0));
@@ -226,24 +215,6 @@ template <class T, class R>
 T AngleDifference(T a1, R a2) {
   T diff{(T)a2 - a1};
   return NormalizeAngle(diff);
-}
-
-int ParseString(std::string &inp, std::string &outp1, std::string &outp2, std::string &delimiter) {
-  size_t pos = inp.find(delimiter);
-  int delimSize{static_cast<int>(delimiter.size())};
-  int miss{1};
-  if (pos != std::string::npos) {
-    while (inp[pos + miss] == delimiter[miss]) {
-      ++miss;
-    }
-    outp1 = inp.substr(0, pos);
-    outp2 = inp.substr(pos + miss, inp.length());
-    return pos;
-  } else {
-    outp1 = inp.substr(0, inp.length());
-    outp2 = "";
-    return -1;
-  }
 }
 
 #endif /* __COMMON_H__ */

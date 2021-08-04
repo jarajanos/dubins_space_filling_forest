@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file random-generator.h
  * @author Jaroslav Janos (janosjar@fel.cvut.cz)

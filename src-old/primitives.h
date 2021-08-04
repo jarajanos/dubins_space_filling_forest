@@ -377,20 +377,6 @@ class Vector {
 };
 
 template <class T>
-class Triangle {
- public:
-  Triangle(Point<T> x, Point<T> y, Point<T> z) : vertices{x, y, z} {
-  }
-
-  inline Point<T> operator[](int i) {
-    return vertices[i];
-  }
-
- protected:
-  Point<T> vertices[3];
-};
-
-template <class T>
 struct Range {
   T minX;
   T maxX;

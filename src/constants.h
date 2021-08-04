@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file constants.h
  * @author Jaroslav Janos (janosjar@fel.cvut.cz)

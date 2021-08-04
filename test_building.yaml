@@ -1,0 +1,63 @@
+---
+  problem:
+    solver: 'rrt'
+    optimize: true
+    iterations: 10000
+    dimension: '3D'
+  
+  delimiters:
+    standard: ' '
+    name: '_'
+
+  TSP-solver:
+    path: '/home/jarajanos/Documents/obst_tsp/obst_tsp'
+    type: 'concorde'
+
+  robot:
+    path: './models/3D/robot_cylinder_small.obj'
+    type: 'obj'
+
+  obstacles:
+    - path: './models/3D/building.obj'
+      type: 'obj'
+      position: '[0; 0; 0]'
+
+  cities:
+    - '[-5.376207930019596; -5.338214644384135; 0.7519141368058615]'
+    - '[5.309629695920314; -5.3435510614853206; 2.225339932086428]'
+    - '[-5.445894591081855; 4.942949264187298; 8.034669391216193]'
+    - '[3.4004901456614443; 0.3800196290706541; 10]'
+    - '[0.30319967716688234; 0.057430173261578954; 7]'
+  
+  range:
+    autodetect: false
+    x: '[-7;7]'
+    y: '[-7;7]'
+    z: '[0;14]'
+
+  distances:
+    collision: 0.01
+    sampling: 0.4
+    tree: 0.5
+
+  algorithm:
+    m2r-ratio: 10
+    bias: 0
+    misses: 5
+  
+  save:
+    goals:
+      path: 'output/goals.tri'
+      type: 'tri'
+    params:
+      path: 'output/params.csv'
+      id: 'sff_3d'
+    TSP:
+      path: 'output/tsp.tsp'
+    tree:
+      path: 'output//tree5_normal_building.obj'
+      type: 'obj'
+      frequency: '0'
+    roadmap:
+      path: 'output//rawPath5_normal_building.tri'
+      type: 'obj'

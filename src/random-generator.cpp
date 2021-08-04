@@ -12,6 +12,48 @@
 #include "random-generator.h"
 
 /**
+ * @brief Private function to check, whether the point lies in the workspace/environment
+ * 
+ * @param p Point to check
+ * @return true Point DOES lie in the workspace
+ * @return false Point DOES NOT lie in the workspace
+ */
+template<>
+bool RandomGenerator<Point2D<double>>::isInLimits(Point2D<double>& p) {
+  bool valid{true};
+  valid &= p[0] >= limits.minX;
+  valid &= p[0] <= limits.maxX;
+  valid &= p[1] >= limits.minY;
+  valid &= p[1] <= limits.maxY;
+
+  return valid;
+}
+
+template<>
+bool RandomGenerator<Point2DDubins<double>>::isInLimits(Point2DDubins<double>& p) {
+  bool valid{true};
+  valid &= p[0] >= limits.minX;
+  valid &= p[0] <= limits.maxX;
+  valid &= p[1] >= limits.minY;
+  valid &= p[1] <= limits.maxY;
+
+  return valid;
+}
+
+template<>
+bool RandomGenerator<Point3D<double>>::isInLimits(Point3D<double>& p) {
+  bool valid{true};
+  valid &= p[0] >= limits.minX;
+  valid &= p[0] <= limits.maxX;
+  valid &= p[1] >= limits.minY;
+  valid &= p[1] <= limits.maxY;
+  valid &= p[2] >= limits.minZ;
+  valid &= p[2] <= limits.maxZ;
+
+  return valid;
+}
+
+/**
  * @brief Random sampling of position, according to https://ri.cmu.edu/pub_files/pub4/kuffner_james_2004_1/kuffner_james_2004_1.pdf 
  * 
  * @return true When the point is valid, i. e. is in limits (does not check nn) 
@@ -65,15 +107,18 @@ bool RandomGenerator<Point3D<double>>::RandomPointInDistance(const Point3D<doubl
  * 
  * @param point Output = uniformly sampled point in the configuration space
  */
+template<>
 void RandomGenerator<Point2D<double>>::RandomPointInSpace(Point2D<double>& point) {
   point.SetPosition(uniSpaceX(rndEng), uniSpaceY(rndEng));
 }
 
+template<>
 void RandomGenerator<Point2DDubins<double>>::RandomPointInSpace(Point2DDubins<double>& point) {
   point.SetPosition(uniSpaceX(rndEng), uniSpaceY(rndEng));
   point.SetAngle(uniDistAngle(rndEng));
 }
 
+template<>
 void RandomGenerator<Point3D<double>>::RandomPointInSpace(Point3D<double>& point) {
   point.SetPosition(uniSpaceX(rndEng), uniSpaceY(rndEng), uniSpaceZ(rndEng));
 
@@ -86,43 +131,4 @@ void RandomGenerator<Point3D<double>>::RandomPointInSpace(Point3D<double>& point
 
   Quaternion<double> rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
   point.SetRotation(rotation);
-}
-
-/**
- * @brief Private function to check, whether the point lies in the workspace/environment
- * 
- * @param p Point to check
- * @return true Point DOES lie in the workspace
- * @return false Point DOES NOT lie in the workspace
- */
-bool RandomGenerator<Point2D<double>>::isInLimits(Point2D<double>& p) {
-  bool valid{true};
-  valid &= p[0] >= limits.minX;
-  valid &= p[0] <= limits.maxX;
-  valid &= p[1] >= limits.minY;
-  valid &= p[1] <= limits.maxY;
-
-  return valid;
-}
-
-bool RandomGenerator<Point2DDubins<double>>::isInLimits(Point2DDubins<double>& p) {
-  bool valid{true};
-  valid &= p[0] >= limits.minX;
-  valid &= p[0] <= limits.maxX;
-  valid &= p[1] >= limits.minY;
-  valid &= p[1] <= limits.maxY;
-
-  return valid;
-}
-
-bool RandomGenerator<Point3D<double>>::isInLimits(Point3D<double>& p) {
-  bool valid{true};
-  valid &= p[0] >= limits.minX;
-  valid &= p[0] <= limits.maxX;
-  valid &= p[1] >= limits.minY;
-  valid &= p[1] <= limits.maxY;
-  valid &= p[2] >= limits.minZ;
-  valid &= p[2] <= limits.maxZ;
-
-  return valid;
 }
