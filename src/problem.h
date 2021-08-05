@@ -15,6 +15,7 @@
 #include <deque>
 
 #include "common.h"
+#include "environment.h"
 
 template<class R>
 struct Problem {
@@ -22,7 +23,7 @@ struct Problem {
   Dimensions dimension{D3};
 
   SolverType solver;
-  bool optimal;
+  bool optimize;
   bool smoothing;
 
   Environment<R> environment;
@@ -48,11 +49,12 @@ struct Problem {
   std::string tspType;
 
   int GetNumRoots() {
-    if (hasGoal) {
-      return roots.size() + 1;
-    } else {
-      return roots.size();
-    }
+    //if (hasGoal) {
+    //  return roots.size() + 1;
+    //} else {
+    //  return roots.size();
+    //}
+    return 1;
   }
 };
 

@@ -25,5 +25,7 @@
 #include "problem.h"
 
 int main(int argc, char *argv[]);
+void ParseFile(const std::string &fileName, Problem<double> &problem);
+bool GetFile(YAML::Node node, FileStruct &file, int iteration=0, bool includeIter=true);
 
 #endif /*__MAIN_H__*/

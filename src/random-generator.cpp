@@ -21,10 +21,10 @@
 template<>
 bool RandomGenerator<Point2D<double>>::isInLimits(Point2D<double>& p) {
   bool valid{true};
-  valid &= p[0] >= limits.minX;
-  valid &= p[0] <= limits.maxX;
-  valid &= p[1] >= limits.minY;
-  valid &= p[1] <= limits.maxY;
+  for (int i{0}; i < 2; ++i) {
+    valid &= p[i] >= limits.mins[i];
+    valid &= p[i] <= limits.maxs[i];
+  }
 
   return valid;
 }
@@ -32,10 +32,10 @@ bool RandomGenerator<Point2D<double>>::isInLimits(Point2D<double>& p) {
 template<>
 bool RandomGenerator<Point2DDubins<double>>::isInLimits(Point2DDubins<double>& p) {
   bool valid{true};
-  valid &= p[0] >= limits.minX;
-  valid &= p[0] <= limits.maxX;
-  valid &= p[1] >= limits.minY;
-  valid &= p[1] <= limits.maxY;
+  for (int i{0}; i < 2; ++i) {
+    valid &= p[i] >= limits.mins[i];
+    valid &= p[i] <= limits.maxs[i];
+  }
 
   return valid;
 }
@@ -43,12 +43,10 @@ bool RandomGenerator<Point2DDubins<double>>::isInLimits(Point2DDubins<double>& p
 template<>
 bool RandomGenerator<Point3D<double>>::isInLimits(Point3D<double>& p) {
   bool valid{true};
-  valid &= p[0] >= limits.minX;
-  valid &= p[0] <= limits.maxX;
-  valid &= p[1] >= limits.minY;
-  valid &= p[1] <= limits.maxY;
-  valid &= p[2] >= limits.minZ;
-  valid &= p[2] <= limits.maxZ;
+  for (int i{0}; i < 3; ++i) {
+    valid &= p[i] >= limits.mins[i];
+    valid &= p[i] <= limits.maxs[i];
+  }
 
   return valid;
 }

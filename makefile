@@ -8,9 +8,9 @@ SOURCES := $(wildcard src/*.cpp)
 SOURCES := $(SOURCES:src/%=%)
 OBJECTS := $(patsubst %.c,%.o, $(patsubst %.cpp,%.o,$(SOURCES)))
 
-INCLUDE := -I. -I./lib/rapid-2.01 -I./lib/ann/ann/include
-LIBPATH := -L./lib/ -L./lib/ann/ -L./lib/flann/ -L./lib/rapid-2.01
-LIBS := -lgmp -lRAPID -llz4 
+INCLUDE := -I. -I./lib/rapid-2.01 -I./lib/ann/ann/include -I./lib/yaml-cpp/include
+LIBPATH := -L./lib/ -L./lib/ann/ -L./lib/flann/ -L./lib/rapid-2.01 -L./lib/yaml-cpp/build
+LIBS := -lgmp -lRAPID -llz4 -lyaml-cpp
 
 CXXFLAGS := -std=c++17
 CXX := g++
@@ -66,7 +66,7 @@ flann:
 
 yaml:
 	@echo "Install YAML-cpp..."
-	@cd ./lib/yaml-cpp; mkdir build; cd build; cmake ..; make; cd ..; rm -r build
+	@cd ./lib/yaml-cpp; mkdir build; cd build; cmake ..; make
 
 clean:
 	@echo "Cleaning..."

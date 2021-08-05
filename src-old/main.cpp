@@ -42,11 +42,6 @@ void parseFile(const std::string &fileName, Problem<double> &problem) {
   char *pString;
   double scale;
   Point<double> pos;
-	std::ifstream fileStream(fileName.c_str());
-	if (!fileStream.good()) {
-		std::cout << "Cannot open config file at: " << fileName << "\n";
-		exit(1);
-	}
 
 	if (fileStream.is_open()) {
 		std::stringstream content;
@@ -327,6 +322,7 @@ void parseFile(const std::string &fileName, Problem<double> &problem) {
       if (attr != nullptr) {
         problem.priorityBias = std::stod(attr->value());
       } 
+      
       if (!problem.hasGoal && problem.priorityBias != 0 && problem.solver == RRT) {
         throw std::invalid_argument("Multi-T-RRT with bias is undefined!");
       } else if (problem.solver == Lazy && problem.priorityBias != 0) {

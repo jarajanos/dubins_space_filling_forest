@@ -18,8 +18,9 @@ void Obstacle<Point2D<double>>::addPoint(int objId, double coords[3]) {
     coords[i] *= scale;
   }
 
+  coords[2] = 0;
   this->facePoints.emplace_back(coords[0], coords[1]);
-  updateLocalRange(coords[0], coords[1], 0);
+  updateLocalRange(coords);
 }
 
 template <>
@@ -29,8 +30,9 @@ void Obstacle<Point2DDubins<double>>::addPoint(int objId, double coords[3]) {
     coords[i] *= scale;
   }
 
+  coords[2] = 0;
   this->facePoints.emplace_back(coords[0], coords[1]);
-  updateLocalRange(coords[0], coords[1], 0);
+  updateLocalRange(coords);
 }
 
 template <>
@@ -41,7 +43,7 @@ void Obstacle<Point3D<double>>::addPoint(int objId, double coords[3]) {
   }
 
   this->facePoints.emplace_back(coords[0], coords[1], coords[2], 0, 0, 0);
-  updateLocalRange(coords[0], coords[1], coords[2]);
+  updateLocalRange(coords);
 }
 
 template <>

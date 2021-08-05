@@ -42,7 +42,7 @@ class Environment {
   public:
     std::deque<Obstacle<R>> Obstacles;
     Obstacle<R> *Robot;
-    Range<double> limits{__DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__};
+    Range limits{__DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__};
     bool HasMap{true};
     double ScaleFactor;
 
@@ -55,13 +55,11 @@ class Environment {
 
     bool Collide(R position); // whether robot in such position collides with any known obstacle
     
-    void processLimits(Range<double> &limits) {
-      this->limits.minX = MIN(this->limits.minX, limits.minX);
-      this->limits.maxX = MAX(this->limits.maxX, limits.maxX);
-      this->limits.minY = MIN(this->limits.minY, limits.minY);
-      this->limits.maxY = MAX(this->limits.maxY, limits.maxY);
-      this->limits.minZ = MIN(this->limits.minZ, limits.minZ);
-      this->limits.maxZ = MAX(this->limits.maxZ, limits.maxZ);
+    void processLimits(Range &limits) {
+      for (int i{0}; i < 3; ++i) {
+        this->limits.mins[i] = MIN(this->limits.mins[i], limits.mins[i]);
+        this->limits.maxs[i] = MAX(this->limits.maxs[i], limits.maxs[i]);
+      }
     }
 
 };
@@ -75,8 +73,8 @@ class Obstacle {
     R Position;
     Obstacle() {}
 
-    Obstacle(const std::string fileName, const bool isObj, const R position, const double scaleFactor);
-    Obstacle(const std::string fileName, const bool isObj, const double scaleFactor);
+    Obstacle(const std::string fileName, const FileType type, const R position, const double scaleFactor);
+    Obstacle(const std::string fileName, const FileType type, const double scaleFactor);
 
     virtual ~Obstacle();
     void ParseOBJFile(const std::string fileName);
@@ -84,7 +82,7 @@ class Obstacle {
   
     R GetPosition();
     RAPID_model *GetRapidModel();
-    Range<double> &GetRange();
+    Range &GetRange();
 
     static bool Collide(Obstacle<R> &object1, R pos1, Obstacle<R> &object2, R pos2);
     static bool Collide(Obstacle<R> &object1, Obstacle<R> &object2);
@@ -94,26 +92,26 @@ class Obstacle {
     std::vector<R> facePoints;
     std::vector<Triangle<R>> faces;
     RAPID_model *rapidModel = NULL;
-    Range<double> localRange{__DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__};
+    Range localRange{__DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__};
     double scale{1};
     inline static int rapidId = 0;
     inline static double eyeRotation[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}; 
 
     virtual void addPoint(int objId, double coords[3]);
     virtual void addFacet(int objId, int offset, int faceInts[3]);
-    virtual void updateLocalRange(double x, double y, double z);
+    virtual void updateLocalRange(double coords[]);
 };
 
 template <class R>
-Obstacle<R>::Obstacle(const std::string fileName, const bool isObj, const double scaleFactor) : Obstacle<R>(fileName, isObj, R(), scaleFactor) {
+Obstacle<R>::Obstacle(const std::string fileName, const FileType type, const double scaleFactor) : Obstacle<R>(fileName, type, R(), scaleFactor) {
 }
 
 template <class R>
-Obstacle<R>::Obstacle(const std::string fileName, const bool isObj, const R position, const double scaleFactor) : Position{position}, scale{scaleFactor} {
+Obstacle<R>::Obstacle(const std::string fileName, const FileType type, const R position, const double scaleFactor) : Position{position}, scale{scaleFactor} {
   this->rapidModel = new RAPID_model();
   this->rapidModel->BeginModel();
 
-  if (isObj) {
+  if (type == Obj) {
     // OBJ file
     ParseOBJFile(fileName);
   } else {
@@ -188,13 +186,11 @@ void Obstacle<R>::addFacet(int objId, int offset, int faceInts[3]) {
 }
 
 template<class R>
-void Obstacle<R>::updateLocalRange(double x, double y, double z) {
-  localRange.minX = MIN(localRange.minX, x);
-  localRange.maxX = MAX(localRange.maxX, x);
-  localRange.minY = MIN(localRange.minY, y);
-  localRange.maxY = MAX(localRange.maxY, y);
-  localRange.minZ = MIN(localRange.minZ, z);
-  localRange.maxZ = MAX(localRange.maxZ, z);
+void Obstacle<R>::updateLocalRange(double coords[]) {
+  for (int i{0}; i < 3; ++i) {
+    localRange.mins[i] = MIN(localRange.mins[i], coords[i]);
+    localRange.maxs[i] = MAX(localRange.maxs[i], coords[i]);
+  }
 }
 
 template <class R>
@@ -208,7 +204,7 @@ RAPID_model *Obstacle<R>::GetRapidModel() {
 }
 
 template <class R>
-Range<double>& Obstacle<R>::GetRange() {
+Range& Obstacle<R>::GetRange() {
   return this->localRange;
 }
 

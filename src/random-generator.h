@@ -25,7 +25,7 @@ typedef std::mt19937_64 randomEngine;   // set used random engine
 template <class R>
 class RandomGenerator {
   public:
-    RandomGenerator(const Range<double> samplingRange);
+    RandomGenerator(const Range samplingRange);
 
     bool RandomPointInDistance(const R& center, R& point, const double distance);
     void RandomPointInSpace(R& point);
@@ -33,7 +33,7 @@ class RandomGenerator {
     double RandomProbability();
 
   private:
-    Range<double> limits;
+    Range limits;
     double Distance;
     randomEngine rndEng;
 
@@ -47,7 +47,7 @@ class RandomGenerator {
 };
 
 template<class R>
-RandomGenerator<R>::RandomGenerator(const Range<double> samplingRange) : limits{samplingRange} {
+RandomGenerator<R>::RandomGenerator(const Range samplingRange) : limits{samplingRange} {
   // seed with actual time
   std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds> tSeed{std::chrono::high_resolution_clock::now()};
   std::uint_fast64_t uSeed{static_cast<uint_fast64_t>(tSeed.time_since_epoch().count())};
@@ -55,9 +55,9 @@ RandomGenerator<R>::RandomGenerator(const Range<double> samplingRange) : limits{
   rndEng = randomEngine(uSeed);
 
   uniDistAngle = std::uniform_real_distribution<double>(-M_PI, M_PI);
-  uniSpaceX = std::uniform_real_distribution<double>(limits.minX, limits.maxX);
-  uniSpaceY = std::uniform_real_distribution<double>(limits.minY, limits.maxY);
-  uniSpaceZ = std::uniform_real_distribution<double>(limits.minZ, limits.maxZ);
+  uniSpaceX = std::uniform_real_distribution<double>(limits.mins[0], limits.maxs[0]);
+  uniSpaceY = std::uniform_real_distribution<double>(limits.mins[1], limits.maxs[1]);
+  uniSpaceZ = std::uniform_real_distribution<double>(limits.mins[2], limits.maxs[2]);
   uniProb = std::uniform_real_distribution<double>(0, 1);
 }
 

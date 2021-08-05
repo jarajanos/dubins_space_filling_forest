@@ -14,6 +14,7 @@
 #define __COMMON_H__
 
 #include <math.h>
+#include <regex>
 #include <vector>
 #include <deque>
 #include <limits.h>
@@ -26,6 +27,10 @@
 
 #define MIN(X, Y) ((X < Y) ? (X) : (Y))
 #define MAX(X, Y) ((X > Y) ? (X) : (Y))
+
+#define ERROR(mess)  std::cerr << "[\033[1;31m ERR\033[0m ]  " << mess << "\n"
+#define INFO(mess)   std::cout << "[\033[1;34m INF\033[0m ]  " << mess << "\n"
+#define WARN(mess)   std::cerr << "[\033[1;33m WAR\033[0m ]  " << mess << "\n"
 
 struct FileStruct;
 
@@ -70,14 +75,25 @@ struct FileStruct {
   FileType type;
 };
 
-template <class T>
 struct Range {
-  T minX;
-  T maxX;
-  T minY;
-  T maxY;
-  T minZ;
-  T maxZ;
+  double mins[3];
+  double maxs[3];
+
+  Range(double minX, double maxX, double minY, double maxY, double minZ, double maxZ) 
+    : mins{minX, minY, minZ}, maxs{maxX, maxY, maxZ} {
+    }
+
+  void Parse(std::string &range, double scale, int order) {
+    std::regex r("\\[(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*)\\]");
+    std::smatch m;
+    std::regex_search(range, m, r);
+    if (m.size() != 3) {
+      throw std::invalid_argument("Unknown format of range");
+    }
+
+    mins[order] = std::stod(m[1]) * scale;
+    maxs[order] = std::stod(m[2]) * scale;
+  }
 };
 
 // FLANN FUNCTOR
