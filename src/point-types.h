@@ -64,6 +64,10 @@ class Point2D {
       return coords;
     }
 
+    inline const T* GetRawCoords() const {
+      return coords;
+    }
+
     const T operator[](int i) const {
       if (i < 2) {
         return coords[i];
@@ -79,12 +83,16 @@ class Point2D {
     }
 
     friend bool operator==(const Point2D<T> &p1, const Point2D<T> &p2) {
-      return p1.x() == p2.x() && p1.y() == p2.y();
+      return p1[0] == p2[0] && p1[1] == p2[1];
+    }
+
+    friend bool operator!=(Point2D<T> &p1, const Point2D<T> &p2) {
+      return !(p1 == p2);
     }
 
     friend bool operator<(const Point2D<T> &p1, const Point2D<T> &p2) {
-      return p1.x() < p2.x() ||
-            (p1.x() == p2.x() && p1.y() < p2.y());
+      return p1[0] < p2[0] ||
+            (p1[0] == p2[0] && p1[1] < p2[1]);
     }
 
     // scale position
@@ -116,6 +124,18 @@ class Point2D {
       retVal.SetPosition(coords[0] + direction[0] * ratio, coords[1] + direction[1] * ratio);
 
       return retVal;
+    }
+
+    void FillRotationMatrix(T (&matrix)[3][3]) const {
+      matrix[0][0] = 1;
+      matrix[0][1] = 0;
+      matrix[0][2] = 0;
+      matrix[1][0] = 0;
+      matrix[1][1] = 1;
+      matrix[1][2] = 0;
+      matrix[2][0] = 0;
+      matrix[2][1] = 0;
+      matrix[2][2] = 1;
     }
 
     void PrintPosition(std::ostream &out) {
@@ -181,6 +201,10 @@ class Point2DDubins {
       return coords;
     }
 
+    inline const T* GetRawCoords() const {
+      return coords;
+    }
+
     const T operator[](int i) const {
       if (i < 2) {
         return coords[i];
@@ -204,6 +228,10 @@ class Point2DDubins {
       }
 
       return equal;
+    }
+
+    friend bool operator!=(Point2DDubins<T> &p1, const Point2DDubins<T> &p2) {
+      return !(p1 == p2);
     }
 
     friend bool operator<(const Point2DDubins<T> &p1, const Point2DDubins<T> &p2) {
@@ -266,6 +294,18 @@ class Point2DDubins {
       return retVal;
     }
 
+    void FillRotationMatrix(T (&matrix)[3][3]) const {
+      matrix[0][0] = cos(phi);
+      matrix[0][1] = -sin(phi);
+      matrix[0][2] = 0;
+      matrix[1][0] = sin(phi);
+      matrix[1][1] = cos(phi);
+      matrix[1][2] = 0;
+      matrix[2][0] = 0;
+      matrix[2][1] = 0;
+      matrix[2][2] = 1;
+    }
+
     void PrintPosition(std::ostream &out) {
       out << (*this)[0] << DELIMITER_OUT << (*this)[1];
     }
@@ -326,6 +366,10 @@ class Point3D {
       return coords;
     }
 
+    inline const T* GetRawCoords() const {
+      return coords;
+    }
+
     const T operator[](int i) const {
       if (i < 3) {
         return coords[i];
@@ -344,6 +388,10 @@ class Point3D {
 
     friend bool operator==(const Point3D<T> &p1, const Point3D<T> &p2) {
       return p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2] && p1.rotation == p2.rotation;
+    }
+
+    friend bool operator!=(const Point3D<T> &p1, const Point3D<T> &p2) {
+      return !(p1 == p2);
     }
 
     friend bool operator<(const Point3D<T> &p1, const Point3D<T> &p2) {
@@ -397,6 +445,10 @@ class Point3D {
       resultRot.Normalize();
       retVal.SetRotation(resultRot);
       return retVal;
+    }
+
+    void FillRotationMatrix(T (&matrix)[3][3]) const {
+      this->GetRotation().ToRotationMatrix(matrix);
     }
 
     void PrintPosition(std::ostream &out) {

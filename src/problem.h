@@ -25,7 +25,7 @@ struct Problem {
   bool optimal;
   bool smoothing;
 
-  Environment environment;
+  Environment<R> environment;
   std::deque<R> roots;
   R goal;
   bool hasGoal{false};

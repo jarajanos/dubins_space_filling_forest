@@ -21,6 +21,8 @@
 #include "yaml-cpp/yaml.h"
 
 #include "common.h"
+#include "environment.h"
+#include "problem.h"
 
 int main(int argc, char *argv[]);
 

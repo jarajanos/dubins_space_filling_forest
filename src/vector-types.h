@@ -23,19 +23,19 @@ class Vector {
     coords = new T[capacity];
   }
 
-  ~Vector() {
+  virtual ~Vector() {
     delete[] coords;
   }
 
-  inline T* operator()() {
+  inline virtual T* GetRawCoords() {
     return coords;
   }
 
-  inline T operator[](int i) const {
+  inline virtual T operator[](int i) const {
     return coords[i];
   }
 
-  void Set(int pos, T val) {
+  virtual void Set(int pos, T val) {
     this->coords[pos] = val;
   }
 
@@ -90,14 +90,14 @@ class Vector {
     return retVal;
   }
 
-  void operator+=(const Vector<T> &v) {
+  virtual void operator+=(const Vector<T> &v) {
     assert(this->capacity == v.capacity);
     for (int i{0}; i < this->capacity; ++i) {
       this->coords[i] += v[i];
     }
   }
 
-  void operator-=(const Vector<T> &v) {
+  virtual void operator-=(const Vector<T> &v) {
     assert(this->capacity == v.capacity);
     for (int i{0}; i < this->capacity; ++i) {
       this->coords[i] -= v[i];
@@ -129,7 +129,7 @@ class Vector {
     return a[i - 1] < b[i - 1];
   }
 
-  inline Vector<T> Inverse(const Vector<T> &vec) {
+  inline virtual Vector<T> Inverse(const Vector<T> &vec) {
     Vector<T> retVal(this->capacity);
     for (int i{0}; i < this->capacity; ++i) {
       retVal.coords[i] = -vec[i];
@@ -138,7 +138,7 @@ class Vector {
     return retVal;
   } 
 
-  T Size() const {
+  virtual T Size() const {
     T retVal{0};
 
     for (int i{0}; i < this->capacity; ++i) {
@@ -148,7 +148,7 @@ class Vector {
     return sqrt(retVal);
   }
 
-  void Normalize() {
+  virtual void Normalize() {
     T s{this->Size()};
     for (int i{0}; i < this->capacity; ++i) {
       coords[i] /= s;
@@ -163,6 +163,12 @@ class Vector {
 template<class T>
 class PointVector3D : public Vector<T> {
   public:
+    PointVector3D() : Vector<T>(3) {
+      this->coords[0] = 0;
+      this->coords[1] = 0;
+      this->coords[2] = 0;     
+    }
+
     PointVector3D(T x, T y, T z) : Vector<T>(3) {
       this->coords[0] = x;
       this->coords[1] = y;
@@ -182,7 +188,12 @@ class PointVector3D : public Vector<T> {
 template<class T>
 class PointVector2D : public Vector<T> {
   public:
-    PointVector2D(T x, T y) : PointVector2D<T>(2) {
+    PointVector2D() : Vector<T>(2) {
+      this->coords[0] = 0;
+      this->coords[1] = 0;
+    }
+
+    PointVector2D(T x, T y) : Vector<T>(2) {
       this->coords[0] = x;
       this->coords[1] = y;
     }
@@ -193,16 +204,20 @@ class PointVector2D : public Vector<T> {
     PointVector2D(Point2DDubins<T> p) : PointVector2D<T>(p[0], p[1]) {
     }
 
-    PointVector2D(Point2D<T> p1, Point2D<T> p2) : PointVector2D<T>(2) {
+    PointVector2D(Point2D<T> p1, Point2D<T> p2) : Vector<T>(2) {
       for (int i{0}; i < 2; ++i) {
         this->coords[i] = p2[i] - p1[i];
       }
     }
 
-    PointVector2D(Point2DDubins<T> p1, Point2DDubins<T> p2) : PointVector2D<T>(2) {
+    PointVector2D(Point2DDubins<T> p1, Point2DDubins<T> p2) : Vector<T>(2) {
       for (int i{0}; i < 2; ++i) {
         this->coords[i] = p2[i] - p1[i];
       }
+    }
+
+    PointVector3D<T> To3DVector() const {
+      return PointVector3D<T>(this->coords[0], this->coords[1], 0);
     }
 };
 
