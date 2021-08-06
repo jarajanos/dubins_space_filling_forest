@@ -22,10 +22,11 @@
 
 #include "common.h"
 #include "environment.h"
-#include "problem.h"
+#include "solver.h"
 
 int main(int argc, char *argv[]);
-void ParseFile(const std::string &fileName, Problem<double> &problem);
-bool GetFile(YAML::Node node, FileStruct &file, int iteration=0, bool includeIter=true);
+template <class R> void SolveProblem(YAML::Node &config, Problem<R> &problem);
+template <class R> void ParseFile(const std::string &fileName, Problem<R> &problem);
+bool GetFile(YAML::Node &node, FileStruct &file, int repetition=0, bool includeIter=true);
 
 #endif /*__MAIN_H__*/

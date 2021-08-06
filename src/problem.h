@@ -19,7 +19,7 @@
 
 template<class R>
 struct Problem {
-  int iteration{0};
+  int repetition{0};
   Dimensions dimension{D3};
 
   SolverType solver;
@@ -34,26 +34,27 @@ struct Problem {
   bool autoRange{false};
 
   double distTree;
+  double samplingDist;
   double collisionDist;
   
   int maxIterations;
   double priorityBias{0};
-  int saveTreeIter{0};
-  int saveFrontiersIter{0};
+  int maxMisses{DEFAULT_THRES_MISS};
   
   SaveOptions saveOptions{None};
   std::map<SaveOptions, FileStruct> fileNames;
+  std::map<SaveOptions, int> saveFreq;
   std::string id{ "Solver" };
 
   std::string tspSolver;
   std::string tspType;
 
   int GetNumRoots() {
-    //if (hasGoal) {
-    //  return roots.size() + 1;
-    //} else {
-    //  return roots.size();
-    //}
+    if (hasGoal) {
+     return roots.size() + 1;
+    } else {
+     return roots.size();
+    }
     return 1;
   }
 };

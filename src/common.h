@@ -56,7 +56,7 @@ enum SaveOptions {
   None = 0,
   SaveGoals = 1,
   SaveTree = 2,
-  SaveRaw = 4,
+  SaveRoadmap = 4,
   SaveSmooth = 8,
   SaveParams = 16,
   SaveTSP = 32,
@@ -231,6 +231,29 @@ template <class T, class R>
 T AngleDifference(T a1, R a2) {
   T diff{(T)a2 - a1};
   return NormalizeAngle(diff);
+}
+
+/**
+ * @brief Addition of a flag to save options
+ * 
+ * @param a Current save options
+ * @param b Flag to be added
+ * @return SaveOptions New save options 
+ */
+inline SaveOptions operator|(SaveOptions a, SaveOptions b) {
+  return static_cast<SaveOptions>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+/**
+ * @brief Returns if a flag in save options is active
+ * 
+ * @param a Flag to be determined
+ * @param b Current save options
+ * @return true Flag is active
+ * @return false Otherwise
+ */
+inline bool operator<=(SaveOptions a, SaveOptions b) {
+  return  (static_cast<int>(b) & static_cast<int>(a)) == static_cast<int>(a);
 }
 
 #endif /* __COMMON_H__ */

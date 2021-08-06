@@ -338,7 +338,7 @@ class Point3D {
       }
 
       // rotation
-      rotation = Quaternion<T>(m[4], m[5], m[6]);
+      rotation = Quaternion<T>(std::stod(m[4]), std::stod(m[5]), std::stod(m[6]));
     }
 
     Quaternion<T> GetRotation() const {
