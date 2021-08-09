@@ -114,7 +114,7 @@ struct D6Distance {
       result = diff * diff;
     }
 
-    Quaternion<T> q1, q2;
+    Quaternion q1, q2;
     for (int i{3}; i < 7; ++i) {
       q1.Set(*a++);
       q2.Set(*b++);
@@ -152,14 +152,14 @@ class SymmetricMatrix {
     int size;
 };
 
-template<class T, class R>
+template<class R>
 struct DistanceHolder {
   R *node1;
   R *node2;
-  T distance;
+  double distance;
   std::deque<R *> plan;
 
-  DistanceHolder() : node1{NULL}, node2{NULL}, distance{std::numeric_limits<T>::max()} {
+  DistanceHolder() : node1{NULL}, node2{NULL}, distance{std::numeric_limits<double>::max()} {
   }
 
   DistanceHolder(R *first, R *second) : node1{first}, node2{second} {
@@ -173,7 +173,7 @@ struct DistanceHolder {
     distance = first->DistanceToRoot + second->DistanceToRoot + first->Position.distance(second->Position);
   }
 
-  DistanceHolder(R *first, R *second, T dist) : distance{dist} {
+  DistanceHolder(R *first, R *second, double dist) : distance{dist} {
     if (*first < *second) {
       node1 = first;
       node2 = second;
@@ -183,7 +183,7 @@ struct DistanceHolder {
     }
   }
 
-  DistanceHolder(R *first, R *second, T dist, std::deque<R *> &plan) : distance{dist}, plan{plan} {
+  DistanceHolder(R *first, R *second, double dist, std::deque<R *> &plan) : distance{dist}, plan{plan} {
     if (*first < *second) {
       node1 = first;
       node2 = second;
@@ -194,11 +194,11 @@ struct DistanceHolder {
     }
   }
 
-  friend bool operator<(const DistanceHolder<T, R> &l, const DistanceHolder<T, R> &r) {
+  friend bool operator<(const DistanceHolder<R> &l, const DistanceHolder<R> &r) {
     return l.distance < r.distance;
   }  
 
-  friend bool operator==(const DistanceHolder<T, R> &l, const DistanceHolder<T, R> &r) {
+  friend bool operator==(const DistanceHolder<R> &l, const DistanceHolder<R> &r) {
     return l.node1 == r.node1 && l.node2 == r.node2;
   }
 
@@ -227,10 +227,23 @@ T NormalizeAngle(T angle) {
   }
 }
 
-template <class T, class R>
-T AngleDifference(T a1, R a2) {
-  T diff{(T)a2 - a1};
-  return NormalizeAngle(diff);
+template <class T>
+T AngleDifference(T a1, T a2) {
+  double angleDirection{a1 - a2};
+  if (a1 >= a2) {
+    if (angleDirection < M_PI) {
+      angleDirection *= -1;
+    } else {
+      angleDirection = 2 * M_PI - angleDirection;
+    }
+  } else {
+    if (angleDirection < -M_PI) {
+      angleDirection = -2 * M_PI - angleDirection;
+    } else {
+      angleDirection *= -1; 
+    }
+  }
+  return angleDirection;
 }
 
 /**

@@ -30,17 +30,17 @@ int main(int argc, char *argv[]) {
 
   std::string dim{config["problem"]["dimension"].as<std::string>()};
   if (dim == "2D") {
-    Problem<Point2D<double>> problem;
+    Problem<Point2D> problem;
     problem.repetition = repetition;
     problem.dimension = D2;
     SolveProblem(config, problem);
   } else if (dim == "2DDubins") {
-    Problem<Point2DDubins<double>> problem;
+    Problem<Point2DDubins> problem;
     problem.repetition = repetition;
     problem.dimension = D2Dubins;
     SolveProblem(config, problem);
   } else if (dim == "3D") {
-    Problem<Point3D<double>> problem;
+    Problem<Point3D> problem;
     problem.repetition = repetition;
     problem.dimension = D3;
     SolveProblem(config, problem);
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
 template<class R>
 void SolveProblem(YAML::Node &config, Problem<R> &problem) {
   ParseFile(config, problem);
-
+  // TODO
 }
 
 template<class R>

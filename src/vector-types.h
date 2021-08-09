@@ -13,304 +13,48 @@
 #ifndef __VECTOR_TYPES_H__
 #define __VECTOR_TYPES_H__
 
-#include <math.h>
+class Point2D;
+class Point2DDubins;
+class Point3D;
 
-template <class T>
+#include <math.h>
+#include <cassert>
+
 class Vector {
  public:
-  Vector(int capacity) {
-    this->capacity = capacity;
-    coords = new T[capacity];
-  }
+  Vector(int capacity);
+  virtual ~Vector();
 
-  virtual ~Vector() {
-    delete[] coords;
-  }
-
-  inline virtual T* GetRawCoords() {
-    return coords;
-  }
-
-  inline virtual T operator[](int i) const {
-    return coords[i];
-  }
-
-  virtual void Set(int pos, T val) {
-    this->coords[pos] = val;
-  }
-
-  friend Vector<T> operator*(Vector<T> v1, const T scale) {
-    Vector<T> retVal{v1.capacity};
-    for (int i{0}; i < v1.capacity; ++i) {
-      retVal.coords[i] = v1.coords[i] * scale;
-    }
-
-    return retVal;
-  }
-
-  friend T operator|(Vector<T> v1, Vector<T> v2) {
-    assert(v1.capacity == v2.capacity);
-    double accum{0};
-
-    for (int i{0}; i < v1.capacity; ++i) {
-      accum += v1[i] * v2[i];
-    }
-
-    return accum;
-  }
-
-  friend Vector<T> operator*(Vector<T> v1, Vector<T> v2) {
-    assert((v1.capacity == 3 && v2.capacity == 3));
-    T  cache[3];
-    cache[0] = v1[1] * v2[2] - v1[2] * v2[1];
-    cache[1] = v1[2] * v2[0] - v1[0] * v2[2];
-    cache[2] = v1[0] * v2[1] - v1[1] * v2[0];
-
-    Vector<T> retVal{cache[0], cache[1], cache[2]};
-    return retVal;
-  }
-
-  friend Vector<T> operator-(const Vector<T> v1, const Vector<T> v2) {
-    assert(v1.capacity == v2.capacity);
-    Vector<T> retVal{v1.capacity};
-    for (int i{0}; i < v1.capacity; ++i) {
-      retVal.coords[i] = v1[i] - v2[i];
-    }
-
-    return retVal;
-  }
-
-  friend Vector<T> operator+(const Vector<T> v1, const Vector<T> v2) {
-    assert(v1.capacity == v2.capacity);
-    Vector<T> retVal{v1.capacity};
-    for (int i{0}; i < v1.capacity; ++i) {
-      retVal.coords[i] = v1[i] + v2[i];
-    }
-
-    return retVal;
-  }
-
-  virtual void operator+=(const Vector<T> &v) {
-    assert(this->capacity == v.capacity);
-    for (int i{0}; i < this->capacity; ++i) {
-      this->coords[i] += v[i];
-    }
-  }
-
-  virtual void operator-=(const Vector<T> &v) {
-    assert(this->capacity == v.capacity);
-    for (int i{0}; i < this->capacity; ++i) {
-      this->coords[i] -= v[i];
-    }
-  }
-
-  friend bool operator==(const Vector<T> &a, const Vector<T> &b) {
-    if (a.capacity != b.capacity) {
-      return false;
-    }
-
-    bool correct{true};
-    for (int i{0}; i < a.capacity && correct; ++i) {
-      correct &= (a[i] == b[i]);
-    }
-
-    return correct;
-  }
-
-  friend bool operator<(const Vector<T> &a, const Vector<T> &b) {
-    assert(a.capacity == b.capacity);
-    bool equal{true};
-    int i{0};
-
-    for ( ; i < a.capacity && equal; ++i) {
-      equal = (a[i] == b[i]);
-    }
-
-    return a[i - 1] < b[i - 1];
-  }
-
-  inline virtual Vector<T> Inverse(const Vector<T> &vec) {
-    Vector<T> retVal(this->capacity);
-    for (int i{0}; i < this->capacity; ++i) {
-      retVal.coords[i] = -vec[i];
-    }
-
-    return retVal;
-  } 
-
-  virtual T Size() const {
-    T retVal{0};
-
-    for (int i{0}; i < this->capacity; ++i) {
-      retVal += coords[i] * coords[i];
-    }
-
-    return sqrt(retVal);
-  }
-
-  virtual void Normalize() {
-    T s{this->Size()};
-    for (int i{0}; i < this->capacity; ++i) {
-      coords[i] /= s;
-    }
-  }
-
+  virtual double* GetRawCoords();
+  double operator[](int i) const;
+  virtual void Set(int pos, double val);
+  friend Vector operator*(Vector v1, const double scale);
+  friend double operator|(Vector v1, Vector v2);
+  friend Vector operator*(Vector v1, Vector v2);
+  friend Vector operator-(const Vector v1, const Vector v2);
+  friend Vector operator+(const Vector v1, const Vector v2);
+  virtual void operator+=(const Vector &v);
+  virtual void operator-=(const Vector &v);
+  friend bool operator==(const Vector &a, const Vector &b);
+  friend bool operator<(const Vector &a, const Vector &b);
+  virtual Vector Inverse(const Vector &vec);
+  virtual double Size() const;
+  virtual void Normalize();
  protected:
   int capacity;
-  T *coords;
+  double *coords;
 };
 
-template<class T>
-class PointVector3D : public Vector<T> {
+class Quaternion : public Vector {
   public:
-    PointVector3D() : Vector<T>(3) {
-      this->coords[0] = 0;
-      this->coords[1] = 0;
-      this->coords[2] = 0;     
-    }
-
-    PointVector3D(T x, T y, T z) : Vector<T>(3) {
-      this->coords[0] = x;
-      this->coords[1] = y;
-      this->coords[2] = z;
-    }
-
-    PointVector3D(Point3D<T> p) : PointVector3D<T>(p[0], p[1], p[2]) {
-    }
-
-    PointVector3D(Point3D<T> p1, Point3D<T> p2) : Vector<T>(3) {
-      for (int i{0}; i < 3; ++i) {
-        this->coords[i] = p2[i] - p1[i];
-      }
-    }
-};
-
-template<class T>
-class PointVector2D : public Vector<T> {
-  public:
-    PointVector2D() : Vector<T>(2) {
-      this->coords[0] = 0;
-      this->coords[1] = 0;
-    }
-
-    PointVector2D(T x, T y) : Vector<T>(2) {
-      this->coords[0] = x;
-      this->coords[1] = y;
-    }
-
-    PointVector2D(Point2D<T> p) : PointVector2D<T>(p[0], p[1]) {
-    }
-
-    PointVector2D(Point2DDubins<T> p) : PointVector2D<T>(p[0], p[1]) {
-    }
-
-    PointVector2D(Point2D<T> p1, Point2D<T> p2) : Vector<T>(2) {
-      for (int i{0}; i < 2; ++i) {
-        this->coords[i] = p2[i] - p1[i];
-      }
-    }
-
-    PointVector2D(Point2DDubins<T> p1, Point2DDubins<T> p2) : Vector<T>(2) {
-      for (int i{0}; i < 2; ++i) {
-        this->coords[i] = p2[i] - p1[i];
-      }
-    }
-
-    PointVector3D<T> To3DVector() const {
-      return PointVector3D<T>(this->coords[0], this->coords[1], 0);
-    }
-};
-
-template<class T>
-class Quaternion : public Vector<T> {
-  public:
-    Quaternion() : Vector<T>(4) {
-    }
-
-    Quaternion(T w, T x, T y, T z) : Vector<T>(4) {
-      this->coords[0] = w;
-      this->coords[1] = x;
-      this->coords[2] = y;
-      this->coords[3] = z;
-    }
-
-    Quaternion(T yaw, T pitch, T roll) : Vector<T>(4) {
-      T c_yaw = cos(yaw * 0.5);
-      T s_yaw = sin(yaw * 0.5);
-      T c_pitch = cos(pitch * 0.5);
-      T s_pitch = sin(pitch * 0.5);
-      T c_roll = cos(roll * 0.5);
-      T s_roll = sin(roll * 0.5);
-
-      this->coords[0] = c_roll * c_pitch * c_yaw + s_roll * s_pitch * s_yaw;
-      this->coords[1] = s_roll * c_pitch * c_yaw - c_roll * s_pitch * s_yaw;
-      this->coords[2] = c_roll * s_pitch * c_yaw + s_roll * c_pitch * s_yaw;
-      this->coords[3] = c_roll * c_pitch * s_yaw - s_roll * s_pitch * c_yaw;
-    }
-
-    friend Quaternion<T> operator*(Quaternion<T> a, Quaternion<T> b) {
-      Quaternion<T> retVal;
-      retVal.coords[0] = a.coords[0] * b.coords[0] - a.coords[1] * b.coords[1] - a.coords[2] * b.coords[2] - a.coords[3] * b.coords[3];
-      retVal.coords[1] = a.coords[0] * b.coords[1] + a.coords[1] * b.coords[0] + a.coords[2] * b.coords[3] - a.coords[3] * b.coords[2];
-      retVal.coords[2] = a.coords[0] * b.coords[2] - a.coords[1] * b.coords[3] + a.coords[2] * b.coords[0] + a.coords[3] * b.coords[1];
-      retVal.coords[3] = a.coords[0] * b.coords[3] + a.coords[1] * b.coords[2] - a.coords[2] * b.coords[1] + a.coords[3] * b.coords[0];
-
-      return retVal;
-    }
-
-    Quaternion<T> Inverse() const {
-      Quaternion<T> retVal;
-
-      retVal.coords[0] = this->coords[0];
-      for (int i{1}; i < 4; ++i) {
-        retVal.coords[i] = -this->coords[i];
-      }
-
-      return retVal;
-    }
-
-    void ToRotationMatrix(T (&matrix)[3][3]) {
-      matrix[0][0] = 2 * this->coords[0] * this->coords[0] + 2 * this->coords[1] * this->coords[1] - 1;
-      matrix[0][1] = 2 * this->coords[1] * this->coords[2] - 2 * this->coords[0] * this->coords[3];
-      matrix[0][2] = 2 * this->coords[0] * this->coords[2] + 2 * this->coords[1] * this->coords[3];
-      matrix[1][0] = 2 * this->coords[0] * this->coords[3] + 2 * this->coords[1] * this->coords[2];
-      matrix[1][1] = 2 * this->coords[0] * this->coords[0] + 2 * this->coords[2] * this->coords[2] - 1;
-      matrix[1][2] = 2 * this->coords[2] * this->coords[3] - 2 * this->coords[0] * this->coords[1];
-      matrix[2][0] = 2 * this->coords[1] * this->coords[3] - 2 * this->coords[0] * this->coords[2];
-      matrix[2][1] = 2 * this->coords[2] * this->coords[3] + 2 * this->coords[0] * this->coords[1];
-      matrix[2][2] = 2 * this->coords[0] * this->coords[0] + 2 * this->coords[3] * this->coords[3] - 1;
-    }
-
-    void Combine(const Quaternion<T> &q) {
-      T tempCoords[4];
-    
-      tempCoords[0] = q.coords[0] * this->coords[0] - q.coords[1] * this->coords[1] - q.coords[2] * this->coords[2] - q.coords[3] * this->coords[3];
-      tempCoords[1] = q.coords[0] * this->coords[1] + q.coords[1] * this->coords[0] + q.coords[2] * this->coords[3] - q.coords[3] * this->coords[2];
-      tempCoords[2] = q.coords[0] * this->coords[2] - q.coords[1] * this->coords[3] + q.coords[2] * this->coords[0] + q.coords[3] * this->coords[1];
-      tempCoords[3] = q.coords[0] * this->coords[3] + q.coords[1] * this->coords[2] - q.coords[2] * this->coords[1] + q.coords[3] * this->coords[0];
-    
-      for (int i{0}; i < 4; ++i) {
-        this->coords[i] = tempCoords[i];
-      }
-    }
-
-    void RotatePoint(Point3D<T> &p) {
-      Quaternion<T> q{0, p[0], p[1], p[2]};
-      Quaternion<T> temp = *this * q;
-      q = temp * Inverse();
-
-      p.set(q[1], q[2], q[3]);
-    }
-
-    T Distance(const Quaternion<T> &b) const {
-      Quaternion<T> diff{Inverse() * b};
-      Vector<T> reduced(3);
-      reduced.Set(0, diff[1]);
-      reduced.Set(1, diff[2]);
-      reduced.Set(2, diff[3]);
-
-      return 2 * atan2(reduced.Size(), diff[0]);
-    }
+    Quaternion();
+    Quaternion(double w, double x, double y, double z);
+    Quaternion(double yaw, double pitch, double roll);
+    friend Quaternion operator*(Quaternion a, Quaternion b);
+    Quaternion Inverse() const;
+    void ToRotationMatrix(double (&matrix)[3][3]);
+    void Combine(const Quaternion &q);
+    double Distance(const Quaternion &b) const;
 };
 
 #endif

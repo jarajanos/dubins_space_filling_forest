@@ -19,7 +19,7 @@
  * @return false Point DOES NOT lie in the workspace
  */
 template<>
-bool RandomGenerator<Point2D<double>>::isInLimits(Point2D<double>& p) {
+bool RandomGenerator<Point2D>::isInLimits(Point2D& p) {
   bool valid{true};
   for (int i{0}; i < 2; ++i) {
     valid &= p[i] >= limits.mins[i];
@@ -30,7 +30,7 @@ bool RandomGenerator<Point2D<double>>::isInLimits(Point2D<double>& p) {
 }
 
 template<>
-bool RandomGenerator<Point2DDubins<double>>::isInLimits(Point2DDubins<double>& p) {
+bool RandomGenerator<Point2DDubins>::isInLimits(Point2DDubins& p) {
   bool valid{true};
   for (int i{0}; i < 2; ++i) {
     valid &= p[i] >= limits.mins[i];
@@ -41,7 +41,7 @@ bool RandomGenerator<Point2DDubins<double>>::isInLimits(Point2DDubins<double>& p
 }
 
 template<>
-bool RandomGenerator<Point3D<double>>::isInLimits(Point3D<double>& p) {
+bool RandomGenerator<Point3D>::isInLimits(Point3D& p) {
   bool valid{true};
   for (int i{0}; i < 3; ++i) {
     valid &= p[i] >= limits.mins[i];
@@ -57,7 +57,7 @@ bool RandomGenerator<Point3D<double>>::isInLimits(Point3D<double>& p) {
  * @return true When the point is valid, i. e. is in limits (does not check nn) 
  */
 template<>
-bool RandomGenerator<Point2D<double>>::RandomPointInDistance(const Point2D<double>& center, Point2D<double>& point, const double distance) {
+bool RandomGenerator<Point2D>::RandomPointInDistance(const Point2D& center, Point2D& point, const double distance) {
   // rotation in polar
   double phi{uniDistAngle(rndEng)};
   
@@ -66,7 +66,7 @@ bool RandomGenerator<Point2D<double>>::RandomPointInDistance(const Point2D<doubl
 }
 
 template<>
-bool RandomGenerator<Point2DDubins<double>>::RandomPointInDistance(const Point2DDubins<double>& center, Point2DDubins<double>& point, const double distance) {
+bool RandomGenerator<Point2DDubins>::RandomPointInDistance(const Point2DDubins& center, Point2DDubins& point, const double distance) {
   // rotation in polar
   double phi{uniDistAngle(rndEng)};
   
@@ -76,8 +76,8 @@ bool RandomGenerator<Point2DDubins<double>>::RandomPointInDistance(const Point2D
 }
 
 template<>
-bool RandomGenerator<Point3D<double>>::RandomPointInDistance(const Point3D<double>& center, Point3D<double>& point, const double distance) {
-  Point3D<double> temp;
+bool RandomGenerator<Point3D>::RandomPointInDistance(const Point3D& center, Point3D& point, const double distance) {
+  Point3D temp;
 
   double phi{uniDistAngle(rndEng)};
   double theta{uniDistAngle(rndEng)};
@@ -90,7 +90,7 @@ bool RandomGenerator<Point3D<double>>::RandomPointInDistance(const Point3D<doubl
   double thetaOne{2*M_PI*RandomProbability()};
   double thetaTwo{2*M_PI*RandomProbability()};
 
-  Quaternion<double> rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
+  Quaternion rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
   temp.SetRotation(rotation);
 
   // the distance is not exactly the expected one (might be much greater), therefore a point in the same direction with the correct distance is needed
@@ -106,18 +106,18 @@ bool RandomGenerator<Point3D<double>>::RandomPointInDistance(const Point3D<doubl
  * @param point Output = uniformly sampled point in the configuration space
  */
 template<>
-void RandomGenerator<Point2D<double>>::RandomPointInSpace(Point2D<double>& point) {
+void RandomGenerator<Point2D>::RandomPointInSpace(Point2D& point) {
   point.SetPosition(uniSpaceX(rndEng), uniSpaceY(rndEng));
 }
 
 template<>
-void RandomGenerator<Point2DDubins<double>>::RandomPointInSpace(Point2DDubins<double>& point) {
+void RandomGenerator<Point2DDubins>::RandomPointInSpace(Point2DDubins& point) {
   point.SetPosition(uniSpaceX(rndEng), uniSpaceY(rndEng));
   point.SetAngle(uniDistAngle(rndEng));
 }
 
 template<>
-void RandomGenerator<Point3D<double>>::RandomPointInSpace(Point3D<double>& point) {
+void RandomGenerator<Point3D>::RandomPointInSpace(Point3D& point) {
   point.SetPosition(uniSpaceX(rndEng), uniSpaceY(rndEng), uniSpaceZ(rndEng));
 
   // rotation
@@ -127,6 +127,6 @@ void RandomGenerator<Point3D<double>>::RandomPointInSpace(Point3D<double>& point
   double thetaOne{2*M_PI*RandomProbability()};
   double thetaTwo{2*M_PI*RandomProbability()};
 
-  Quaternion<double> rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
+  Quaternion rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
   point.SetRotation(rotation);
 }
