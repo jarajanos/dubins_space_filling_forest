@@ -160,13 +160,20 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     if (!subNode.IsNull()) {
       problem.MaxMisses = subNode.as<int>();
     }
+    subNode = node["dubins-radius"];
+    if ((problem.Dimension == D2Dubins || problem.Dimension == D3Dubins) && subNode.IsNull()) {
+      throw std::invalid_argument("dubins radius missing");
+    } else if (!subNode.IsNull()) {
+      problem.DubinsRadius = subNode.as<double>();
+      Point2DDubins::DubinsRadius = subNode.as<double>();
+    }
     subNode = node["bias"];
     if (!subNode.IsNull()) {
       problem.PriorityBias = subNode.as<double>();
     }
 
     if (problem.Solver == Lazy && problem.PriorityBias != 0) {
-      throw std::invalid_argument("priority bias for Lazy solver is not implemented!");
+      throw std::invalid_argument("priority bias for Lazy solver is not implemented");
     }
 
     // robot node

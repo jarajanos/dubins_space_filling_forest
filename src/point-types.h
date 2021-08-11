@@ -19,6 +19,8 @@
 #include "vector-types.h"
 #include "common.h"
 
+#include "opendubins/dubins.h"
+
 class Point2D {
   public:
     Point2D();
@@ -35,7 +37,6 @@ class Point2D {
     friend bool operator!=(Point2D &p1, const Point2D &p2);
     friend bool operator<(const Point2D &p1, const Point2D &p2);
     friend Point2D operator/(const Point2D &p1, const double scale);    // scale position
-
     double Distance(const Point2D &other) const;
     Point2D GetStateInDistance(Point2D &other, double dist) const;
     void FillRotationMatrix(double (&matrix)[3][3]) const;
@@ -46,9 +47,12 @@ class Point2D {
 
 class Point2DDubins {
   public:
+    inline static double DubinsRadius;
+
     Point2DDubins();
     Point2DDubins(double x, double y);
     Point2DDubins(const std::string &s, double scale=1);
+    Point2DDubins(opendubins::State dubinsState);
 
     Point2DDubins& operator=(const Point2DDubins &p);
     void SetAngle(double angle);
@@ -117,5 +121,10 @@ class PointVector2D : public Vector {
     PointVector2D(Point2DDubins p1, Point2DDubins p2);
     PointVector3D To3DVector() const;
 };
+
+// STREAM OUTPUTS
+std::ostream& operator<<(std::ostream &out, const Point2D &p);
+std::ostream& operator<<(std::ostream &out, const Point2DDubins &p);
+std::ostream& operator<<(std::ostream &out, const Point3D &p);
 
 #endif

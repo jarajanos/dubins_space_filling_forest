@@ -34,3 +34,9 @@ FlannHolder<Node<Point3D>>::~FlannHolder() {
     }
   }
 }
+
+// does not make sense = only purpose is correct ordering in DistanceHolder - position of Node in argument MAKES sense here, the problem is not symmetric
+template<>
+bool Node<Point2DDubins>::operator<(const Node<Point2DDubins> &l) {
+  return true;
+}

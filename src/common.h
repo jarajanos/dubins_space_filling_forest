@@ -87,11 +87,10 @@ enum SaveOptions {
   SaveGoals = 1,
   SaveTree = 2,
   SaveRoadmap = 4,
-  SaveSmooth = 8,
-  SaveParams = 16,
-  SaveTSP = 32,
-  SaveFrontiers = 64,
-  Invalid = 128
+  SaveParams = 8,
+  SaveTSP = 16,
+  SaveFrontiers = 32,
+  Invalid = 64
 };
 
 enum SolverType{
@@ -127,9 +126,9 @@ struct Range {
 };
 
 template<class T>
-class SymmetricMatrix {
+class DistanceMatrix {
   public:
-    SymmetricMatrix(const int size) {
+    DistanceMatrix(const int size) {
       holder.resize(size * (size+1) / 2);
       this->size = size;
     }

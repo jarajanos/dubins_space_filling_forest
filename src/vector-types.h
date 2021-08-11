@@ -55,6 +55,9 @@ class Quaternion : public Vector {
     void ToRotationMatrix(double (&matrix)[3][3]);
     void Combine(const Quaternion &q);
     double Distance(const Quaternion &b) const;
+    double GetYaw() const;
+    double GetPitch() const;
+    double GetRoll() const;
 };
 
 #endif

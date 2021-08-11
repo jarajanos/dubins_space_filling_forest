@@ -46,6 +46,7 @@
     m2r-ratio: 10
     bias: 0
     misses: 5
+    dubins-radius: 0.5
   
   save:
     goals:

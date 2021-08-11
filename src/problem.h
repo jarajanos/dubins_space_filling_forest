@@ -35,6 +35,7 @@ struct Problem {
   double DistTree;
   double SamplingDist;
   double CollisionDist;
+  double DubinsRadius;
   
   int MaxIterations;
   double PriorityBias{0};
@@ -47,6 +48,13 @@ struct Problem {
 
   std::string TspSolver;
   std::string TspType;
+
+  Problem() {
+    for (int i{1}; i < Invalid; i *= 2) {
+      SaveOptions opt = static_cast<SaveOptions>(i);
+      SaveFreq[opt] = 0;
+    }
+  }
 
   int GetNumRoots() {
     if (HasGoal) {

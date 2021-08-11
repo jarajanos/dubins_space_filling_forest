@@ -39,17 +39,17 @@ bool Solver<Point2D>::isPathFree(Point2D &start, Point2D &finish) {
 
 template<>
 bool Solver<Point2DDubins>::isPathFree(Point2DDubins &start, Point2DDubins &finish) {
-  double distance{start.Distance(finish)};
+  opendubins::State startDub{start[0], start[1], start.GetAngle()};
+  opendubins::State finishDub{finish[0], finish[1], finish.GetAngle()};
+  opendubins::Dubins pathDub{startDub, finishDub, this->problem.DubinsRadius};
+  double distance{pathDub.length};
   double parts{distance / problem.CollisionDist};
   bool isFree{true};
-  PointVector2D direction{start, finish};
-  double angleDirection{AngleDifference(start.GetAngle(), finish.GetAngle())};
 
-  Point2DDubins position;
   for (int index{1}; index < parts && isFree; ++index) {
-    position.SetPosition(start[0] + direction[0] * index / parts, start[1] + direction[1] * index / parts);
-    position.SetAngle(start.GetAngle() + angleDirection * index / parts);
-
+    opendubins::State temp{pathDub.getState(index * distance / parts)};
+    Point2DDubins position{temp};
+    
     isFree &= problem.Env.Collide(position);
   }
 

@@ -11,6 +11,49 @@
 
 #include "common.h"
 
+// NON-SYMMETRIC variant of distance matrix for Dubins problem
+template<>
+class DistanceMatrix<DistanceHolder<Node<Point2DDubins>>> {
+  public:
+    DistanceMatrix(const int size) {
+      holder.resize(size * size);
+      this->size = size;
+    }
+
+    DistanceHolder<Node<Point2DDubins>>& operator()(int i, int j) {
+      return holder[i * size + j];
+    }
+
+    const bool Exists(int i, int j) {
+      return this->operator()(i, j).Exists();
+    }
+
+  private:
+    std::deque<DistanceHolder<Node<Point2DDubins>>> holder;
+    int size;
+};
+
+template<>
+class DistanceMatrix<std::deque<DistanceHolder<Node<Point2DDubins>>>> {
+  public:
+    DistanceMatrix(const int size) {
+      holder.resize(size * size);
+      this->size = size;
+    }
+
+    std::deque<DistanceHolder<Node<Point2DDubins>>>& operator()(int i, int j) {
+      return holder[i * size + j];
+    }
+
+    const bool Exists(int i, int j) {
+      return !this->operator()(i, j).empty();
+    }
+
+  private:
+    std::deque<std::deque<DistanceHolder<Node<Point2DDubins>>>> holder;
+    int size;
+};
+
 FileStruct PrefixFileName(const FileStruct &path, const std::string &insert) {
 	FileStruct retVal{path};
 

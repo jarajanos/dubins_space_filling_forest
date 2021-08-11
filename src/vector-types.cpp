@@ -226,3 +226,26 @@ double Quaternion::Distance(const Quaternion &b) const {
 
   return 2 * atan2(reduced.Size(), diff[0]);
 }
+
+double Quaternion::GetYaw() const {
+  double sinp = 2 * (this->coords[0] * this->coords[3] + this->coords[1] * this->coords[2]);
+  double cosp = 1 - 2 * (this->coords[2] * this->coords[2] + this->coords[3] * this->coords[3]);
+
+  return std::atan2(sinp, cosp);
+}
+
+double Quaternion::GetPitch() const {
+  double temp = 2 * (this->coords[0] * this->coords[2] - this->coords[3] * this->coords[1]);
+  if (std::abs(temp) >= 1) {
+    return std::copysign(M_PI / 2, temp); 
+  } else {
+    return std::asin(temp);
+  }
+}
+
+double Quaternion::GetRoll() const {
+  double sinp = 2 * (this->coords[0] * this->coords[1] + this->coords[3] * this->coords[2]);
+  double cosp = 1 - 2 * (this->coords[0] * this->coords[0] + this->coords[2] * this->coords[2]);
+
+  return std::atan2(sinp, cosp);
+}

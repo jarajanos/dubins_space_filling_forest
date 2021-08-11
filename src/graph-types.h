@@ -27,13 +27,20 @@ class Node {
     int ID;
     R Position;
 
-    Tree<Node<R>> *Root;
+    Node<R> *Root;
     Node<R> *Closest;
     std::deque<Node<R> *> Children;
     double DistanceToRoot;
     double DistanceToClosest;
+
+    bool operator<(const Node<R> &l);
+    
+    unsigned int GetAge() const {
+      return generation;
+    }
   private:
     inline static int globID = 0;
+    unsigned int generation;
 };
 
 template<>
@@ -73,5 +80,10 @@ class Tree {
     std::vector<Heap<R>> Frontiers;
     std::deque<DistanceHolder<R>> Links;
 };
+
+template<class R>
+bool Node<R>::operator<(const Node<R> &l) {
+  return this->ID < l.ID;
+}
 
 #endif

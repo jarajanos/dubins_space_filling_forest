@@ -151,6 +151,9 @@ Point2DDubins::Point2DDubins(const std::string &s, double scale) {
   phi = std::stod(m[3]);
 }
 
+Point2DDubins::Point2DDubins(opendubins::State dubinsState) : coords{dubinsState.getPoint().getX(), dubinsState.getPoint().getY()}, phi{dubinsState.getAngle()} {
+}
+
 Point2DDubins& Point2DDubins::operator=(const Point2DDubins &p) {
   if(*this != p) {
     for (int i{0}; i < 2; ++i) {
@@ -234,16 +237,11 @@ Point2DDubins operator/(const Point2DDubins &p1, const double scale) {
 }
 
 double Point2DDubins::Distance(const Point2DDubins &other) const {
-  double sum{0};
-  for (int i{0}; i < 2; ++i) {
-    double diff{(*this)[i] - other[i]};
-    sum += diff * diff;
-  }
+  opendubins::State a{coords[0], coords[1], GetAngle()};
+  opendubins::State b{other[0], other[1], other.GetAngle()};
+  opendubins::Dubins dubPath{a, b, DubinsRadius};
 
-  double diff{AngleDifference(GetAngle(), other.GetAngle())};
-  sum += diff * diff;
-
-  return sqrt(sum);
+  return dubPath.length;
 }
 
 Point2DDubins Point2DDubins::GetStateInDistance(Point2DDubins &other, double dist) const {
@@ -473,4 +471,17 @@ PointVector2D::PointVector2D(Point2DDubins p1, Point2DDubins p2) : Vector(2) {
 
 PointVector3D PointVector2D::To3DVector() const {
   return PointVector3D(this->coords[0], this->coords[1], 0);
+}
+
+// STREAM OUTPUTS
+std::ostream& operator<<(std::ostream &out, const Point2D &p) {
+  return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << "0" << DELIMITER_OUT << "0" << DELIMITER_OUT << "0" << DELIMITER_OUT << "0";
+}
+
+std::ostream& operator<<(std::ostream &out, const Point2DDubins &p) {
+  return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << "0" << DELIMITER_OUT << p.GetAngle() << DELIMITER_OUT << "0" << DELIMITER_OUT << "0";
+}
+
+std::ostream& operator<<(std::ostream &out, const Point3D &p) {
+  return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << p[2] << DELIMITER_OUT << p.GetRotation().GetYaw() << DELIMITER_OUT << p.GetRotation().GetPitch() << DELIMITER_OUT << p.GetRotation().GetRoll();
 }

@@ -26,17 +26,28 @@ class SpaceForest : public Solver<R> {
     std::deque<Node<R>*> closed_list;
     Node<R> *goalNode{nullptr};
 
-    SymmetricMatrix<std::deque<DistanceHolder<Node<R>>>> borders;
+    DistanceMatrix<std::deque<DistanceHolder<Node<R>>>> borders;
 
     void getPaths() override;
 };
 
 template<class R>
 SpaceForest<R>::SpaceForest(Problem<R> &problem) : Solver<R>(problem), borders{this->problem.GetNumRoots()} {
-   std::cout << "Hello, I am OpenDubins library!" << std::endl;
-    opendubins::Dubins d = opendubins::Dubins(opendubins::State(0, 0, 0), opendubins::State(1, 1, 1), 1);
-    std::cout << d << std::endl;
+  // initialize trees
 
+  // initialize goal
+
+}
+
+template<class R>
+void SpaceForest<R>::Solve() {
+  if (SaveGoals <= this->problem.SaveOpt) {
+    this->saveCities(this->problem.FileNames[SaveGoals]);
+  }
+
+  // iterate 
+
+  // saving procedures
 }
 
 template<class R>
