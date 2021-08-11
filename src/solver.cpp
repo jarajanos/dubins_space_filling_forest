@@ -23,7 +23,7 @@
 template<>
 bool Solver<Point2D>::isPathFree(Point2D &start, Point2D &finish) {
   double distance{start.Distance(finish)};
-  double parts{distance / problem.collisionDist};
+  double parts{distance / problem.CollisionDist};
   bool isFree{true};
   PointVector2D direction{start, finish};
 
@@ -31,7 +31,7 @@ bool Solver<Point2D>::isPathFree(Point2D &start, Point2D &finish) {
   for (int index{1}; index < parts && isFree; ++index) {
     position.SetPosition(start[0] + direction[0] * index / parts, start[1] + direction[1] * index / parts);
 
-    isFree &= problem.environment.Collide(position);
+    isFree &= problem.Env.Collide(position);
   }
 
   return isFree;
@@ -40,7 +40,7 @@ bool Solver<Point2D>::isPathFree(Point2D &start, Point2D &finish) {
 template<>
 bool Solver<Point2DDubins>::isPathFree(Point2DDubins &start, Point2DDubins &finish) {
   double distance{start.Distance(finish)};
-  double parts{distance / problem.collisionDist};
+  double parts{distance / problem.CollisionDist};
   bool isFree{true};
   PointVector2D direction{start, finish};
   double angleDirection{AngleDifference(start.GetAngle(), finish.GetAngle())};
@@ -50,7 +50,7 @@ bool Solver<Point2DDubins>::isPathFree(Point2DDubins &start, Point2DDubins &fini
     position.SetPosition(start[0] + direction[0] * index / parts, start[1] + direction[1] * index / parts);
     position.SetAngle(start.GetAngle() + angleDirection * index / parts);
 
-    isFree &= problem.environment.Collide(position);
+    isFree &= problem.Env.Collide(position);
   }
 
   return isFree;
@@ -59,7 +59,7 @@ bool Solver<Point2DDubins>::isPathFree(Point2DDubins &start, Point2DDubins &fini
 template<>
 bool Solver<Point3D>::isPathFree(Point3D &start, Point3D &finish) {
   double distance{start.Distance(finish)};
-  double parts{distance / problem.collisionDist};
+  double parts{distance / problem.CollisionDist};
   bool isFree{true};
   PointVector3D direction{start, finish};
 
@@ -79,7 +79,7 @@ bool Solver<Point3D>::isPathFree(Point3D &start, Point3D &finish) {
     rot.Normalize();
     position.SetRotation(rot);
 
-    isFree &= problem.environment.Collide(position);
+    isFree &= problem.Env.Collide(position);
   }
 
   return isFree;

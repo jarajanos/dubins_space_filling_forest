@@ -42,7 +42,7 @@ class Environment {
   public:
     std::deque<Obstacle<R>> Obstacles;
     Obstacle<R> *Robot;
-    Range limits{__DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__};
+    Range Limits{__DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__};
     bool HasMap{true};
     double ScaleFactor;
 
@@ -55,10 +55,10 @@ class Environment {
 
     bool Collide(R position); // whether robot in such position collides with any known obstacle
     
-    void processLimits(Range &limits) {
+    void ProcessLimits(Range &limits) {
       for (int i{0}; i < 3; ++i) {
-        this->limits.mins[i] = MIN(this->limits.mins[i], limits.mins[i]);
-        this->limits.maxs[i] = MAX(this->limits.maxs[i], limits.maxs[i]);
+        this->Limits.mins[i] = MIN(this->Limits.mins[i], limits.mins[i]);
+        this->Limits.maxs[i] = MAX(this->Limits.maxs[i], limits.maxs[i]);
       }
     }
 

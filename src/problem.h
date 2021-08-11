@@ -19,41 +19,40 @@
 
 template<class R>
 struct Problem {
-  int repetition{0};
-  Dimensions dimension{D3};
+  int Repetition{0};
+  Dimensions Dimension{D3};
 
-  SolverType solver;
-  bool optimize;
-  bool smoothing;
+  SolverType Solver;
+  bool Optimize;
 
-  Environment<R> environment;
-  std::deque<R> roots;
-  R goal;
-  bool hasGoal{false};
+  Environment<R> Env;
+  std::deque<R> Roots;
+  R Goal;
+  bool HasGoal{false};
   
-  bool autoRange{false};
+  bool AutoRange{false};
 
-  double distTree;
-  double samplingDist;
-  double collisionDist;
+  double DistTree;
+  double SamplingDist;
+  double CollisionDist;
   
-  int maxIterations;
-  double priorityBias{0};
-  int maxMisses{DEFAULT_THRES_MISS};
+  int MaxIterations;
+  double PriorityBias{0};
+  int MaxMisses{DEFAULT_THRES_MISS};
   
-  SaveOptions saveOptions{None};
-  std::map<SaveOptions, FileStruct> fileNames;
-  std::map<SaveOptions, int> saveFreq;
-  std::string id{ "Solver" };
+  SaveOptions SaveOpt{None};
+  std::map<SaveOptions, FileStruct> FileNames;
+  std::map<SaveOptions, int> SaveFreq;
+  std::string ID{ "Solver" };
 
-  std::string tspSolver;
-  std::string tspType;
+  std::string TspSolver;
+  std::string TspType;
 
   int GetNumRoots() {
-    if (hasGoal) {
-     return roots.size() + 1;
+    if (HasGoal) {
+     return Roots.size() + 1;
     } else {
-     return roots.size();
+     return Roots.size();
     }
     return 1;
   }

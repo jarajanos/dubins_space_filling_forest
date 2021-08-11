@@ -170,7 +170,7 @@ struct DistanceHolder {
       node1 = second;
       node2 = first;
     }
-    distance = first->DistanceToRoot + second->DistanceToRoot + first->Position.distance(second->Position);
+    distance = first->DistanceToRoot + second->DistanceToRoot + first->Position.Distance(second->Position);
   }
 
   DistanceHolder(R *first, R *second, double dist) : distance{dist} {
@@ -207,7 +207,7 @@ struct DistanceHolder {
   }
 
   void UpdateDistance() {
-    distance = node1->DistanceToRoot + node2->DistanceToRoot + node1->Position.distance(node2->Position);
+    distance = node1->DistanceToRoot + node2->DistanceToRoot + node1->Position.Distance(node2->Position);
   }
 };
 
