@@ -33,7 +33,7 @@
 
 #define DEFAULT_THRES_MISS 3
 #define DEFAULT_OBSTAC_MISS 10
-#define TOLERANCE 1e-9
+#define SFF_TOLERANCE 1e-9
 
 #define SAMPLING_ANGLE_DISP 1 // something about 60 degrees
 #define DEFAULT_SAMP_DIST 1

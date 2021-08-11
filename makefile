@@ -8,9 +8,9 @@ SOURCES := $(wildcard src/*.cpp)
 SOURCES := $(SOURCES:src/%=%)
 OBJECTS := $(patsubst %.c,%.o, $(patsubst %.cpp,%.o,$(SOURCES)))
 
-INCLUDE := -I. -I./lib/rapid-2.01 -I./lib/ann/ann/include -I./lib/yaml-cpp/include
-LIBPATH := -L./lib/ -L./lib/ann/ -L./lib/flann/ -L./lib/rapid-2.01 -L./lib/yaml-cpp/build
-LIBS := -lgmp -lRAPID -llz4 -lyaml-cpp
+INCLUDE := -I. -I./lib/rapid-2.01 -I./lib/ann/ann/include -I./lib/yaml-cpp/include -I./lib/gdip/gdip/include
+LIBPATH := -L./lib/ -L./lib/ann/ -L./lib/flann/ -L./lib/rapid-2.01 -L./lib/yaml-cpp/build -L./lib/gdip/gdip/lib
+LIBS := -lgmp -lRAPID -llz4 -lyaml-cpp -lGDIP
 
 CXXFLAGS := -std=c++17
 CXX := g++
@@ -23,7 +23,7 @@ RELEXE := $(RELDIR)/$(TARGET)
 RELOBJS := $(addprefix $(OBJDIR)/, $(addprefix $(RELDIR)/, $(OBJECTS)))
 RELFLAGS := $(CXXFLAGS) -O3
 
-.PHONY: all clean debug release prep rapid flann yaml install
+.PHONY: all clean debug release prep rapid flann yaml install gdip
 
 all: release
 
@@ -65,8 +65,12 @@ flann:
 	@cd ./lib/flann; mkdir build; cd build; cmake .. -DCMAKE_INSTALL_PREFIX=../install; make -j4; make install
 
 yaml:
-	@echo "Install YAML-cpp..."
+	@echo "Installing YAML-cpp..."
 	@cd ./lib/yaml-cpp; mkdir build; cd build; cmake ..; make
+
+gdip:
+	@echo "Installing GDIP..."
+	@cd ./lib/gdip/gdip; ./install.sh
 
 clean:
 	@echo "Cleaning..."

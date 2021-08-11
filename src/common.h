@@ -40,6 +40,36 @@ std::string Ltrim(const std::string &s);
 std::string Rtrim(const std::string &s);
 std::string Trim(const std::string &s);
 
+// FLANN FUNCTOR
+template<class T>
+struct D6Distance {
+  typedef bool is_vector_space_distance;
+
+  typedef T ElementType;
+  typedef typename flann::Accumulator<T>::Type ResultType;
+
+  template <typename Iterator1, typename Iterator2>
+  ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType worst_dist = -1) const {
+    ResultType result = ResultType();
+    ResultType diff;
+
+    for (int i{0}; i < 3; ++i) {
+      diff = (ResultType)(*a++ - *b++);
+      result = diff * diff;
+    }
+
+    Quaternion q1, q2;
+    for (int i{3}; i < 7; ++i) {
+      q1.Set(*a++);
+      q2.Set(*b++);
+    }
+
+    diff = q1.Distance(q2);
+    result += diff * diff;
+    return result;
+  }
+};
+
 enum Dimensions {
   D2 = 2,
   D2Dubins = 3,
@@ -93,36 +123,6 @@ struct Range {
 
     mins[order] = std::stod(m[1]) * scale;
     maxs[order] = std::stod(m[2]) * scale;
-  }
-};
-
-// FLANN FUNCTOR
-template<class T>
-struct D6Distance {
-  typedef bool is_vector_space_distance;
-
-  typedef T ElementType;
-  typedef typename flann::Accumulator<T>::Type ResultType;
-
-  template <typename Iterator1, typename Iterator2>
-  ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType worst_dist = -1) const {
-    ResultType result = ResultType();
-    ResultType diff;
-
-    for (int i{0}; i < 3; ++i) {
-      diff = (ResultType)(*a++ - *b++);
-      result = diff * diff;
-    }
-
-    Quaternion q1, q2;
-    for (int i{3}; i < 7; ++i) {
-      q1.Set(*a++);
-      q2.Set(*b++);
-    }
-
-    diff = q1.Distance(q2);
-    result += diff * diff;
-    return result;
   }
 };
 
@@ -268,5 +268,7 @@ inline SaveOptions operator|(SaveOptions a, SaveOptions b) {
 inline bool operator<=(SaveOptions a, SaveOptions b) {
   return  (static_cast<int>(b) & static_cast<int>(a)) == static_cast<int>(a);
 }
+
+#include "graph-types.h"
 
 #endif /* __COMMON_H__ */

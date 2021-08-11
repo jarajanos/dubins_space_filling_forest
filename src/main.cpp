@@ -57,7 +57,18 @@ int main(int argc, char *argv[]) {
 template<class R>
 void SolveProblem(YAML::Node &config, Problem<R> &problem) {
   ParseFile(config, problem);
-  // TODO
+  std::unique_ptr<Solver<R>> solver;
+  if (problem.Solver == SFF) {
+    solver = std::make_unique<SpaceForest<R>>(problem);
+  } else if (problem.Solver == RRT) {
+
+  } else if (problem.Solver == Lazy) {
+
+  } else {
+    ERROR("Unimplemented problem solver");
+  }
+
+  solver->Solve();
 }
 
 template<class R>

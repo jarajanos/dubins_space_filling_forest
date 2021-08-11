@@ -16,6 +16,7 @@
 #include <chrono>
 #include "problem.h"
 #include "random-generator.h"
+#include "common.h"
 
 template<class R>
 class Solver {
@@ -36,16 +37,15 @@ class Solver {
 
     Environment<R> &env;
 
-    //std::deque<Node<T, R> *> allNodes;
-    //std::deque<Tree<T, Node<T, R>>> trees;
-    //SymmetricMatrix<DistanceHolder<T, Node<T, R>>> neighboringMatrix;
-    //std::deque<Tree<T, Node<T, R>> *> connectedTrees;
+    std::deque<Node<R> *> allNodes;
+    std::deque<Tree<Node<R>>> trees;
+    //SymmetricMatrix<DistanceHolder<Node<R>>> neighboringMatrix;
+    //std::deque<Tree<Node<R>> *> connectedTrees;
 
     bool isPathFree(R &start, R &finish);
 
     virtual void getPaths() = 0;
     virtual void getAllPaths();
-    virtual void smoothPaths() = 0;
     void checkPlan();
     // void checkPlan(std::deque<Node<T, R> *> &plan);
     // void checkDistances(std::deque<Node<T, R> *> &plan, T distanceToCheck);

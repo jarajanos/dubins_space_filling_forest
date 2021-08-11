@@ -23,6 +23,7 @@
 #include "common.h"
 #include "environment.h"
 #include "solver.h"
+#include "forest.h"
 
 int main(int argc, char *argv[]);
 template <class R> void SolveProblem(YAML::Node &config, Problem<R> &problem);
