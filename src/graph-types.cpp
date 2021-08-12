@@ -12,7 +12,7 @@
 #include "graph-types.h"
 
 void FlannHolder<Node<Point2D>>::CreateIndex(flann::Matrix<float> &matrix) {
-  Index = new flann::Index<flann::L2<float>>(matrix, flann::KDTreeIndexParams(4));
+  Index = new flann::Index<flann::L2<float>>(matrix, flann::KDTreeIndexParams(FLANN_NUM_KD_TREES));
   Index->buildIndex();
   this->PtrsToDel.push_back(matrix.ptr());
 }
@@ -30,7 +30,7 @@ FlannHolder<Node<Point2D>>::~FlannHolder() {
 }
 
 void FlannHolder<Node<Point2DDubins>>::CreateIndex(flann::Matrix<float> &matrix) {
-  Index = new flann::Index<flann::L2Dubins<float>>(matrix, flann::KDTreeIndexParams(4));
+  Index = new flann::Index<flann::L2Dubins<float>>(matrix, flann::KDTreeIndexParams(FLANN_NUM_KD_TREES));
   Index->buildIndex();
   this->PtrsToDel.push_back(matrix.ptr());
 }
@@ -48,7 +48,7 @@ FlannHolder<Node<Point2DDubins>>::~FlannHolder() {
 }
 
 void FlannHolder<Node<Point3D>>::CreateIndex(flann::Matrix<float> &matrix) {
-  Index = new flann::Index<D6Distance<float>>(matrix, flann::KDTreeIndexParams(4));
+  Index = new flann::Index<D6Distance<float>>(matrix, flann::KDTreeIndexParams(FLANN_NUM_KD_TREES));
   Index->buildIndex();
   this->PtrsToDel.push_back(matrix.ptr());
 }

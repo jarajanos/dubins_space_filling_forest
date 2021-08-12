@@ -28,6 +28,7 @@
 
 #define MIN(X, Y) ((X < Y) ? (X) : (Y))
 #define MAX(X, Y) ((X > Y) ? (X) : (Y))
+#define SQR(X)    ((X) * (X))
 
 #define ERROR(mess)  std::cerr << "[\033[1;31m ERR\033[0m ]  " << mess << "\n"
 #define INFO(mess)   std::cout << "[\033[1;34m INF\033[0m ]  " << mess << "\n"

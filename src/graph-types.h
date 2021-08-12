@@ -43,6 +43,10 @@ class Node {
     unsigned int GetAge() const {
       return generation;
     }
+
+    bool IsRoot() const {
+      return this->Root->Root == this;
+    }
   private:
     inline static int globID = 0;
     unsigned int generation;

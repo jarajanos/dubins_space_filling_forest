@@ -53,6 +53,18 @@ bool Solver<Point2DDubins>::isPathFree(Point2DDubins &start, Point2DDubins &fini
     isFree &= problem.Env.Collide(position);
   }
 
+  // TODO checking both ways should be perhaps replaced by two point states
+  opendubins::Dubins pathDubBack{finishDub, startDub, this->problem.DubinsRadius};
+  distance = pathDubBack.length;
+  parts = distance / problem.CollisionDist;
+
+  for (int index{1}; index < parts && isFree; ++index) {
+    opendubins::State temp{pathDubBack.getState(index * distance / parts)};
+    Point2DDubins position{temp};
+    
+    isFree &= problem.Env.Collide(position);
+  }
+
   return isFree;
 }
 
