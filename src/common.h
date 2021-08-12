@@ -17,13 +17,14 @@
 #include <regex>
 #include <vector>
 #include <deque>
+#include <chrono>
 #include <limits.h>
 #include <flann/flann.hpp>
 #include "point-types.h"
 #include "vector-types.h"
 #include "constants.h"
 
-#define PROBLEM_DIMENSION   static_cast<size_t>(this->problem.dimension)
+#define PROBLEM_DIMENSION   static_cast<size_t>(this->problem.Dimension)
 
 #define MIN(X, Y) ((X < Y) ? (X) : (Y))
 #define MAX(X, Y) ((X > Y) ? (X) : (Y))
@@ -60,8 +61,8 @@ struct D6Distance {
 
     Quaternion q1, q2;
     for (int i{3}; i < 7; ++i) {
-      q1.Set(*a++);
-      q2.Set(*b++);
+      q1.Set(i-3, *a++);
+      q2.Set(i-3, *b++);
     }
 
     diff = q1.Distance(q2);
@@ -74,7 +75,7 @@ enum Dimensions {
   D2 = 2,
   D2Dubins = 3,
   D3 = 6,
-  D3Dubins = 7
+  D3Dubins = 6
 };
 
 enum FileType {
@@ -208,6 +209,16 @@ struct DistanceHolder {
   void UpdateDistance() {
     distance = node1->DistanceToRoot + node2->DistanceToRoot + node1->Position.Distance(node2->Position);
   }
+};
+
+class StopWatch {
+  public:
+    void Start();
+    void Stop();
+    std::chrono::duration<double> GetElapsed();
+  private:
+    std::chrono::high_resolution_clock::time_point startTime;
+    std::chrono::high_resolution_clock::time_point stopTime;
 };
 
 template <typename T> 

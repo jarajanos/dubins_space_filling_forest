@@ -54,6 +54,18 @@ class DistanceMatrix<std::deque<DistanceHolder<Node<Point2DDubins>>>> {
     int size;
 };
 
+void StopWatch::Start() {
+  this->startTime = std::chrono::high_resolution_clock::now();
+}
+
+void StopWatch::Stop() {
+  this->stopTime = std::chrono::high_resolution_clock::now();
+}
+
+std::chrono::duration<double> StopWatch::GetElapsed() {
+  return this->stopTime - this->startTime;
+}
+
 FileStruct PrefixFileName(const FileStruct &path, const std::string &insert) {
 	FileStruct retVal{path};
 

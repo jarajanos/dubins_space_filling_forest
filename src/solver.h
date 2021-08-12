@@ -101,7 +101,7 @@ void Solver<R>::getAllPaths() {
         bool reversed1{false};
         bool reversed2{false};
         plan1 = holder1.plan;
-        if (holder1.node1->Root->ID == id1) {
+        if (holder1.node1->Root->Root->ID == id1) {
           node1 = holder1.node1;
         } else {
           if (problem.Dimension == D2Dubins) {
@@ -113,7 +113,7 @@ void Solver<R>::getAllPaths() {
         }
 
         plan2 = holder2.plan;
-        if (holder2.node1->Root->ID == id2) {
+        if (holder2.node1->Root->Root->ID == id2) {
           node2 = holder2.node1;
         } else {
           if (problem.Dimension == D2Dubins) {
@@ -252,7 +252,7 @@ void Solver<R>::saveTrees(const FileStruct file) {
       for (int i{0}; i < this->trees.size(); ++i) {
         for (Node<R> &node : this->trees[i].Leaves) {
           if (node.DistanceToRoot != 0) {
-            fileStream << node.Position / problem.Env.ScaleFactor << DELIMITER_OUT << node.Closest->Position / problem.Env.ScaleFactor << DELIMITER_OUT << node.Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
+            fileStream << node.Position / problem.Env.ScaleFactor << DELIMITER_OUT << node.Closest->Position / problem.Env.ScaleFactor << DELIMITER_OUT << node.Root->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
           }
         }
       }

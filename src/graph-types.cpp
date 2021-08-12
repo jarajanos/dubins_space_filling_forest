@@ -11,15 +11,35 @@
 
 #include "graph-types.h"
 
+void FlannHolder<Node<Point2D>>::CreateIndex(flann::Matrix<float> &matrix) {
+  Index = new flann::Index<flann::L2<float>>(matrix, flann::KDTreeIndexParams(4));
+  Index->buildIndex();
+  this->PtrsToDel.push_back(matrix.ptr());
+}
+
 FlannHolder<Node<Point2D>>::~FlannHolder() {
+  if (Index != nullptr) {
+    delete Index;
+  }
+
   for (auto ptr : PtrsToDel) {
     if (ptr != nullptr) {
       delete[] ptr;
     }
   }
+}
+
+void FlannHolder<Node<Point2DDubins>>::CreateIndex(flann::Matrix<float> &matrix) {
+  Index = new flann::Index<flann::L2Dubins<float>>(matrix, flann::KDTreeIndexParams(4));
+  Index->buildIndex();
+  this->PtrsToDel.push_back(matrix.ptr());
 }
 
 FlannHolder<Node<Point2DDubins>>::~FlannHolder() {
+  if (Index != nullptr) {
+    delete Index;
+  }
+  
   for (auto ptr : PtrsToDel) {
     if (ptr != nullptr) {
       delete[] ptr;
@@ -27,7 +47,17 @@ FlannHolder<Node<Point2DDubins>>::~FlannHolder() {
   }
 }
 
+void FlannHolder<Node<Point3D>>::CreateIndex(flann::Matrix<float> &matrix) {
+  Index = new flann::Index<D6Distance<float>>(matrix, flann::KDTreeIndexParams(4));
+  Index->buildIndex();
+  this->PtrsToDel.push_back(matrix.ptr());
+}
+
 FlannHolder<Node<Point3D>>::~FlannHolder() {
+  if (Index != nullptr) {
+    delete Index;
+  }
+  
   for (auto ptr : PtrsToDel) {
     if (ptr != nullptr) {
       delete[] ptr;

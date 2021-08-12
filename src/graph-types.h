@@ -27,14 +27,19 @@ class Node {
     int ID;
     R Position;
 
-    Node<R> *Root;
+    Tree<Node<R>> *Root;
     Node<R> *Closest;
     std::deque<Node<R> *> Children;
     double DistanceToRoot;
     double DistanceToClosest;
 
+    Node(R position, Tree<Node<R>> *root, Node *closest, double distanceToClosest, double distanceToRoot, unsigned int iteration) : Position{position},
+      Root{root}, Closest{closest}, DistanceToClosest{distanceToClosest}, DistanceToRoot{distanceToRoot}, generation{iteration} {
+        ID = globID++;
+      }
+
     bool operator<(const Node<R> &l);
-    
+
     unsigned int GetAge() const {
       return generation;
     }
@@ -49,7 +54,9 @@ class FlannHolder<Node<Point2D>> {
     flann::Index<flann::L2<float>> *Index;
     std::deque<float *> PtrsToDel;
 
-  ~FlannHolder();
+    ~FlannHolder();
+
+    void CreateIndex(flann::Matrix<float> &matrix);
 };
 
 template<>
@@ -58,7 +65,9 @@ class FlannHolder<Node<Point2DDubins>> {
     flann::Index<flann::L2Dubins<float>> *Index;
     std::deque<float *> PtrsToDel;
 
-  ~FlannHolder();
+    ~FlannHolder();
+
+    void CreateIndex(flann::Matrix<float> &matrix);
 };
 
 template<>
@@ -67,7 +76,9 @@ class FlannHolder<Node<Point3D>> {
     flann::Index<D6Distance<float>> *Index;
     std::deque<float *> PtrsToDel;
 
-  ~FlannHolder();
+    ~FlannHolder();
+
+    void CreateIndex(flann::Matrix<float> &matrix);
 };
 
 template<class R>
@@ -79,6 +90,19 @@ class Tree {
 
     std::vector<Heap<R>> Frontiers;
     std::deque<DistanceHolder<R>> Links;
+
+    void AddFrontier(R *reference) {
+      Frontiers.emplace_back(this->Leaves, reference);
+    }
+
+    const bool EmptyFrontiers() {
+      bool retVal{true};
+      for (auto &prior : Frontiers) {
+        retVal &= prior.Empty();
+      }
+      
+      return retVal;
+    }
 };
 
 template<class R>
