@@ -32,7 +32,7 @@ class SpaceForest : public Solver<R> {
     bool getAndCheckNewPoint(Node<R> *expanded, R* newPoint);
     bool checkExpandedTree(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix);
     bool checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix, bool &solved);
-    void optimizeConnections(Node<R> *expanded, R* newPoint, Node<R> *newNode, flann::Matrix<float> &matrix, int iteration);
+    void optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>* &newNode, flann::Matrix<float> &matrix, int iteration);
 
     int checkConnected();
 
@@ -178,10 +178,10 @@ void SpaceForest<R>::Solve() {
         for (int i{0}; i < this->trees.size() && emptyFrontier; ++i) {
           emptyFrontier &= this->trees[i].EmptyFrontiers();
         }
-        solved = (!this->problem.HasGoal && emptyFrontier && connected);
       } else {
         emptyFrontier = frontier.empty();
       }
+      solved = (!this->problem.HasGoal && emptyFrontier && connected);
     } else {
       // update the connected trees to correct params output
       checkConnected(); 
@@ -278,7 +278,7 @@ bool SpaceForest<R>::expandNode(Node<R> *expanded, bool &solved, const unsigned 
 template<class R>
 bool SpaceForest<R>::getAndCheckNewPoint(Node<R> *expanded, R* newPoint) {
   // sample new point
-  if (this->rnd.RandomPointInDistance(expanded->Position, *newPoint, this->problem.SamplingDist)) {
+  if (!this->rnd.RandomPointInDistance(expanded->Position, *newPoint, this->problem.SamplingDist)) {
     return true;
   }
 
@@ -367,7 +367,7 @@ bool SpaceForest<R>::checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matr
 }
 
 template<class R>
-void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R> *newNode, flann::Matrix<float> &matrix, int iteration) {
+void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>* &newNode, flann::Matrix<float> &matrix, int iteration) {
   std::vector<std::vector<int>> indices;
   std::vector<std::vector<float>> dists;
   double bestDist{newPoint->Distance(expanded->Position) + expanded->DistanceToRoot};
@@ -481,10 +481,14 @@ void SpaceForest<R>::getPaths() {
 
       std::deque<DistanceHolder<Node<R>>> &borderPoints{this->borders(i, j)};
       for (DistanceHolder<Node<R>> &dist : borderPoints) {
-        if (!this->isPathFree(dist.node1->Position, dist.node2->Position)) {
+        if (this->isPathFree(dist.node1->Position, dist.node2->Position)) {
           this->neighboringMatrix(i, j) = dist;
           break;
         }
+      }
+
+      if (!this->neighboringMatrix.Exists(i,j)) {
+        continue;
       }
 
       DistanceHolder<Node<R>> &holder{this->neighboringMatrix(i, j)};
@@ -539,6 +543,7 @@ void SpaceForest<R>::saveFrontiers(const FileStruct file) {
         }
       }
     } else if (file.type == Map) {
+      fileStream << "#Frontiers" << DELIMITER_OUT << this->problem.Dimension << "\n";
       if (this->problem.PriorityBias != 0) {
         for (int i{0}; i < this->trees.size(); ++i) {
           Heap<Node<R>> &heap{this->trees[i].Frontiers[0]};   // all nodes are in all heaps, so printing out the first heap is sufficient

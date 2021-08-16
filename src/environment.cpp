@@ -12,6 +12,46 @@
 #include "environment.h"
 
 template <>
+void Obstacle<Point2D>::addFacet(int objId, int offset, int faceInts[3]) {
+  Point3D faceCache[3];
+  Point2D faceCache2D[3];
+  for (int i{0}; i < 3; ++i) {
+    int pos{faceInts[i] - offset - 1};
+    faceCache[i].SetPosition(this->facePoints[pos][0], this->facePoints[pos][1], 0);
+    faceCache2D[i] = this->facePoints[pos];
+  }
+
+  this->faces.emplace_back(faceCache2D[0], faceCache2D[1], faceCache2D[2]);
+  this->rapidModel->AddTri(faceCache[0].GetRawCoords(), faceCache[1].GetRawCoords(), faceCache[2].GetRawCoords(), this->rapidId++);
+}
+
+template <>
+void Obstacle<Point2DDubins>::addFacet(int objId, int offset, int faceInts[3]) {
+  Point3D faceCache[3];
+  Point2DDubins faceCache2D[3];
+  for (int i{0}; i < 3; ++i) {
+    int pos{faceInts[i] - offset - 1};
+    faceCache[i].SetPosition(this->facePoints[pos][0], this->facePoints[pos][1], 0);
+    faceCache2D[i] = this->facePoints[pos];
+  }
+
+  this->faces.emplace_back(faceCache2D[0], faceCache2D[1], faceCache2D[2]);
+  this->rapidModel->AddTri(faceCache[0].GetRawCoords(), faceCache[1].GetRawCoords(), faceCache[2].GetRawCoords(), this->rapidId++);
+}
+
+template<>
+void Obstacle<Point3D>::addFacet(int objId, int offset, int faceInts[3]) {
+  Point3D faceCache[3];
+  for (int i{0}; i < 3; ++i) {
+    int pos{faceInts[i] - offset - 1};
+    faceCache[i].SetPosition(this->facePoints[pos][0], this->facePoints[pos][1], 0);
+  }
+
+  this->faces.emplace_back(faceCache[0], faceCache[1], faceCache[2]);
+  this->rapidModel->AddTri(faceCache[0].GetRawCoords(), faceCache[1].GetRawCoords(), faceCache[2].GetRawCoords(), this->rapidId++);
+}
+
+template <>
 void Obstacle<Point2D>::addPoint(int objId, double coords[3]) {
   // scale
   for (int i{0}; i < 2; ++i) {
@@ -56,7 +96,7 @@ void Obstacle<Point2D>::ParseMapFile(const std::string fileName) {
 
   while (getline(modelFile, line)) {
     line = Trim(line);
-    if (!strcmp(line.c_str(), "")) {
+    if (!strcmp(line.c_str(), "") || !strncmp(line.c_str(), "#", 1)) {
       continue;
     }
 

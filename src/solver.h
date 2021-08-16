@@ -200,6 +200,7 @@ void Solver<R>::saveCities(const FileStruct file) {
         }
       }
     } else if (file.type == Map) {
+      fileStream << "#Cities" << DELIMITER_OUT << problem.Dimension << "\n";
       for (int i{0}; i < problem.GetNumRoots(); ++i) {
         for(Node<R> &node : this->trees[i].Leaves) {
           fileStream << node.Position / problem.Env.ScaleFactor << "\n";
@@ -248,7 +249,7 @@ void Solver<R>::saveTrees(const FileStruct file) {
         }
       }
     } else if (file.type == Map) {
-      fileStream << "#X1 Y1 Z1 Yaw1 Pitch1 Roll1 X2 Y2 Z2 Yaw2 Pitch2 Roll2 TreeID IterationOfCreation\n";
+      fileStream << "#Trees" << DELIMITER_OUT << problem.Dimension << "\n";
       for (int i{0}; i < this->trees.size(); ++i) {
         for (Node<R> &node : this->trees[i].Leaves) {
           if (node.DistanceToRoot != 0) {
@@ -398,6 +399,7 @@ void Solver<R>::savePaths(const FileStruct file) {
         }
       }
     } else if (file.type == Map) {
+      fileStream << "#Paths" << DELIMITER_OUT << problem.Dimension << "\n";
       for (int i{0}; i < numRoots; ++i) {
         for (int j{i + 1}; j < numRoots; ++j) {
           DistanceHolder<Node<R>> &holder{this->neighboringMatrix(i, j)};

@@ -475,11 +475,11 @@ PointVector3D PointVector2D::To3DVector() const {
 
 // STREAM OUTPUTS
 std::ostream& operator<<(std::ostream &out, const Point2D &p) {
-  return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << "0" << DELIMITER_OUT << "0" << DELIMITER_OUT << "0" << DELIMITER_OUT << "0";
+  return out << p[0] << DELIMITER_OUT << p[1];
 }
 
 std::ostream& operator<<(std::ostream &out, const Point2DDubins &p) {
-  return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << "0" << DELIMITER_OUT << p.GetAngle() << DELIMITER_OUT << "0" << DELIMITER_OUT << "0";
+  return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << p.GetAngle();
 }
 
 std::ostream& operator<<(std::ostream &out, const Point3D &p) {

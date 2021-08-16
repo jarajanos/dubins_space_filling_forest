@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
   }
 
   try {
-    config = YAML::LoadFile(".//test_building.yaml");
+    config = YAML::LoadFile(argv[1]);
   } catch (...) {
     ERROR("Error loading configuration file!");
     exit(1);
@@ -79,12 +79,12 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
   try {
     // problem
     YAML::Node node{config["problem"]};
-    if (node.IsNull()) {
+    if (!node.IsDefined()) {
       throw std::invalid_argument("invalid problem node");
     }
 
     YAML::Node subNode{node["solver"]};
-    if (subNode.IsNull()) {
+    if (!subNode.IsDefined()) {
       throw std::invalid_argument("invalid solver node in \"problem\" root node");
     }
     std::string value{subNode.as<std::string>()};
@@ -99,48 +99,48 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     }
 
     subNode = node["optimize"];
-    if (subNode.IsNull()) {
+    if (!subNode.IsDefined()) {
       throw std::invalid_argument("invalid optimize node in \"problem\" root node");
     }
     problem.Optimize = subNode.as<bool>();
 
     subNode = node["iterations"];
-    if (subNode.IsNull()) {
+    if (!subNode.IsDefined()) {
       throw std::invalid_argument("invalid iterations node in \"problem\" root node");
     }
     problem.MaxIterations = subNode.as<int>();
 
     // delimiters
     node = config["delimiters"];
-    if (!node.IsNull()) {
+    if (node.IsDefined()) {
       subNode = node["standard"];
-      if (!subNode.IsNull()) {
+      if (subNode.IsDefined()) {
         Obstacle<R>::Delimiter = subNode.as<std::string>();
       }
 
       subNode = node["name"];
-      if (!subNode.IsNull()) {
+      if (subNode.IsDefined()) {
         Obstacle<R>::NameDelimiter = subNode.as<std::string>();
       }
     }
 
     // TSP solver for Lazy-RRT
     node = config["TSP-solver"];
-    if (node.IsNull() && problem.Solver == Lazy) {
+    if (!node.IsDefined() && problem.Solver == Lazy) {
       throw std::invalid_argument("missing TSP solver parameters for Lazy solver!");
-    } else if (!node.IsNull()) {
+    } else if (node.IsDefined()) {
       if (problem.Solver != Lazy) {
         WARN("TSP solver is called only in Lazy solver algorithm -- defined TSP parameters are redundant and will not be used.");
       }
 
       subNode = node["path"];
-      if (subNode.IsNull()) {
+      if (!subNode.IsDefined()) {
         throw std::invalid_argument("invalid path node in \"TSP-solver\" root node");
       }
       problem.TspSolver = subNode.as<std::string>();
 
       subNode = node["type"];
-      if (subNode.IsNull()) {
+      if (!subNode.IsDefined()) {
         throw std::invalid_argument("invalid type node in \"TSP-solver\" root node");
       }
       problem.TspType = subNode.as<std::string>();
@@ -148,27 +148,27 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
 
     // algorithm node
     node = config["algorithm"];
-    if (node.IsNull()) {
+    if (!node.IsDefined()) {
       throw std::invalid_argument("invalid \"algorithm\" root node");
     }
     subNode = node["m2r-ratio"];
-    if (subNode.IsNull()) {
+    if (!subNode.IsDefined()) {
       throw std::invalid_argument("invalid m2r-ratio node in \"algorithm\" root node");
     }
     scale = subNode.as<double>();
     subNode = node["misses"];
-    if (!subNode.IsNull()) {
+    if (subNode.IsDefined()) {
       problem.MaxMisses = subNode.as<int>();
     }
     subNode = node["dubins-radius"];
-    if ((problem.Dimension == D2Dubins || problem.Dimension == D3Dubins) && subNode.IsNull()) {
+    if ((problem.Dimension == D2Dubins || problem.Dimension == D3Dubins) && !subNode.IsDefined()) {
       throw std::invalid_argument("dubins radius missing");
-    } else if (!subNode.IsNull()) {
+    } else if (subNode.IsDefined()) {
       problem.DubinsRadius = subNode.as<double>();
       Point2DDubins::DubinsRadius = subNode.as<double>();
     }
     subNode = node["bias"];
-    if (!subNode.IsNull()) {
+    if (subNode.IsDefined()) {
       problem.PriorityBias = subNode.as<double>();
     }
 
@@ -178,7 +178,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
 
     // robot node
     node = config["robot"];
-    if (node.IsNull()) {
+    if (!node.IsDefined()) {
       throw std::invalid_argument("invalid \"robot\" root node");
     }
     if (GetFile(node, tempFile)) {
@@ -188,32 +188,32 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
 
     // parse range
     node = config["range"];
-    if (node.IsNull()) {
+    if (!node.IsDefined()) {
       throw std::invalid_argument("invalide \"range\" root node");
     }
-    subNode = node["autoDetect"];
-    problem.AutoRange = (!subNode.IsNull() && subNode.as<bool>());
+    subNode = node["autodetect"];
+    problem.AutoRange = (subNode.IsDefined() && subNode.as<bool>());
 
     if (!problem.AutoRange) {
       std::string tempText;
       subNode = node['x'];
-      if (subNode.IsNull()) {
+      if (!subNode.IsDefined()) {
         throw std::invalid_argument("invalid x node in \"range\" root node");
       }
       tempText = subNode.as<std::string>();
       problem.Env.Limits.Parse(tempText, scale, 0);
 
       subNode = node['y'];
-      if (subNode.IsNull()) {
+      if (!subNode.IsDefined()) {
         throw std::invalid_argument("invalid y node in \"range\" root node");
       }
       tempText = subNode.as<std::string>();
       problem.Env.Limits.Parse(tempText, scale, 1);
 
       subNode = node['z'];
-      if (subNode.IsNull() && (problem.Dimension == D3 || problem.Dimension == D3Dubins)) {
+      if (!subNode.IsDefined() && (problem.Dimension == D3 || problem.Dimension == D3Dubins)) {
         throw std::invalid_argument("invalid z node in \"range\" root node");
-      } else if (!subNode.IsNull()) {
+      } else if (subNode.IsDefined()) {
         tempText = subNode.as<std::string>();
         problem.Env.Limits.Parse(tempText, scale, 2);
       }
@@ -221,7 +221,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
 
     // parse obstacles
     node = config["obstacles"];
-    if (node.IsNull()) {
+    if (!node.IsDefined()) {
       problem.Env.HasMap = false;
     } else {
       problem.Env.ScaleFactor = scale;
@@ -233,7 +233,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
         }
 
         subNode = (*it)["position"];
-        if (subNode.IsNull()) {
+        if (!subNode.IsDefined()) {
           pos = R();
         } else {
           pos = R(subNode.as<std::string>());
@@ -249,7 +249,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
 
     // parse cities
     node = config["cities"];
-    if (node.IsNull()) {
+    if (!node.IsDefined()) {
       throw std::invalid_argument("invalid \"cities\" root node");
     } else {
       int numCities{0};
@@ -265,7 +265,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
 
     // parse goal
     node = config["goal"];
-    if (!node.IsNull()) {
+    if (node.IsDefined()) {
       if (problem.Solver == Lazy) {
         throw std::invalid_argument("single point path planning not defined for Lazy solver (use RRT/RRT* solver instead)");
       } else if (problem.Roots.size() > 1) {
@@ -281,30 +281,30 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
 
     // parse distances
     node = config["distances"];
-    if (node.IsNull()) {
+    if (!node.IsDefined()) {
       throw std::invalid_argument("invalid \"distances\" root node");
     }
     subNode = node["collision"];
-    if (subNode.IsNull()) {
+    if (!subNode.IsDefined()) {
       throw std::invalid_argument("invalid collision node in \"distances\" root node");
     }
     problem.CollisionDist = subNode.as<double>() * scale;
 
     subNode = node["sampling"];
-    if (subNode.IsNull()) {
+    if (!subNode.IsDefined()) {
       throw std::invalid_argument("invalid sampling node in \"distances\" root node");
     }
     problem.SamplingDist = subNode.as<double>() * scale;
 
     subNode = node["tree"];
-    if (subNode.IsNull()) {
+    if (!subNode.IsDefined()) {
       throw std::invalid_argument("invalid tree node in \"distances\" root node");
     }
     problem.DistTree = subNode.as<double>() * scale;
 
     // parse save
     node = config["save"];
-    if (node.IsNull()) {
+    if (node.IsDefined()) {
       subNode = node["goals"];
       if (!GetFile(subNode, tempFile, problem.Repetition)) {
         problem.SaveOpt = problem.SaveOpt | SaveGoals;
@@ -317,7 +317,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
         problem.FileNames[SaveTree] = tempFile;
 
         subNode = subNode["frequency"];
-        if (!subNode.IsNull() && subNode.as<int>() != 0) {
+        if (subNode.IsDefined() && subNode.as<int>() != 0) {
           problem.SaveFreq[SaveTree] = subNode.as<int>();
         }
       }
@@ -334,7 +334,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
         problem.FileNames[SaveParams] = tempFile;
 
         subNode = subNode["id"];
-        if (!subNode.IsNull()) {
+        if (subNode.IsDefined()) {
           problem.ID = subNode.as<std::string>();
         }
       }
@@ -354,7 +354,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
         problem.FileNames[SaveFrontiers] = tempFile;
 
         subNode = subNode["frequency"];
-        if (!subNode.IsNull() && subNode.as<int>() != 0) {
+        if (subNode.IsDefined() && subNode.as<int>() != 0) {
           problem.SaveFreq[SaveFrontiers] = subNode.as<int>();
         }
       } 
@@ -371,12 +371,12 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
 
 bool GetFile(YAML::Node &node, FileStruct &file, int repetition, bool includeIter) {
   YAML::Node subNode;
-  if (node.IsNull()) {
+  if (!node.IsDefined()) {
     return true;
   }
   
-  subNode = node["file"];
-  if (subNode.IsNull()) { 
+  subNode = node["path"];
+  if (!subNode.IsDefined()) { 
     return true;
   }  
   file.fileName = subNode.as<std::string>();
@@ -386,16 +386,17 @@ bool GetFile(YAML::Node &node, FileStruct &file, int repetition, bool includeIte
   }
 
   subNode = node["type"];
-  if (subNode.IsNull()) {
+  if (!subNode.IsDefined()) {
     file.type = Map;
-  } 
-  std::string value{subNode.as<std::string>()};
-  if (!strcmp(value.c_str(), "map")) {
-    file.type = Map;
-  } else if (!strcmp(value.c_str(), "obj")) {
-    file.type = Obj;
   } else {
-    throw std::invalid_argument("invalid type node in file node");
+    std::string value{subNode.as<std::string>()};
+    if (!strcmp(value.c_str(), "map")) {
+      file.type = Map;
+    } else if (!strcmp(value.c_str(), "obj")) {
+      file.type = Obj;
+    } else {
+      throw std::invalid_argument("invalid type node in file node");
+    }
   }
 
   return false;

@@ -17,7 +17,7 @@ CXX := g++
 
 DBGEXE := $(DBGDIR)/$(TARGET)
 DBGOBJS := $(addprefix $(OBJDIR)/, $(addprefix $(DBGDIR)/, $(OBJECTS)))
-DBGFLAGS := $(CXXFLAGS) -g -Og
+DBGFLAGS := $(CXXFLAGS) -g -O0
 
 RELEXE := $(RELDIR)/$(TARGET)
 RELOBJS := $(addprefix $(OBJDIR)/, $(addprefix $(RELDIR)/, $(OBJECTS)))

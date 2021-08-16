@@ -173,18 +173,6 @@ void Obstacle<R>::ParseOBJFile(const std::string fileName) {
   modelFile.close();
 }
 
-template <class R>
-void Obstacle<R>::addFacet(int objId, int offset, int faceInts[3]) {
-  R faceCache[3];
-  for (int i{0}; i < 3; ++i) {
-    int pos{faceInts[i] - offset - 1};
-    faceCache[i] = this->facePoints[pos];
-  }
-
-  this->faces.emplace_back(faceCache[0], faceCache[1], faceCache[2]);
-  this->rapidModel->AddTri(faceCache[0].GetRawCoords(), faceCache[1].GetRawCoords(), faceCache[2].GetRawCoords(), this->rapidId++);
-}
-
 template<class R>
 void Obstacle<R>::updateLocalRange(double coords[]) {
   for (int i{0}; i < 3; ++i) {

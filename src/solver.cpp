@@ -31,7 +31,7 @@ bool Solver<Point2D>::isPathFree(Point2D &start, Point2D &finish) {
   for (int index{1}; index < parts && isFree; ++index) {
     position.SetPosition(start[0] + direction[0] * index / parts, start[1] + direction[1] * index / parts);
 
-    isFree &= problem.Env.Collide(position);
+    isFree &= !problem.Env.Collide(position);
   }
 
   return isFree;
@@ -50,7 +50,7 @@ bool Solver<Point2DDubins>::isPathFree(Point2DDubins &start, Point2DDubins &fini
     opendubins::State temp{pathDub.getState(index * distance / parts)};
     Point2DDubins position{temp};
     
-    isFree &= problem.Env.Collide(position);
+    isFree &= !problem.Env.Collide(position);
   }
 
   // TODO checking both ways should be perhaps replaced by two point states
@@ -62,7 +62,7 @@ bool Solver<Point2DDubins>::isPathFree(Point2DDubins &start, Point2DDubins &fini
     opendubins::State temp{pathDubBack.getState(index * distance / parts)};
     Point2DDubins position{temp};
     
-    isFree &= problem.Env.Collide(position);
+    isFree &= !problem.Env.Collide(position);
   }
 
   return isFree;
@@ -91,7 +91,7 @@ bool Solver<Point3D>::isPathFree(Point3D &start, Point3D &finish) {
     rot.Normalize();
     position.SetRotation(rot);
 
-    isFree &= problem.Env.Collide(position);
+    isFree &= !problem.Env.Collide(position);
   }
 
   return isFree;

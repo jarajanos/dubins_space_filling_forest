@@ -280,6 +280,21 @@ inline bool operator<=(SaveOptions a, SaveOptions b) {
   return  (static_cast<int>(b) & static_cast<int>(a)) == static_cast<int>(a);
 }
 
+inline std::ostream& operator<<(std::ostream &out, const Dimensions &d) {
+  if (d == D2) {
+    return out << "2D";
+  } else if (d == D2Dubins) {
+    return out << "2DDubins";
+  } else if (d == D3) {
+    return out << "3D";
+  } else if (d == D3Dubins) {
+    return out << "3DDubins";
+  } else {
+    ERROR("Unimplemented dimension print!");
+    return out;
+  }
+}
+
 #include "graph-types.h"
 
 #endif /* __COMMON_H__ */
