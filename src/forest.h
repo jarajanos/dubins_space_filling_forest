@@ -354,6 +354,17 @@ bool SpaceForest<R>::checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matr
           if (std::find(borderPoints.begin(), borderPoints.end(), holder) == borderPoints.end()) {  // is it necessary? maybe use sorted set?
             this->borders(neighbourRootID, expandedRootID).push_back(holder);
           }
+
+          if (this->problem.Dimension == D2Dubins) {
+            std::deque<DistanceHolder<Node<R>>> &borderPointsBack{this->borders(expandedRootID, neighbourRootID)};
+            DistanceHolder<Node<R>> holder{expanded, neighbour};
+            if (std::find(borderPoints.begin(), borderPoints.end(), holder) == borderPoints.end()) {  // is it necessary? maybe use sorted set?
+              this->borders(expandedRootID, neighbourRootID).push_back(holder);
+            }
+          } else if (this->problem.Dimension == D3Dubins) {
+            ERROR("Not implemented");
+            exit(1);
+          }
         }
 
         if (!solved) {  // if solved, the new node lies near the goal and should be created
@@ -368,6 +379,7 @@ bool SpaceForest<R>::checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matr
 
 template<class R>
 void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>* &newNode, flann::Matrix<float> &matrix, int iteration) {
+  // TODO: should be different for Dubins (path back and forth)
   std::vector<std::vector<int>> indices;
   std::vector<std::vector<float>> dists;
   double bestDist{newPoint->Distance(expanded->Position) + expanded->DistanceToRoot};
@@ -390,9 +402,9 @@ void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>
 
   for (int &ind : indRow) {
     Node<R> &neighbor{expanded->Root->Leaves[ind]};
-    double newPointDist{neighbor.Position.Distance(*newPoint)};
+    double newPointDist{newPoint->Distance(neighbor.Position)};
     double proposedDist{bestDist + newPointDist};
-    if (proposedDist < neighbor.DistanceToRoot - SFF_TOLERANCE && this->isPathFree(neighbor.Position, *newPoint)) {
+    if (proposedDist < neighbor.DistanceToRoot - SFF_TOLERANCE && this->isPathFree(*newPoint, neighbor.Position)) {
       // rewire
       std::deque<Node<R> *> &children{neighbor.Closest->Children};
       auto iter{std::find(children.begin(), children.end(), &neighbor)};
@@ -434,6 +446,7 @@ int SpaceForest<R>::checkConnected() {
         }
 
         // TODO: non-emptinness does NOT assure correct connectivity due to lazy behaviour
+        // TODO: what about dubins?
         if (!this->borders(root, i).empty() && !connMat[i]) {
           connMat[i] = true;
           stack.push_front(i);
@@ -481,7 +494,7 @@ void SpaceForest<R>::getPaths() {
 
       std::deque<DistanceHolder<Node<R>>> &borderPoints{this->borders(i, j)};
       for (DistanceHolder<Node<R>> &dist : borderPoints) {
-        if (this->isPathFree(dist.node1->Position, dist.node2->Position)) {
+        if (this->isPathFree(dist.Node1->Position, dist.Node2->Position)) {
           this->neighboringMatrix(i, j) = dist;
           break;
         }
@@ -492,9 +505,9 @@ void SpaceForest<R>::getPaths() {
       }
 
       DistanceHolder<Node<R>> &holder{this->neighboringMatrix(i, j)};
-      std::deque<Node<R> *> &plan{holder.plan};
+      std::deque<Node<R> *> &plan{holder.Plan};
       // one tree
-      Node<R> *nodeToPush{holder.node1};
+      Node<R> *nodeToPush{holder.Node1};
       plan.push_front(nodeToPush);
       while (!nodeToPush->IsRoot()) {
         nodeToPush = nodeToPush->Closest;
@@ -502,7 +515,7 @@ void SpaceForest<R>::getPaths() {
       }
 
       // second tree
-      nodeToPush = holder.node2;
+      nodeToPush = holder.Node2;
       plan.push_back(nodeToPush);
       while(!nodeToPush->IsRoot()) {
         nodeToPush = nodeToPush->Closest;

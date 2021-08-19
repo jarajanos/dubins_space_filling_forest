@@ -14,15 +14,17 @@
 
 #include "common.h"
 #include "heap.h"
+#include "opendubins/dubins.h"
 #include <flann/flann.hpp>
 #include <deque>
 
+template<class R> class NodeBase;
 template<class R> class Node;
 template<class R> class FlannHolder;
 template<class R> class Tree;
 
 template<class R>
-class Node {
+class NodeBase {
   public:
     int ID;
     R Position;
@@ -33,23 +35,41 @@ class Node {
     double DistanceToRoot;
     double DistanceToClosest;
 
-    Node(R position, Tree<Node<R>> *root, Node *closest, double distanceToClosest, double distanceToRoot, unsigned int iteration) : Position{position},
+    NodeBase(R position, Tree<Node<R>> *root, Node<R> *closest, double distanceToClosest, double distanceToRoot, unsigned int iteration) : Position{position},
       Root{root}, Closest{closest}, DistanceToClosest{distanceToClosest}, DistanceToRoot{distanceToRoot}, generation{iteration} {
         ID = globID++;
       }
 
-    bool operator<(const Node<R> &l);
+    friend bool operator==(const NodeBase<R> &r, const NodeBase<R> &l) {
+      return r.ID == l.ID;
+    }
+
+    bool operator<(const NodeBase<R> &l);
 
     unsigned int GetAge() const {
       return generation;
     }
 
     bool IsRoot() const {
-      return this->Root->Root == this;
+      return this->Root->Root->ID == this->ID;
     }
   private:
     inline static int globID = 0;
     unsigned int generation;
+};
+
+
+template<class R>
+class Node : public NodeBase<R> {
+  using NodeBase<R>::NodeBase;
+};
+
+template<>
+class Node<Point2DDubins> : public NodeBase<Point2DDubins> {
+  using NodeBase<Point2DDubins>::NodeBase;
+  public:
+    // opendubins::Dubins PathToClosest;
+    // opendubins::Dubins PathFromClosest;
 };
 
 template<>
@@ -107,10 +127,14 @@ class Tree {
       
       return retVal;
     }
+
+    friend bool operator<(const Tree<R> &a, const Tree<R> &b) {
+      return a.Root->ID < b.Root->ID;
+    }
 };
 
 template<class R>
-bool Node<R>::operator<(const Node<R> &l) {
+bool NodeBase<R>::operator<(const NodeBase<R> &l) {
   return this->ID < l.ID;
 }
 

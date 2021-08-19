@@ -10,6 +10,7 @@
  */
 
 #include "point-types.h"
+#include "common.h"
 
 Point2D::Point2D() : coords{0, 0} {
 }

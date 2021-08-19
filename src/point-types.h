@@ -13,11 +13,14 @@
 #ifndef __POINT_TYPES_H__
 #define __POINT_TYPES_H__
 
+class Point2D;
+class Point2DDubins;
+class Point3D;
+
 #include <regex>
 #include <math.h>
 #include "constants.h"
 #include "vector-types.h"
-#include "common.h"
 
 #include "opendubins/dubins.h"
 

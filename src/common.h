@@ -155,61 +155,108 @@ class DistanceMatrix {
 
 template<class R>
 struct DistanceHolder {
-  R *node1;
-  R *node2;
-  double distance;
-  std::deque<R *> plan;
+  R *Node1;
+  R *Node2;
+  double Distance;
+  std::deque<R *> Plan;
 
-  DistanceHolder() : node1{NULL}, node2{NULL}, distance{std::numeric_limits<double>::max()} {
+  DistanceHolder() : Node1{NULL}, Node2{NULL}, Distance{std::numeric_limits<double>::max()} {
   }
 
-  DistanceHolder(R *first, R *second) : node1{first}, node2{second} {
+  DistanceHolder(R *first, R *second) : Node1{first}, Node2{second} {
     if (*first < *second) {
-      node1 = first;
-      node2 = second;
+      Node1 = first;
+      Node2 = second;
     } else {
-      node1 = second;
-      node2 = first;
+      Node1 = second;
+      Node2 = first;
     }
-    distance = first->DistanceToRoot + second->DistanceToRoot + first->Position.Distance(second->Position);
+    Distance = first->DistanceToRoot + second->DistanceToRoot + first->Position.Distance(second->Position);
   }
 
-  DistanceHolder(R *first, R *second, double dist) : distance{dist} {
+  DistanceHolder(R *first, R *second, double dist) : Distance{dist} {
     if (*first < *second) {
-      node1 = first;
-      node2 = second;
+      Node1 = first;
+      Node2 = second;
     } else {
-      node1 = second;
-      node2 = first;
+      Node1 = second;
+      Node2 = first;
     }
   }
 
-  DistanceHolder(R *first, R *second, double dist, std::deque<R *> &plan) : distance{dist}, plan{plan} {
+  DistanceHolder(R *first, R *second, double dist, std::deque<R *> &plan) : Distance{dist}, Plan{plan} {
     if (*first < *second) {
-      node1 = first;
-      node2 = second;
+      Node1 = first;
+      Node2 = second;
     } else {
-      node1 = second;
-      node2 = first;
-      std::reverse(this->plan.begin(), this->plan.end());
+      Node1 = second;
+      Node2 = first;
+      std::reverse(this->Plan.begin(), this->Plan.end());
     }
   }
 
   friend bool operator<(const DistanceHolder<R> &l, const DistanceHolder<R> &r) {
-    return l.distance < r.distance;
+    return l.Distance < r.Distance;
   }  
 
   friend bool operator==(const DistanceHolder<R> &l, const DistanceHolder<R> &r) {
-    return l.node1 == r.node1 && l.node2 == r.node2;
+    return l.Node1 == r.Node1 && l.Node2 == r.Node2;
   }
 
   const bool Exists() const {
-    return node1 != nullptr;
+    return Node1 != nullptr;
   }
 
   void UpdateDistance() {
-    distance = node1->DistanceToRoot + node2->DistanceToRoot + node1->Position.Distance(node2->Position);
+    Distance = Node1->DistanceToRoot + Node2->DistanceToRoot + Node1->Position.Distance(Node2->Position);
   }
+};
+
+template<class R>
+class UnionFind {
+  public:
+    UnionFind() {
+    }
+
+    UnionFind(std::deque<R> &elements) {
+      for (auto r : elements) {
+        holder[r] = r;
+        counter[r] = 0;
+      }
+    }
+
+    void Union(R child, R parent) {
+      counter[Find(parent)] += counter[Find(child)]; 
+      holder[Find(child)] = parent;
+    }
+
+    R Find(R element) {
+      R parent = holder[element];
+      if (parent != element) {
+        holder[element] = Find(parent);
+      }
+
+      return holder[element];
+    }
+
+    std::deque<R> GetAllWithParent(R parent) {
+      std::deque<R> retVal;
+      for (auto iter{holder.begin()}; iter != holder.end(); iter++) {
+        if (Find(iter->second) == parent) {
+          retVal.push_back(iter->second);
+        }
+      }
+
+      return retVal;
+    }
+
+    int GetCountOf(R element) {
+      return counter[element];
+    }
+
+  private:
+    std::map<R, R> holder;
+    std::map<R, int> counter;
 };
 
 class StopWatch {

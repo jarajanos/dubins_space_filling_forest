@@ -100,26 +100,26 @@ void Solver<R>::getAllPaths() {
 
         bool reversed1{false};
         bool reversed2{false};
-        plan1 = holder1.plan;
-        if (holder1.node1->Root->Root->ID == id1) {
-          node1 = holder1.node1;
+        plan1 = holder1.Plan;
+        if (holder1.Node1->Root->Root->ID == id1) {
+          node1 = holder1.Node1;
         } else {
           if (problem.Dimension == D2Dubins) {
             ERROR("Error in neighboring matrix: DistanceHolder's plan can't be reversed in Dubins scenario - problem is not symmetric!");
           }
-          node1 = holder1.node2;
+          node1 = holder1.Node2;
           std::reverse(plan1.begin(), plan1.end());
           reversed1 = true;
         }
 
-        plan2 = holder2.plan;
-        if (holder2.node1->Root->Root->ID == id2) {
-          node2 = holder2.node1;
+        plan2 = holder2.Plan;
+        if (holder2.Node1->Root->Root->ID == id2) {
+          node2 = holder2.Node1;
         } else {
           if (problem.Dimension == D2Dubins) {
             ERROR("Error in neighboring matrix: DistanceHolder's plan can't be reversed in Dubins scenario - problem is not symmetric!");
           }
-          node2 = holder2.node2;
+          node2 = holder2.Node2;
           std::reverse(plan2.begin(), plan2.end());
           reversed2 = true;
         }
@@ -143,7 +143,7 @@ void Solver<R>::getAllPaths() {
         }
 
         double distance{computeDistance(finalPlan)};
-        if (distance < link.distance - SFF_TOLERANCE) {     // for nonexisting connections always true (infinite distance at init)
+        if (distance < link.Distance - SFF_TOLERANCE) {     // for nonexisting connections always true (infinite distance at init)
           this->neighboringMatrix(id1, id2) = DistanceHolder<Node<R>>(node1, node2, distance, finalPlan);
         }
       }
@@ -303,7 +303,7 @@ void Solver<R>::saveParams(const FileStruct file, const int iterations, const bo
       for (int j{0}; j < i; ++j) {
         int id1{this->connectedTrees[i]->Root->ID};
         int id2{this->connectedTrees[j]->Root->ID};
-        fileStream << neighboringMatrix(id1,id2).distance / problem.Env.ScaleFactor;
+        fileStream << neighboringMatrix(id1,id2).Distance / problem.Env.ScaleFactor;
         if (i + 1 != numRoots || j + 1 != i) {
           fileStream << CSV_DELIMITER_2;
         }
@@ -351,7 +351,7 @@ void Solver<R>::saveTsp(const FileStruct file) {
       for (int j{0}; j < i; ++j) {
         int id1{this->connectedTrees[i]->Root->ID};
         int id2{this->connectedTrees[j]->Root->ID};
-        fileStream << neighboringMatrix(id1, id2).distance / problem.Env.ScaleFactor << TSP_DELIMITER;
+        fileStream << neighboringMatrix(id1, id2).Distance / problem.Env.ScaleFactor << TSP_DELIMITER;
       }
       fileStream << "0\n";
     }
@@ -388,11 +388,11 @@ void Solver<R>::savePaths(const FileStruct file) {
       for (int i{0}; i < numRoots; ++i) {
         for (int j{i + 1}; j < numRoots; ++j) {
           DistanceHolder<Node<R>> &holder{this->neighboringMatrix(i, j)};
-          if (holder.node1 == NULL) {
+          if (holder.Node1 == NULL) {
             continue;
           }
 
-          std::deque<Node<R> *> &plan{holder.plan};
+          std::deque<Node<R> *> &plan{holder.Plan};
           for (int k{0}; k < plan.size() - 1; ++k) {
             fileStream << "l" << DELIMITER_OUT << plan[k]->ID + 1 << DELIMITER_OUT << plan[k+1]->ID + 1 << "\n";
           }
@@ -403,11 +403,11 @@ void Solver<R>::savePaths(const FileStruct file) {
       for (int i{0}; i < numRoots; ++i) {
         for (int j{i + 1}; j < numRoots; ++j) {
           DistanceHolder<Node<R>> &holder{this->neighboringMatrix(i, j)};
-          if (holder.node1 == NULL) {
+          if (holder.Node1 == NULL) {
             continue;
           }
 
-          std::deque<Node<R> *> &plan{holder.plan};
+          std::deque<Node<R> *> &plan{holder.Plan};
           for (int k{0}; k < plan.size() - 1; ++k) {
             fileStream << plan[k]->Position / problem.Env.ScaleFactor << DELIMITER_OUT << plan[k+1]->Position / problem.Env.ScaleFactor << "\n";
           }

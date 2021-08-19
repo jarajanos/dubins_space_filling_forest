@@ -13,10 +13,6 @@
 #ifndef __VECTOR_TYPES_H__
 #define __VECTOR_TYPES_H__
 
-class Point2D;
-class Point2DDubins;
-class Point3D;
-
 #include <math.h>
 #include <cassert>
 
