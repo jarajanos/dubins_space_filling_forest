@@ -226,6 +226,7 @@ bool SpaceForest<R>::expandNode(Node<R> *expanded, bool &solved, const unsigned 
 
   Tree<Node<R>> *expandedTree{expanded->Root};
 
+  // sample new point and check basic collisions with obstacles
   if (getAndCheckNewPoint(expanded, &newPoint)) {
     return true;
   }
@@ -235,11 +236,19 @@ bool SpaceForest<R>::expandNode(Node<R> *expanded, bool &solved, const unsigned 
     pointToAdd[0][i] = newPoint[i];
   }
 
+  // ensure that the node does not "grow" into the tree
   if (checkExpandedTree(expanded, &newPoint, pointToAdd)) {
     delete[] pointToAdd.ptr();
     return true;
   }
 
+  // finally check clear path to expanded node
+  if (!this->isPathFree(expanded->Position, newPoint)) {
+    delete[] pointToAdd.ptr();
+    return true;
+  }
+
+  // check other trees, link them together or check availability of the goal node
   if (checkOtherTrees(expanded, &newPoint, pointToAdd, solved)) {
     delete[] pointToAdd.ptr();
     return true;
@@ -283,7 +292,7 @@ bool SpaceForest<R>::getAndCheckNewPoint(Node<R> *expanded, R* newPoint) {
   }
 
   // check limits and collisions
-  if (this->problem.Env.Collide(*newPoint) || !this->isPathFree(expanded->Position, *newPoint)) {     
+  if (this->problem.Env.Collide(*newPoint)) {     
     return true;
   }
 
@@ -301,7 +310,7 @@ bool SpaceForest<R>::checkExpandedTree(Node<R> *expanded, R* newPoint, flann::Ma
   std::vector<std::vector<float>> dists;
   double checkDist{FLANN_PREC_MULTIPLIER * this->problem.SamplingDist};
   int neighbours{expandedTree->Flann.Index->radiusSearch(matrix, indices, dists, SQR(checkDist), 
-    flann::SearchParams(FLANN_NUM_SEARCHES))};
+    flann::SearchParams(FLANN_NUM_SEARCHES))}; // better and faster than knnSearch - tested by perf
   
   std::vector<int> &indRow{indices[0]}; // just one point
   for (int i{0}; i < neighbours; ++i) {

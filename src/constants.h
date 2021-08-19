@@ -41,7 +41,7 @@
 #define DEFAULT_DIST_DIV 1
 #define ANGLE_MOVE 0.8
 
-#define FLANN_NUM_KD_TREES    8
+#define FLANN_NUM_KD_TREES    4
 #define FLANN_NUM_SEARCHES    128
 #define FLANN_PREC_MULTIPLIER 1.1
 
