@@ -54,15 +54,18 @@ bool Solver<Point2DDubins>::isPathFree(Point2DDubins &start, Point2DDubins &fini
   }
 
   // TODO checking both ways should be perhaps replaced by two point states
-  opendubins::Dubins pathDubBack{finishDub, startDub, this->problem.DubinsRadius};
-  distance = pathDubBack.length;
-  parts = distance / problem.CollisionDist;
+  // it is useless to check path back when searching only path to an goal
+  if (!this->problem.HasGoal) {
+    opendubins::Dubins pathDubBack{finishDub, startDub, this->problem.DubinsRadius};
+    distance = pathDubBack.length;
+    parts = distance / problem.CollisionDist;
 
-  for (int index{1}; index < parts && isFree; ++index) {
-    opendubins::State temp{pathDubBack.getState(index * distance / parts)};
-    Point2DDubins position{temp};
-    
-    isFree &= !problem.Env.Collide(position);
+    for (int index{1}; index < parts && isFree; ++index) {
+      opendubins::State temp{pathDubBack.getState(index * distance / parts)};
+      Point2DDubins position{temp};
+      
+      isFree &= !problem.Env.Collide(position);
+    }
   }
 
   return isFree;
@@ -136,7 +139,7 @@ void Solver<Point2DDubins>::saveTrees(const FileStruct file) {
             opendubins::State startDub{node.Closest->Position[0], node.Closest->Position[1], node.Closest->Position.GetAngle()};
             opendubins::Dubins pathFromClosest{startDub, finishDub, this->problem.DubinsRadius};
 
-            
+
             fileStream << node.Position / problem.Env.ScaleFactor << DELIMITER_OUT << node.Closest->Position / problem.Env.ScaleFactor << DELIMITER_OUT << node.Root->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
           }
         }

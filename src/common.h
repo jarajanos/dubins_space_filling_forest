@@ -226,7 +226,7 @@ class UnionFind {
     }
 
     void Union(R child, R parent) {
-      counter[Find(parent)] += counter[Find(child)]; 
+      counter[Find(parent)] += counter[Find(child)] + 1; 
       holder[Find(child)] = parent;
     }
 
