@@ -10,3 +10,5 @@ tempTsp.tsp
 results/*
 tests_2.zip
 lib/*
+perf.data
+perf.data.old

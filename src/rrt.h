@@ -29,6 +29,9 @@ class RapidExpTree : public Solver<R> {
     UnionFind<Tree<Node<R>> *> expandedTrees;
 
     void expandNode(Tree<Node<R>> *tree, bool &solved, const unsigned int iteration);
+    bool getAndCheckNewPoint(Tree<Node<R>> *treeToExpand, R *newPoint, Node<R>* &parent);
+    bool optimizeConnections(Tree<Node<R>> *treeToExpand, R *newPoint, Node<R>* &parent, Node<R>* &newNode, const unsigned iteration);
+    bool checkOtherRewire(Tree<Node<R>> *treeToExpand, R *newPoint, Node<R>* &newNode);
     
     void getPaths() override;
     void getConnectedTrees();
@@ -111,8 +114,8 @@ void RapidExpTree<R>::Solve() {
 }
 
 template<class R>
-void RapidExpTree<R>::expandNode(Tree<Node<R>> *treeToExpand, bool &solved, const unsigned int iteration) {
-  R rndPoint, newPoint;
+bool RapidExpTree<R>::getAndCheckNewPoint(Tree<Node<R>> *treeToExpand, R *newPoint, Node<R>* &parent) {
+  R rndPoint;
   if (this->problem.PriorityBias > 0 && this->rnd.RandomProbability() <= this->problem.PriorityBias) {
     rndPoint = goalNode->Position; 
   } else {
@@ -128,77 +131,78 @@ void RapidExpTree<R>::expandNode(Tree<Node<R>> *treeToExpand, bool &solved, cons
   }
   treeToExpand->Flann.Index->knnSearch(rndPointMat, indices, dists, 1, flann::SearchParams(FLANN_NUM_SEARCHES));
   delete[] rndPointMat.ptr();
-  Node<R> &neighbor{treeToExpand->Leaves[indices[0][0]]};
+
+  parent = &(treeToExpand->Leaves[indices[0][0]]);
   
   // get point in this direction, check for collisions
-  newPoint = neighbor.Position.GetStateInDistance(rndPoint, this->problem.SamplingDist);
-  if (this->problem.Env.Collide(newPoint) || !this->isPathFree(neighbor.Position, newPoint)) {
-    return;    
+  *newPoint = parent->Position.GetStateInDistance(rndPoint, this->problem.SamplingDist);
+  if (this->problem.Env.Collide(*newPoint) || !this->isPathFree(parent->Position, *newPoint)) {
+    return true;    
   }
 
-  Node <R> *nearest{&neighbor}, *newNode;
+  return false;
+}
 
-  // rrt star
-  if (this->problem.Optimize) {
-    double bestDist{newPoint.Distance(nearest->Position) + nearest->DistanceToRoot};
-    double krrt{2 * M_E * log10(this->allNodes.size())};
-    indices.clear();
-    dists.clear();
+template<class R>
+bool RapidExpTree<R>::optimizeConnections(Tree<Node<R>> *treeToExpand, R *newPoint, Node<R>* &parent, Node<R>* &newNode, const unsigned iteration) {
+  double bestDist{newPoint->Distance(parent->Position) + parent->DistanceToRoot};
+  double krrt{2 * M_E * log10(this->allNodes.size())};
+  std::vector<std::vector<int>> indices;
+  std::vector<std::vector<float>> dists;
 
-    flann::Matrix<float> newPointMat{new float[PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
-    for (int i{0}; i < PROBLEM_DIMENSION; ++i) {
-      newPointMat[0][i] = newPoint[i];
-    }
-    treeToExpand->Flann.Index->knnSearch(newPointMat, indices, dists, krrt, flann::SearchParams(FLANN_NUM_SEARCHES));
-
-    std::vector<int> &indRow{indices[0]};
-    for (int &ind : indRow) {
-      Node<R> &neighbor{treeToExpand->Leaves[ind]};
-      double neighDist{newPoint.Distance(neighbor.Position) + neighbor.DistanceToRoot};
-      if (neighDist < bestDist - SFF_TOLERANCE && this->isPathFree(newPoint, neighbor.Position)) {
-        bestDist = neighDist;
-        nearest = &neighbor;
-      }
-    }
-
-    newNode = &(treeToExpand->Leaves.emplace_back(newPoint, nearest->Root, nearest, nearest->Position.Distance(newPoint), bestDist, iteration));
-    nearest->Children.push_back(newNode);
-
-    for (int &ind : indRow) {
-      Node<R> &neighbor{treeToExpand->Leaves[ind]}; // offset goal node
-      double newPointDist{neighbor.Position.Distance(newPoint)};
-      double proposedDist{bestDist + newPointDist};
-      if (proposedDist < neighbor.DistanceToRoot - SFF_TOLERANCE && this->isPathFree(neighbor.Position, newPoint)) {
-        // rewire
-        std::deque<Node<R> *> &children{neighbor.Closest->Children};
-        auto iter{find(children.begin(), children.end(), &neighbor)};
-        if (iter == children.end()) {
-          ERROR("Fatal error: Node not in children");
-          exit(1);
-        }
-        neighbor.Closest->Children.erase(iter);
-        neighbor.Closest = newNode;
-        neighbor.Root = newNode->Root;
-        neighbor.DistanceToClosest = newPointDist;
-        neighbor.DistanceToRoot = proposedDist;
-        newNode->Children.push_back(&neighbor);
-      }
-    }
-  } else {
-    newNode = &(treeToExpand->Leaves.emplace_back(newPoint, nearest->Root, nearest, this->problem.SamplingDist, nearest->DistanceToRoot + this->problem.SamplingDist, iteration));
-    nearest->Children.push_back(newNode);
+  flann::Matrix<float> newPointMat{new float[PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
+  for (int i{0}; i < PROBLEM_DIMENSION; ++i) {
+    newPointMat[0][i] = (*newPoint)[i];
   }
-  this->allNodes.push_back(newNode);
+  treeToExpand->Flann.Index->knnSearch(newPointMat, indices, dists, krrt, flann::SearchParams(FLANN_NUM_SEARCHES));
 
-  // add the point to flann
-  flann::Matrix<float> pointToAdd{new float[PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
+  delete newPointMat.ptr();
+
+  std::vector<int> &indRow{indices[0]};
+  for (int &ind : indRow) {
+    Node<R> &neighbor{treeToExpand->Leaves[ind]};
+    double neighDist{newPoint->Distance(neighbor.Position) + neighbor.DistanceToRoot};
+    if (neighDist < bestDist - SFF_TOLERANCE && this->isPathFree(*newPoint, neighbor.Position)) {
+      bestDist = neighDist;
+      parent = &neighbor;
+    }
+  }
+
+  newNode = &(treeToExpand->Leaves.emplace_back(*newPoint, parent->Root, parent, parent->Position.Distance(*newPoint), bestDist, iteration));
+  parent->Children.push_back(newNode);
+
+  for (int &ind : indRow) {
+    Node<R> &neighbor{treeToExpand->Leaves[ind]}; // offset goal node
+    double newPointDist{neighbor.Position.Distance(*newPoint)};
+    double proposedDist{bestDist + newPointDist};
+    if (proposedDist < neighbor.DistanceToRoot - SFF_TOLERANCE && this->isPathFree(neighbor.Position, *newPoint)) {
+      // rewire
+      std::deque<Node<R> *> &children{neighbor.Closest->Children};
+      auto iter{find(children.begin(), children.end(), &neighbor)};
+      if (iter == children.end()) {
+        ERROR("Fatal error: Node not in children");
+        exit(1);
+      }
+      neighbor.Closest->Children.erase(iter);
+      neighbor.Closest = newNode;
+      neighbor.Root = newNode->Root;
+      neighbor.DistanceToClosest = newPointDist;
+      neighbor.DistanceToRoot = proposedDist;
+      newNode->Children.push_back(&neighbor);
+    }
+  }
+
+  return false;
+}
+
+template<class R>
+bool RapidExpTree<R>::checkOtherRewire(Tree<Node<R>> *treeToExpand, R *newPoint, Node<R>* &newNode) {
   flann::Matrix<float> refPoint{new float[PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
   for (int i{0}; i < PROBLEM_DIMENSION; ++i) {
-    pointToAdd[0][i] = newPoint[i];
-    refPoint[0][i] = newPoint[i];
+    refPoint[0][i] = (*newPoint)[i];
   }
-  treeToExpand->Flann.Index->addPoints(pointToAdd);
-  treeToExpand->Flann.PtrsToDel.push_back(pointToAdd.ptr());
+  std::vector<std::vector<int>> indices;
+  std::vector<std::vector<float>> dists;
 
   // check distance to other trees and rewire
   for (int i{0}; i < this->treeFrontier.size(); ++i) {
@@ -207,14 +211,11 @@ void RapidExpTree<R>::expandNode(Tree<Node<R>> *treeToExpand, bool &solved, cons
       continue;
     }
 
-    indices.clear();
-    dists.clear();
-
-    tree->Flann.Index->knnSearch(refPoint, indices, dists, 1, flann::SearchParams(128));
+    tree->Flann.Index->knnSearch(refPoint, indices, dists, 1, flann::SearchParams(FLANN_NUM_SEARCHES));
     Node<R> &neighbor{tree->Leaves[indices[0][0]]}; // just one-to-one connection
-    double neighDist{neighbor.Position.Distance(newPoint)};
+    double neighDist{neighbor.Position.Distance(*newPoint)};
 
-    if (neighDist < this->problem.DistTree && this->isPathFree(newPoint, neighbor.Position)) {
+    if (neighDist < this->problem.DistTree && this->isPathFree(*newPoint, neighbor.Position)) {
       // create link
       treeToExpand->Links.emplace_back(newNode, &neighbor);
 
@@ -233,15 +234,12 @@ void RapidExpTree<R>::expandNode(Tree<Node<R>> *treeToExpand, bool &solved, cons
         to->Leaves.push_back(from->Leaves[i]);
       }
 
+      // update new points
       for (int j{rewirePos}; j < to->Leaves.size(); ++j) {
         Node<R> &node{to->Leaves[j]};
         
         if (node.Closest != nullptr) {
           auto subIter{find(to->Leaves.begin(), to->Leaves.end(), *(node.Closest))};
-          if (subIter == to->Leaves.end()) {
-            ERROR("Fatal error, rewiring tree multi RRT");
-            exit(1);
-          }
           node.Closest = &(*subIter);
         }
 
@@ -249,34 +247,22 @@ void RapidExpTree<R>::expandNode(Tree<Node<R>> *treeToExpand, bool &solved, cons
         node.Children.clear();
         for(Node<R> *&child : temp) {
           auto subIter{find(to->Leaves.begin(), to->Leaves.end(), *child)};
-          if (subIter == to->Leaves.end()) {
-            ERROR("Fatal error, rewiring tree multi RRT");
-            exit(1);
-          }
           node.Children.push_back(&(*subIter));
         }
       }
 
+      // updating "to"'s links -- pointer to the other node might have changed
       std::deque<DistanceHolder<Node<R>>> temp{to->Links};
       to->Links.clear();
       for (DistanceHolder<Node<R>> &link : temp) {
         auto iter{find(to->Leaves.begin(), to->Leaves.end(), *link.Node1)};
-        if (iter == to->Leaves.end()) {
-          ERROR("Fatal error, rewiring tree multi RRT");
-          exit(1);
-        }
-
         auto iter2{find(to->Leaves.begin(), to->Leaves.end(), *link.Node2)};
         to->Links.emplace_back(&(*iter), &(*iter2));
       }
 
+      // updating "from"'s links
       for(DistanceHolder<Node<R>> &link : from->Links) {
         auto iter{find(to->Leaves.begin(), to->Leaves.end(), *link.Node1)};
-        if (iter == to->Leaves.end()) {
-          ERROR("Fatal error, rewiring tree multi RRT");
-          exit(1);
-        }
-
         auto iter2{find(to->Leaves.begin(), to->Leaves.end(), *link.Node2)};
         to->Links.emplace_back(&(*iter), &(*iter2));
       }
@@ -292,14 +278,46 @@ void RapidExpTree<R>::expandNode(Tree<Node<R>> *treeToExpand, bool &solved, cons
       }
       this->treeFrontier.erase(iter);
       treeToExpand = to;
-      solved = (this->treeFrontier.size() == 1);
+      
       --actNumTrees;
       --i;
     }
+  }
+  delete[] refPoint.ptr();
+  return false;
+}
 
+template<class R>
+void RapidExpTree<R>::expandNode(Tree<Node<R>> *treeToExpand, bool &solved, const unsigned int iteration) {
+  R newPoint;
+  Node<R> *parent, *newNode;
+
+  if (getAndCheckNewPoint(treeToExpand, &newPoint, parent)) {
+    return;
   }
 
-  delete[] refPoint.ptr();
+  // rrt star
+  if (this->problem.Optimize) {
+    if (optimizeConnections(treeToExpand, &newPoint, parent, newNode, iteration)) {
+      return;
+    }
+  } else {
+    newNode = &(treeToExpand->Leaves.emplace_back(newPoint, parent->Root, parent, this->problem.SamplingDist, parent->DistanceToRoot + this->problem.SamplingDist, iteration));
+    parent->Children.push_back(newNode);
+  }
+  this->allNodes.push_back(newNode);
+
+  // add the point to flann
+  flann::Matrix<float> pointToAdd{new float[PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
+  for (int i{0}; i < PROBLEM_DIMENSION; ++i) {
+    pointToAdd[0][i] = newPoint[i];
+  }
+  treeToExpand->Flann.Index->addPoints(pointToAdd);
+  treeToExpand->Flann.PtrsToDel.push_back(pointToAdd.ptr());
+
+  checkOtherRewire(treeToExpand, &newPoint, newNode);
+
+  solved = (this->treeFrontier.size() == 1);
 }
 
 template<class R>

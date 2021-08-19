@@ -1,6 +1,6 @@
 ---
   problem:
-    solver: 'rrt'
+    solver: 'sff'
     optimize: false
     iterations: 100000
     dimension: '2D'
@@ -33,12 +33,12 @@
 
   distances:
     collision: 1
-    sampling: 40
-    tree: 50
+    sampling: 20
+    tree: 25
 
   algorithm:
     m2r-ratio: 10
-    bias: 0
+    bias: 0.95
     misses: 10
     dubins-radius: 0.5
   
