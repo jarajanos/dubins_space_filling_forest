@@ -79,6 +79,7 @@ SpaceForest<R>::SpaceForest(Problem<R> &problem) : Solver<R>(problem), borders{t
       rootMat[0][i] = this->problem.Goal[i];
     }
     tree.Flann.CreateIndex(rootMat);
+    tree.Root = &node;
     goalNode = &node;
 
     if (this->problem.PriorityBias != 0) {  // must be done after goalNode assignment
@@ -399,8 +400,8 @@ void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>
   std::vector<int> &indRow{indices[0]};
   for (int &ind : indRow) {
     Node<R> &neighbor{expanded->Root->Leaves[ind]};
-    double neighborDist{newPoint->Distance(neighbor.Position) + neighbor.DistanceToRoot};
-    if (neighborDist < bestDist - SFF_TOLERANCE && this->isPathFree(*newPoint, neighbor.Position)) {
+    double neighborDist{neighbor.Position.Distance(*newPoint) + neighbor.DistanceToRoot};
+    if (neighborDist < bestDist - SFF_TOLERANCE && this->isPathFree(neighbor.Position, *newPoint)) {
       bestDist = neighborDist;
       expanded = &neighbor;
     }

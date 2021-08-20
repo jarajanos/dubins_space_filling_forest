@@ -164,8 +164,8 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     if ((problem.Dimension == D2Dubins || problem.Dimension == D3Dubins) && !subNode.IsDefined()) {
       throw std::invalid_argument("dubins radius missing");
     } else if (subNode.IsDefined()) {
-      problem.DubinsRadius = subNode.as<double>();
-      Point2DDubins::DubinsRadius = subNode.as<double>();
+      problem.DubinsRadius = subNode.as<double>() * scale;
+      Point2DDubins::DubinsRadius = subNode.as<double>() * scale;
     }
     subNode = node["bias"];
     if (subNode.IsDefined()) {

@@ -125,7 +125,7 @@ void Obstacle<Point2DDubins>::ParseMapFile(const std::string fileName) {
 
   while (getline(modelFile, line)) {
     line = Trim(line);
-    if (!strcmp(line.c_str(), "")) {
+    if (!strcmp(line.c_str(), "") || !strncmp(line.c_str(), "#", 1)) {
       continue;
     }
 
@@ -154,7 +154,7 @@ void Obstacle<Point3D>::ParseMapFile(const std::string fileName) {
 
   while (getline(modelFile, line)) {
     line = Trim(line);
-    if (!strcmp(line.c_str(), "")) {
+    if (!strcmp(line.c_str(), "") || !strncmp(line.c_str(), "#", 1)) {
       continue;
     }
 
