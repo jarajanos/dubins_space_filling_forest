@@ -243,7 +243,7 @@ class UnionFind {
       std::deque<R> retVal;
       for (auto iter{holder.begin()}; iter != holder.end(); iter++) {
         if (Find(iter->second) == parent) {
-          retVal.push_back(iter->second);
+          retVal.push_back(iter->first);
         }
       }
 

@@ -63,7 +63,7 @@ void SolveProblem(YAML::Node &config, Problem<R> &problem) {
   } else if (problem.Solver == RRT) {
     solver = std::make_unique<RapidExpTree<R>>(problem);
   } else if (problem.Solver == Lazy) {
-
+    solver = std::make_unique<LazyTSP<R>>(problem);
   } else {
     ERROR("Unimplemented problem solver");
   }

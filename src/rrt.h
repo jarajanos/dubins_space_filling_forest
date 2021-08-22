@@ -324,7 +324,7 @@ template<class R>
 void RapidExpTree<R>::getPaths() {
   for (DistanceHolder<Node<R>> &link : centralRoot->Links) {
     if (link.Distance > 1e100) {
-      std::cout << "Fatal error: max distance reached";
+      ERROR("Fatal error: max distance reached");
       exit(1);
     } 
     std::deque<Node<R> *> &plan{link.Plan};

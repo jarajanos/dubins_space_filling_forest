@@ -434,6 +434,7 @@ void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>
 template<class R>
 int SpaceForest<R>::checkConnected() {
   int maxConn{0};
+  this->connectedTrees.clear();
   int remaining{this->problem.GetNumRoots()};
   bool connMat[this->problem.GetNumRoots()];
   for (int i{1}; i < remaining; ++i) {

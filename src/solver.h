@@ -311,6 +311,9 @@ void Solver<R>::saveParams(const FileStruct file, const int iterations, const bo
     }
     fileStream << "]" << CSV_DELIMITER;
     fileStream << elapsedTime.count() << "\n";
+
+    fileStream.flush();
+    fileStream.close();
   } else {
     std::stringstream message;
     message << "Cannot open file at: " << file.fileName;
@@ -355,6 +358,9 @@ void Solver<R>::saveTsp(const FileStruct file) {
       }
       fileStream << "0\n";
     }
+
+    fileStream.flush();
+    fileStream.close();
   } else {
     std::stringstream message;
     message << "Cannot open file at: " << file.fileName;
