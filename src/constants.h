@@ -31,15 +31,20 @@
 #define TSP_DELIMITER (" ")
 #endif
 
+// used for LazyTSP
+#ifndef TEMP_TSP
+#define TEMP_TSP      "tempTsp.tsp"
+#endif
+
+#ifndef TEMP_RESULT
+#define TEMP_RESULT   "tempTsp.result"
+#endif
+
+
 #define DEFAULT_THRES_MISS 3
-#define DEFAULT_OBSTAC_MISS 10
 #define SFF_TOLERANCE 1e-9
 
-#define SAMPLING_ANGLE_DISP 1 // something about 60 degrees
 #define DEFAULT_SAMP_DIST 1
-#define EXPANSION_MULTIPLIER 2
-#define DEFAULT_DIST_DIV 1
-#define ANGLE_MOVE 0.8
 
 #define FLANN_NUM_KD_TREES    4
 #define FLANN_NUM_SEARCHES    128

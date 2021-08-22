@@ -213,7 +213,7 @@ void Solver<Point2DDubins>::savePaths(const FileStruct file) {
           }
 
           std::deque<Node<Point2DDubins> *> &plan{holder.Plan};
-          for (int k{plan.size() - 2}; k >= 0; --k) {
+          for (int k{0}; k < plan.size() - 1; ++k) {
             opendubins::State finishDub{plan[k]->Position[0], plan[k]->Position[1], plan[k]->Position.GetAngle()};
             opendubins::State startDub{plan[k+1]->Position[0], plan[k+1]->Position[1], plan[k+1]->Position.GetAngle()};
             opendubins::Dubins pathFromClosest{startDub, finishDub, this->problem.DubinsRadius};
