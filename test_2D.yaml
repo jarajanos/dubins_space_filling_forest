@@ -1,9 +1,9 @@
 ---
   problem:
-    solver: 'rrt'
-    optimize: false
+    solver: 'lazy'
+    optimize: true
     iterations: 100000
-    dimension: '2D'
+    dimension: '2DDubins'
   
   delimiters:
     standard: ' '
@@ -20,19 +20,21 @@
   obstacles:
     - path: './maps/dense.tri'
       type: 'map'
-      position: '[0; 0]'
+      position: '[0; 0; 0]'
 
   cities:
-    - "[1500; 1600]"
-    - "[100; 100]"
-    - "[500; 1700]"
-    - "[1440; 330]"
+    - "[100; 100; 1]"
+    - "[1500; 1600; 4]"
+    - "[500; 1700; 2]"
+    - "[1440; 330; 3]"
+
+  agoal: "[1500; 1600; 4]"
 
   range:
     autodetect: true
 
   distances:
-    collision: 1
+    collision: 5
     sampling: 80
     tree: 100
 
@@ -40,7 +42,7 @@
     m2r-ratio: 10
     bias: 0
     misses: 5
-    dubins-radius: 100
+    dubins-radius: 20
   
   save:
     goals:

@@ -22,7 +22,7 @@ class RapidExpTree : public Solver<R> {
     void Solve() override;
   private:
     int actNumTrees;
-    Tree<Node<R>> *centralRoot;
+    Tree<Node<R>> *centralRoot{nullptr};
 
     Node<R> *goalNode;
     std::deque<Tree<Node<R>> *> treeFrontier;
@@ -99,11 +99,14 @@ void RapidExpTree<R>::Solve() {
     this->saveTrees(this->problem.FileNames[SaveTree]);
   }
 
-  this->getPaths();
-  this->getAllPaths();
-  if (SaveRoadmap <= this->problem.SaveOpt) {
-    this->savePaths(this->problem.FileNames[SaveRoadmap]);
+  if (this->centralRoot != nullptr) {
+    this->getPaths();
+    this->getAllPaths();
+    if (SaveRoadmap <= this->problem.SaveOpt) {
+      this->savePaths(this->problem.FileNames[SaveRoadmap]);
+    }
   }
+  
   if (SaveParams <= this->problem.SaveOpt) {
     this->saveParams(this->problem.FileNames[SaveParams], iter, solved, watch.GetElapsed());
   }
@@ -161,8 +164,8 @@ bool RapidExpTree<R>::optimizeConnections(Tree<Node<R>> *treeToExpand, R *newPoi
   std::vector<int> &indRow{indices[0]};
   for (int &ind : indRow) {
     Node<R> &neighbor{treeToExpand->Leaves[ind]};
-    double neighDist{newPoint->Distance(neighbor.Position) + neighbor.DistanceToRoot};
-    if (neighDist < bestDist - SFF_TOLERANCE && this->isPathFree(*newPoint, neighbor.Position)) {
+    double neighDist{neighbor.Position.Distance(*newPoint) + neighbor.DistanceToRoot};
+    if (neighDist < bestDist - SFF_TOLERANCE && this->isPathFree(neighbor.Position, *newPoint)) {
       bestDist = neighDist;
       parent = &neighbor;
     }
@@ -173,9 +176,9 @@ bool RapidExpTree<R>::optimizeConnections(Tree<Node<R>> *treeToExpand, R *newPoi
 
   for (int &ind : indRow) {
     Node<R> &neighbor{treeToExpand->Leaves[ind]}; // offset goal node
-    double newPointDist{neighbor.Position.Distance(*newPoint)};
+    double newPointDist{newPoint->Distance(neighbor.Position)};
     double proposedDist{bestDist + newPointDist};
-    if (proposedDist < neighbor.DistanceToRoot - SFF_TOLERANCE && this->isPathFree(neighbor.Position, *newPoint)) {
+    if (proposedDist < neighbor.DistanceToRoot - SFF_TOLERANCE && this->isPathFree(*newPoint, neighbor.Position)) {
       // rewire
       std::deque<Node<R> *> &children{neighbor.Closest->Children};
       auto iter{find(children.begin(), children.end(), &neighbor)};

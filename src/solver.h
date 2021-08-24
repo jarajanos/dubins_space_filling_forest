@@ -194,17 +194,13 @@ void Solver<R>::saveCities(const FileStruct file) {
   if (fileStream.is_open()) {
     if (file.type == Obj) {
       fileStream << "o Points\n";;
-      for (int i{0}; i < problem.GetNumRoots(); ++i) { // goal is included
-        for (Node<R> &node : this->trees[i].Leaves){
-          fileStream << "v" << DELIMITER_OUT << node.Position / problem.Env.ScaleFactor << "\n";
-        }
+      for (Node<R>* &node : this->allNodes){
+        fileStream << "v" << DELIMITER_OUT << node->Position / problem.Env.ScaleFactor << "\n";
       }
     } else if (file.type == Map) {
       fileStream << "#Cities" << DELIMITER_OUT << problem.Dimension << "\n";
-      for (int i{0}; i < problem.GetNumRoots(); ++i) {
-        for(Node<R> &node : this->trees[i].Leaves) {
-          fileStream << node.Position / problem.Env.ScaleFactor << "\n";
-        }
+      for(Node<R>* &node : this->allNodes) {
+        fileStream << node->Position / problem.Env.ScaleFactor << "\n";
       }
     } else {
       throw std::string("Unimplemented file type!");
