@@ -134,7 +134,7 @@ void Solver<Point2DDubins>::saveTrees(const FileStruct file) {
       fileStream << "#Trees" << DELIMITER_OUT << problem.Dimension << "\n";
       for (int i{0}; i < this->trees.size(); ++i) {
         for (Node<Point2DDubins> &node : this->trees[i].Leaves) {
-          if (node.DistanceToRoot != 0) {
+          if (!node.IsRoot()) {
             opendubins::State finishDub{node.Position[0], node.Position[1], node.Position.GetAngle()};
             opendubins::State startDub{node.Closest->Position[0], node.Closest->Position[1], node.Closest->Position.GetAngle()};
             opendubins::Dubins pathFromClosest{startDub, finishDub, this->problem.DubinsRadius};
@@ -145,11 +145,11 @@ void Solver<Point2DDubins>::saveTrees(const FileStruct file) {
             double parts{length / this->problem.CollisionDist};
             for (int index{1}; index < parts; ++index) {
               actPoint = Point2DDubins(pathFromClosest.getState(index * this->problem.CollisionDist));
-              fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << DELIMITER_OUT << node.Root->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
+              fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << DELIMITER_OUT << node.SourceTree->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
               lastPoint = actPoint;
             }
             actPoint = Point2DDubins(finishDub);
-            fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << DELIMITER_OUT << node.Root->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
+            fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << DELIMITER_OUT << node.SourceTree->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
           }
         }
       }

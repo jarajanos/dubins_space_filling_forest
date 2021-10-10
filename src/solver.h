@@ -101,7 +101,7 @@ void Solver<R>::getAllPaths() {
         bool reversed1{false};
         bool reversed2{false};
         plan1 = holder1.Plan;
-        if (holder1.Node1->Root->Root->ID == id1) {
+        if (holder1.Node1->SourceTree->Root->ID == id1) {
           node1 = holder1.Node1;
         } else {
           if (problem.Dimension == D2Dubins) {
@@ -113,7 +113,7 @@ void Solver<R>::getAllPaths() {
         }
 
         plan2 = holder2.Plan;
-        if (holder2.Node1->Root->Root->ID == id2) {
+        if (holder2.Node1->SourceTree->Root->ID == id2) {
           node2 = holder2.Node1;
         } else {
           if (problem.Dimension == D2Dubins) {
@@ -239,7 +239,7 @@ void Solver<R>::saveTrees(const FileStruct file) {
 
       for (int i{0}; i < this->trees.size(); ++i) {
         for (Node<R> &node : this->trees[i].Leaves) {
-          if (node.DistanceToRoot != 0) {
+          if (!node.IsRoot()) {
             fileStream << "l" << DELIMITER_OUT << node.ID + 1 << DELIMITER_OUT << node.Closest->ID + 1 << "\n";
           }
         }
@@ -248,8 +248,8 @@ void Solver<R>::saveTrees(const FileStruct file) {
       fileStream << "#Trees" << DELIMITER_OUT << problem.Dimension << "\n";
       for (int i{0}; i < this->trees.size(); ++i) {
         for (Node<R> &node : this->trees[i].Leaves) {
-          if (node.DistanceToRoot != 0) {
-            fileStream << node.Position / problem.Env.ScaleFactor << DELIMITER_OUT << node.Closest->Position / problem.Env.ScaleFactor << DELIMITER_OUT << node.Root->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
+          if (!node.IsRoot()) {
+            fileStream << node.Position / problem.Env.ScaleFactor << DELIMITER_OUT << node.Closest->Position / problem.Env.ScaleFactor << DELIMITER_OUT << node.SourceTree->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
           }
         }
       }

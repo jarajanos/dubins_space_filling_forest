@@ -163,7 +163,7 @@ struct DistanceHolder {
   DistanceHolder() : Node1{NULL}, Node2{NULL}, Distance{std::numeric_limits<double>::max()} {
   }
 
-  DistanceHolder(R *first, R *second) : Node1{first}, Node2{second} {
+  DistanceHolder(R *first, R *second, bool computeDistance=false) : Node1{first}, Node2{second} {
     if (*first < *second) {
       Node1 = first;
       Node2 = second;
@@ -171,7 +171,9 @@ struct DistanceHolder {
       Node1 = second;
       Node2 = first;
     }
-    Distance = first->DistanceToRoot + second->DistanceToRoot + first->Position.Distance(second->Position);
+    if (computeDistance) {
+      this->UpdateDistance();
+    }
   }
 
   DistanceHolder(R *first, R *second, double dist) : Distance{dist} {
@@ -208,7 +210,7 @@ struct DistanceHolder {
   }
 
   void UpdateDistance() {
-    Distance = Node1->DistanceToRoot + Node2->DistanceToRoot + Node1->Position.Distance(Node2->Position);
+    Distance = Node1->DistanceToRoot() + Node2->DistanceToRoot() + Node1->Position.Distance(Node2->Position);
   }
 };
 

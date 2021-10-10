@@ -29,14 +29,13 @@ class NodeBase {
     int ID;
     R Position;
 
-    Tree<Node<R>> *Root;
+    Tree<Node<R>> *SourceTree;
     Node<R> *Closest;
     std::deque<Node<R> *> Children;
-    double DistanceToRoot;
     double DistanceToClosest;
 
-    NodeBase(R position, Tree<Node<R>> *root, Node<R> *closest, double distanceToClosest, double distanceToRoot, unsigned int iteration) : Position{position},
-      Root{root}, Closest{closest}, DistanceToClosest{distanceToClosest}, DistanceToRoot{distanceToRoot}, generation{iteration} {
+    NodeBase(R position, Tree<Node<R>> *root, Node<R> *closest, double distanceToClosest, unsigned int iteration) : Position{position},
+      SourceTree{root}, Closest{closest}, DistanceToClosest{distanceToClosest}, generation{iteration} {
         ID = globID++;
       }
 
@@ -51,7 +50,18 @@ class NodeBase {
     }
 
     bool IsRoot() const {
-      return this->Root->Root->ID == this->ID;
+      return this->SourceTree->Root->ID == this->ID;
+    }
+
+    double DistanceToRoot() {
+      Node<R> *previous{this->Closest};
+      double distance{this->DistanceToClosest};
+      while (previous != nullptr) {
+        distance += previous->DistanceToClosest;
+        previous = previous->Closest;
+      }
+
+      return distance;
     }
   private:
     inline static int globID = 0;

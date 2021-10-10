@@ -43,7 +43,7 @@ template<class R>
 LazyTSP<R>::LazyTSP(Problem<R> &problem) : Solver<R>(problem) {
   // create adjacency matrix
   for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
-    Node<R> &node{rootNodes.emplace_back(this->problem.Roots[i], nullptr, nullptr, 0, 0, 0)};
+    Node<R> &node{rootNodes.emplace_back(this->problem.Roots[i], nullptr, nullptr, 0, 0)};
     this->allNodes.push_back(&node);
   }
   for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
@@ -156,7 +156,7 @@ void LazyTSP<R>::runRRT(DistanceHolder<Node<R>> *edge, int &iterations) {
   Tree<Node<R>> *rrtTree{new Tree<Node<R>>};
   treesToDel.push_back(rrtTree);
   
-  Node<R> &start{rrtTree->Leaves.emplace_back(edge->Node1->Position, rrtTree, nullptr, 0, 0, 0)};
+  Node<R> &start{rrtTree->Leaves.emplace_back(edge->Node1->Position, rrtTree, nullptr, 0, 0)};
   rrtTree->Root = &start;
   this->allNodes.push_back(&start);
   flann::Matrix<float> rootMat{new float[1 * PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
@@ -193,7 +193,7 @@ void LazyTSP<R>::runRRT(DistanceHolder<Node<R>> *edge, int &iterations) {
 
     // rrt star
     if (this->problem.Optimize) {
-      double bestDist{nearest->Position.Distance(newPoint) + nearest->DistanceToRoot};
+      double bestDist{nearest->Position.Distance(newPoint) + nearest->DistanceToRoot()};
       double krrt{2 * M_E * log10(rrtTree->Leaves.size() + 1)};
       indices.clear();
       dists.clear();
@@ -207,21 +207,21 @@ void LazyTSP<R>::runRRT(DistanceHolder<Node<R>> *edge, int &iterations) {
       std::vector<int> &indRow{indices[0]};
       for (int &ind : indRow) {
         Node<R> &neighbor{rrtTree->Leaves[ind]};
-        double neighDist{neighbor.Position.Distance(newPoint) + neighbor.DistanceToRoot};
+        double neighDist{neighbor.Position.Distance(newPoint) + neighbor.DistanceToRoot()};
         if (neighDist < bestDist - SFF_TOLERANCE && this->isPathFree(neighbor.Position, newPoint)) {
           bestDist = neighDist;
           nearest = &neighbor;
         }
       }
 
-      newNode = &(rrtTree->Leaves.emplace_back(newPoint, rrtTree, nearest, nearest->Position.Distance(newPoint), bestDist, iter));
+      newNode = &(rrtTree->Leaves.emplace_back(newPoint, rrtTree, nearest, nearest->Position.Distance(newPoint), iter));
       nearest->Children.push_back(newNode);
 
       for (int &ind : indRow) {
         Node<R> &neighbor{rrtTree->Leaves[ind]}; // offset goal node
         double newPointDist{neighbor.Position.Distance(newPoint)};
         double proposedDist{bestDist + newPointDist};
-        if (proposedDist < neighbor.DistanceToRoot - SFF_TOLERANCE && this->isPathFree(newPoint, neighbor.Position)) {
+        if (proposedDist < neighbor.DistanceToRoot() - SFF_TOLERANCE && this->isPathFree(newPoint, neighbor.Position)) {
           // rewire
           std::deque<Node<R> *> &children{neighbor.Closest->Children};
           auto iter{find(children.begin(), children.end(), &neighbor)};
@@ -231,14 +231,13 @@ void LazyTSP<R>::runRRT(DistanceHolder<Node<R>> *edge, int &iterations) {
           }
           neighbor.Closest->Children.erase(iter);
           neighbor.Closest = newNode;
-          neighbor.Root = newNode->Root;
+          neighbor.SourceTree = newNode->SourceTree;
           neighbor.DistanceToClosest = newPointDist;
-          neighbor.DistanceToRoot = proposedDist;
           newNode->Children.push_back(&neighbor);
         }
       }
     } else {
-      newNode = &(rrtTree->Leaves.emplace_back(newPoint, rrtTree, nearest, this->problem.SamplingDist, nearest->DistanceToRoot + this->problem.SamplingDist, iter));
+      newNode = &(rrtTree->Leaves.emplace_back(newPoint, rrtTree, nearest, this->problem.SamplingDist, iter));
       nearest->Children.push_back(newNode);
     }
     this->allNodes.push_back(newNode);
@@ -255,7 +254,7 @@ void LazyTSP<R>::runRRT(DistanceHolder<Node<R>> *edge, int &iterations) {
     double goalDistance{goal->Position.Distance(newNode->Position)};
     if (goalDistance < this->problem.DistTree && this->isPathFree(newNode->Position, goal->Position)) {
       solved = true;
-      edge->Distance = goalDistance + newNode->DistanceToRoot;
+      edge->Distance = goalDistance + newNode->DistanceToRoot();
       
       // fill-in plan
       edge->Plan.push_front(goal);

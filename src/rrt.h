@@ -41,7 +41,7 @@ template<class R>
 RapidExpTree<R>::RapidExpTree(Problem<R> &problem) : Solver<R>(problem) {
   for (int j{0}; j < this->problem.Roots.size(); ++j) {
     Tree<Node<R>> &tree{this->trees.emplace_back()};
-    Node<R> &node{tree.Leaves.emplace_back(this->problem.Roots[j], &tree, nullptr, 0, 0, 0)};
+    Node<R> &node{tree.Leaves.emplace_back(this->problem.Roots[j], &tree, nullptr, 0, 0)};
     tree.Root = &node;
     this->allNodes.push_back(&node);
     flann::Matrix<float> rootMat{new float[1 * PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
@@ -58,7 +58,7 @@ RapidExpTree<R>::RapidExpTree(Problem<R> &problem) : Solver<R>(problem) {
   if (this->problem.HasGoal) {
     Tree<Node<R>> &tree{this->trees.emplace_back()};
     flann::Matrix<float> rootMat{new float[1 * PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
-    goalNode = &(tree.Leaves.emplace_back(this->problem.Goal, &tree, nullptr, 0, 0, 0));
+    goalNode = &(tree.Leaves.emplace_back(this->problem.Goal, &tree, nullptr, 0, 0));
     this->allNodes.push_back(goalNode);
     tree.Root = goalNode;
     for (int i{0}; i < PROBLEM_DIMENSION; ++i) {
@@ -148,7 +148,7 @@ bool RapidExpTree<R>::getAndCheckNewPoint(Tree<Node<R>> *treeToExpand, R *newPoi
 
 template<class R>
 bool RapidExpTree<R>::optimizeConnections(Tree<Node<R>> *treeToExpand, R *newPoint, Node<R>* &parent, Node<R>* &newNode, const unsigned iteration) {
-  double bestDist{newPoint->Distance(parent->Position) + parent->DistanceToRoot};
+  double bestDist{newPoint->Distance(parent->Position) + parent->DistanceToRoot()};
   double krrt{2 * M_E * log10(this->allNodes.size())};
   std::vector<std::vector<int>> indices;
   std::vector<std::vector<float>> dists;
@@ -164,21 +164,21 @@ bool RapidExpTree<R>::optimizeConnections(Tree<Node<R>> *treeToExpand, R *newPoi
   std::vector<int> &indRow{indices[0]};
   for (int &ind : indRow) {
     Node<R> &neighbor{treeToExpand->Leaves[ind]};
-    double neighDist{neighbor.Position.Distance(*newPoint) + neighbor.DistanceToRoot};
+    double neighDist{neighbor.Position.Distance(*newPoint) + neighbor.DistanceToRoot()};
     if (neighDist < bestDist - SFF_TOLERANCE && this->isPathFree(neighbor.Position, *newPoint)) {
       bestDist = neighDist;
       parent = &neighbor;
     }
   }
 
-  newNode = &(treeToExpand->Leaves.emplace_back(*newPoint, parent->Root, parent, parent->Position.Distance(*newPoint), bestDist, iteration));
+  newNode = &(treeToExpand->Leaves.emplace_back(*newPoint, parent->SourceTree, parent, parent->Position.Distance(*newPoint), iteration));
   parent->Children.push_back(newNode);
 
   for (int &ind : indRow) {
     Node<R> &neighbor{treeToExpand->Leaves[ind]}; // offset goal node
     double newPointDist{newPoint->Distance(neighbor.Position)};
     double proposedDist{bestDist + newPointDist};
-    if (proposedDist < neighbor.DistanceToRoot - SFF_TOLERANCE && this->isPathFree(*newPoint, neighbor.Position)) {
+    if (proposedDist < neighbor.DistanceToRoot() - SFF_TOLERANCE && this->isPathFree(*newPoint, neighbor.Position)) {
       // rewire
       std::deque<Node<R> *> &children{neighbor.Closest->Children};
       auto iter{find(children.begin(), children.end(), &neighbor)};
@@ -188,9 +188,8 @@ bool RapidExpTree<R>::optimizeConnections(Tree<Node<R>> *treeToExpand, R *newPoi
       }
       neighbor.Closest->Children.erase(iter);
       neighbor.Closest = newNode;
-      neighbor.Root = newNode->Root;
+      neighbor.SourceTree = newNode->SourceTree;
       neighbor.DistanceToClosest = newPointDist;
-      neighbor.DistanceToRoot = proposedDist;
       newNode->Children.push_back(&neighbor);
     }
   }
@@ -223,7 +222,7 @@ bool RapidExpTree<R>::checkOtherRewire(Tree<Node<R>> *treeToExpand, R *newPoint,
       treeToExpand->Links.emplace_back(newNode, &neighbor);
 
       // transfer nodes to tree with lower index
-      Tree<Node<R>> *neighborExpanded{expandedTrees.Find(neighbor.Root)};
+      Tree<Node<R>> *neighborExpanded{expandedTrees.Find(neighbor.SourceTree)};
       Tree<Node<R>> *to{*treeToExpand < *neighborExpanded ? treeToExpand : neighborExpanded};
       Tree<Node<R>> *from{*treeToExpand < *neighborExpanded ? neighborExpanded : treeToExpand};
       expandedTrees.Union(from, to);
@@ -305,7 +304,7 @@ void RapidExpTree<R>::expandNode(Tree<Node<R>> *treeToExpand, bool &solved, cons
       return;
     }
   } else {
-    newNode = &(treeToExpand->Leaves.emplace_back(newPoint, parent->Root, parent, this->problem.SamplingDist, parent->DistanceToRoot + this->problem.SamplingDist, iteration));
+    newNode = &(treeToExpand->Leaves.emplace_back(newPoint, parent->SourceTree, parent, this->problem.SamplingDist, iteration));
     parent->Children.push_back(newNode);
   }
   this->allNodes.push_back(newNode);
@@ -348,7 +347,7 @@ void RapidExpTree<R>::getPaths() {
       plan.push_back(nodeToPush);
     }
 
-    this->neighboringMatrix(link.Node1->Root->Root->ID, link.Node2->Root->Root->ID) = link;
+    this->neighboringMatrix(link.Node1->SourceTree->Root->ID, link.Node2->SourceTree->Root->ID) = link;
   }
 }
 
