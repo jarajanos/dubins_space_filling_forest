@@ -347,6 +347,8 @@ void RapidExpTree<R>::getPaths() {
       plan.push_back(nodeToPush);
     }
 
+    link.UpdateDistance();
+
     this->neighboringMatrix(link.Node1->SourceTree->Root->ID, link.Node2->SourceTree->Root->ID) = link;
   }
 }

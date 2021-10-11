@@ -1,6 +1,6 @@
 ---
   problem:
-    solver: 'sff'
+    solver: 'rrt'
     optimize: true
     iterations: 100000
     dimension: '2D'
@@ -38,7 +38,7 @@
 
   algorithm:
     m2r-ratio: 10
-    bias: 0.95
+    bias: 0.05
     misses: 5
     dubins-radius: 20
   
