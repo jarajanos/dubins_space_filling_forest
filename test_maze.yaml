@@ -1,6 +1,6 @@
 ---
   problem:
-    solver: 'rrt'
+    solver: 'sff'
     optimize: true
     iterations: 100000
     dimension: '2D'
@@ -9,40 +9,36 @@
     standard: ' '
     name: '_'
 
-  TSP-solver:
-    path: '/home/jarajanos/Documents/obst_tsp/obst_tsp'
-    type: 'Concorde'
-
   robot:
     path: './models/robot_small.obj'
     type: 'obj'
 
   obstacles:
-    - path: './maps/dense.tri'
-      type: 'map'
+    - path: './maps/maze2.obj'
+      type: 'obj'
       position: '[0; 0]'
 
+  1cities:
+    - "[0;0]"
+   
   cities:
-    - "[100; 100]"
-  
-  aa:
-    - "[1500; 1600]"
-    - "[500; 1700]"
-    - "[1440; 330]"
+    - "[750; -845]"
 
-  goal: "[1500; 1600]"
+  1goal: "[-844; 850]"
+
+  goal: "[600; -900]"
 
   range:
     autodetect: true
 
   distances:
-    collision: 5
-    sampling: 80
+    collision: 10
+    sampling: 50
     tree: 100
 
   algorithm:
     m2r-ratio: 10
-    bias: 0.05
+    bias: 0.95
     misses: 5
     dubins-radius: 20
   
@@ -52,7 +48,7 @@
       type: 'map'
     params:
       path: 'output/params.csv'
-      id: 'rrt_2d'
+      id: 'sff_maze_bias'
     TSP:
       path: 'output/tsp.tsp'
     tree:

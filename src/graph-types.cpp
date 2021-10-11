@@ -48,7 +48,7 @@ FlannHolder<Node<Point2DDubins>>::~FlannHolder() {
 }
 
 void FlannHolder<Node<Point3D>>::CreateIndex(flann::Matrix<float> &matrix) {
-  Index = new flann::Index<D6Distance<float>>(matrix, flann::KDTreeIndexParams(FLANN_NUM_KD_TREES));
+  Index = new flann::Index<D6Distance<float>>(matrix, flann::LinearIndexParams());
   Index->buildIndex();
   this->PtrsToDel.push_back(matrix.ptr());
 }

@@ -422,15 +422,15 @@ void Point3D::PrintPosition(std::ostream &out) {
 }
 
 PointVector3D::PointVector3D() : Vector(3) {
-  this->coords[0] = 0;
-  this->coords[1] = 0;
-  this->coords[2] = 0;     
+  this->coords.get()[0] = 0;
+  this->coords.get()[1] = 0;
+  this->coords.get()[2] = 0;     
 }
 
 PointVector3D::PointVector3D(double x, double y, double z) : Vector(3) {
-  this->coords[0] = x;
-  this->coords[1] = y;
-  this->coords[2] = z;
+  this->coords.get()[0] = x;
+  this->coords.get()[1] = y;
+  this->coords.get()[2] = z;
 }
 
 PointVector3D::PointVector3D(Point3D p) : PointVector3D(p[0], p[1], p[2]) {
@@ -438,18 +438,18 @@ PointVector3D::PointVector3D(Point3D p) : PointVector3D(p[0], p[1], p[2]) {
 
 PointVector3D::PointVector3D(Point3D p1, Point3D p2) : Vector(3) {
   for (int i{0}; i < 3; ++i) {
-    this->coords[i] = p2[i] - p1[i];
+    this->coords.get()[i] = p2[i] - p1[i];
   }
 }
 
 PointVector2D::PointVector2D() : Vector(2) {
-  this->coords[0] = 0;
-  this->coords[1] = 0;
+  this->coords.get()[0] = 0;
+  this->coords.get()[1] = 0;
 }
 
 PointVector2D::PointVector2D(double x, double y) : Vector(2) {
-  this->coords[0] = x;
-  this->coords[1] = y;
+  this->coords.get()[0] = x;
+  this->coords.get()[1] = y;
 }
 
 PointVector2D::PointVector2D(Point2D p) : PointVector2D(p[0], p[1]) {
@@ -460,18 +460,18 @@ PointVector2D::PointVector2D(Point2DDubins p) : PointVector2D(p[0], p[1]) {
 
 PointVector2D::PointVector2D(Point2D p1, Point2D p2) : Vector(2) {
   for (int i{0}; i < 2; ++i) {
-    this->coords[i] = p2[i] - p1[i];
+    this->coords.get()[i] = p2[i] - p1[i];
   }
 }
 
 PointVector2D::PointVector2D(Point2DDubins p1, Point2DDubins p2) : Vector(2) {
   for (int i{0}; i < 2; ++i) {
-    this->coords[i] = p2[i] - p1[i];
+    this->coords.get()[i] = p2[i] - p1[i];
   }
 }
 
 PointVector3D PointVector2D::To3DVector() const {
-  return PointVector3D(this->coords[0], this->coords[1], 0);
+  return PointVector3D(this->coords.get()[0], this->coords.get()[1], 0);
 }
 
 // STREAM OUTPUTS

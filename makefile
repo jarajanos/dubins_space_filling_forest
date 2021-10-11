@@ -33,7 +33,7 @@ debug: prep $(DBGEXE)
 $(DBGEXE): $(DBGOBJS)
 	$(CXX) $(DBGFLAGS) $(INCLUDE) -o $(DBGEXE) $^ $(LIBPATH) $(LIBS)
 
-$(OBJDIR)/$(DBGDIR)/%.o: src/%.cpp
+$(OBJDIR)/$(DBGDIR)/%.o: src/%.cpp src/%.h
 	$(CXX) $(DBGFLAGS) $(INCLUDE) -c $< -o $@
 
 ############ RELEASE ###############
@@ -42,12 +42,12 @@ release: prep $(RELEXE)
 $(RELEXE): $(RELOBJS)
 	$(CXX) $(RELFLAGS) $(INCLUDE) -o $(RELEXE) $^ $(LIBPATH) $(LIBS)
 
-$(OBJDIR)/$(RELDIR)/%.o: src/%.cpp
+$(OBJDIR)/$(RELDIR)/%.o: src/%.cpp src/%.h
 	$(CXX) $(RELFLAGS) $(INCLUDE) -c $< -o $@
 
 ############# COMMON ##############	
 prep:
-	@echo "Creating directories..."
+	@echo "Checking directories..."
 	@mkdir -p $(OBJDIR)
 	@mkdir -p $(OBJDIR)/$(DBGDIR)
 	@mkdir -p $(OBJDIR)/$(RELDIR)

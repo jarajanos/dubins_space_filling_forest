@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
     Problem<Point2DDubins> problem;
     problem.Repetition = repetition;
     problem.Dimension = D2Dubins;
-    SolveProblem(config, problem);
+    //SolveProblem(config, problem);
   } else if (dim == "3D") {
     Problem<Point3D> problem;
     problem.Repetition = repetition;

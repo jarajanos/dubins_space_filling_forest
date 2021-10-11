@@ -28,14 +28,13 @@ class NodeBase {
   public:
     int ID;
     R Position;
-
-    Tree<Node<R>> *SourceTree;
     Node<R> *Closest;
+    Tree<Node<R>> *SourceTree;
     std::deque<Node<R> *> Children;
-    double DistanceToClosest;
+    virtual double DistanceToRoot() = 0;
 
-    NodeBase(R position, Tree<Node<R>> *root, Node<R> *closest, double distanceToClosest, unsigned int iteration) : Position{position},
-      SourceTree{root}, Closest{closest}, DistanceToClosest{distanceToClosest}, generation{iteration} {
+    NodeBase(R position, Tree<Node<R>> *root, Node<R> *closest, unsigned int iteration) : Position{position}, SourceTree{root}, 
+      Closest{closest}, generation{iteration} {
         ID = globID++;
       }
 
@@ -53,16 +52,6 @@ class NodeBase {
       return this->SourceTree->Root->ID == this->ID;
     }
 
-    double DistanceToRoot() {
-      Node<R> *previous{this->Closest};
-      double distance{this->DistanceToClosest};
-      while (previous != nullptr) {
-        distance += previous->DistanceToClosest;
-        previous = previous->Closest;
-      }
-
-      return distance;
-    }
   private:
     inline static int globID = 0;
     unsigned int generation;
@@ -72,14 +61,46 @@ class NodeBase {
 template<class R>
 class Node : public NodeBase<R> {
   using NodeBase<R>::NodeBase;
+  public:
+    double DistanceToClosest;
+
+    Node(R position, Tree<Node<R>> *root, Node<R> *closest, double distanceToClosest, unsigned int iteration) : NodeBase<R>(position, root, closest, iteration),
+      DistanceToClosest{distanceToClosest} {
+      }
+
+    double DistanceToRoot() override {
+      Node<R> *previous{this->Closest};
+      double distance{this->DistanceToClosest};
+      while (previous != nullptr) {
+        distance += previous->DistanceToClosest;
+        previous = previous->Closest;
+      }
+
+      return distance;
+    }
 };
 
 template<>
 class Node<Point2DDubins> : public NodeBase<Point2DDubins> {
   using NodeBase<Point2DDubins>::NodeBase;
   public:
-    // opendubins::Dubins PathToClosest;
-    // opendubins::Dubins PathFromClosest;
+    // TODO: CHANGE!!! more sampling angles, 
+   double DistanceToClosest;
+
+    Node(Point2DDubins position, Tree<Node<Point2DDubins>> *root, Node<Point2DDubins> *closest, double distanceToClosest, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration),
+      DistanceToClosest{distanceToClosest} {
+      }
+
+    double DistanceToRoot() override {
+      Node<Point2DDubins> *previous{this->Closest};
+      double distance{this->DistanceToClosest};
+      while (previous != nullptr) {
+        distance += previous->DistanceToClosest;
+        previous = previous->Closest;
+      }
+
+      return distance;
+    }
 };
 
 template<>

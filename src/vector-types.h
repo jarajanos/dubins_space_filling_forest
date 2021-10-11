@@ -15,12 +15,13 @@
 
 #include <math.h>
 #include <cassert>
+#include <memory>
 
 class Vector {
  public:
   Vector(int capacity);
-  virtual ~Vector();
-
+  Vector(const Vector &v);
+  
   virtual double* GetRawCoords();
   double operator[](int i) const;
   virtual void Set(int pos, double val);
@@ -38,7 +39,7 @@ class Vector {
   virtual void Normalize();
  protected:
   int capacity;
-  double *coords;
+  std::shared_ptr<double> coords;
 };
 
 class Quaternion : public Vector {
