@@ -128,7 +128,8 @@ class FlannHolder<Node<Point2DDubins>> {
 template<>
 class FlannHolder<Node<Point3D>> {
   public:
-    flann::Index<D6Distance<float>> *Index;
+    //flann::Index<D6Distance<float>> *Index;
+    flann::Index<flann::L2_3D<float>> *Index;
     std::deque<float *> PtrsToDel;
 
     ~FlannHolder();

@@ -24,7 +24,7 @@
 #include "vector-types.h"
 #include "constants.h"
 
-#define PROBLEM_DIMENSION   static_cast<size_t>(this->problem.Dimension == D2 ? 2 : (this->problem.Dimension == D2Dubins ? 3 : 6))
+#define PROBLEM_DIMENSION   NumDimensions[this->problem.Dimension]
 
 #define MIN(X, Y) ((X < Y) ? (X) : (Y))
 #define MAX(X, Y) ((X > Y) ? (X) : (Y))
@@ -73,11 +73,13 @@ struct D6Distance {
 };
 
 enum Dimensions {
-  D2 = 1,
-  D2Dubins = 2,
-  D3 = 3,
-  D3Dubins = 4
+  D2 = 0,
+  D2Dubins = 1,
+  D3 = 2,
+  D3Dubins = 3
 };
+
+const static inline size_t NumDimensions[] = { 2, 3, 3, 6 };
 
 enum FileType {
   Map,
