@@ -10,7 +10,7 @@ OBJECTS := $(patsubst %.c,%.o, $(patsubst %.cpp,%.o,$(SOURCES)))
 
 INCLUDE := -I. -I./lib/rapid-2.01 -I./lib/ann/ann/include -I./lib/yaml-cpp/include -I./lib/gdip/gdip/include
 LIBPATH := -L./lib/ -L./lib/ann/ -L./lib/flann/ -L./lib/rapid-2.01 -L./lib/yaml-cpp/build -L./lib/gdip/gdip/lib
-LIBS := -lgmp -lRAPID -llz4 -lyaml-cpp -lGDIP
+LIBS := -lgmp -lRAPID -llz4 -lyaml-cpp -lopendubins_core
 
 CXXFLAGS := -std=c++17
 CXX := g++

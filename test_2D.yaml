@@ -1,7 +1,7 @@
 ---
   problem:
     solver: 'rrt'
-    optimize: false
+    optimize: true
     iterations: 100000
     dimension: '2D'
   
@@ -24,23 +24,25 @@
 
   cities:
     - "[100; 100]"
+  
+  aa:
     - "[1500; 1600]"
     - "[500; 1700]"
     - "[1440; 330]"
 
-  agoal: "[1500; 1600]"
+  goal: "[1500; 1600]"
 
   range:
     autodetect: true
 
   distances:
     collision: 5
-    sampling: 80
-    tree: 100
+    sampling: 20
+    tree: 20
 
   algorithm:
     m2r-ratio: 10
-    bias: 0
+    bias: 0.95
     misses: 5
     dubins-radius: 20
   
