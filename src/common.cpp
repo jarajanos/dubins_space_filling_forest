@@ -11,47 +11,85 @@
 
 #include "common.h"
 
-// NON-SYMMETRIC variant of distance matrix for Dubins problem
+// Distance matrix for Dubins problem = 4D matrix considering inlet/outlet angles
 template<>
 class DistanceMatrix<DistanceHolder<Node<Point2DDubins>>> {
   public:
-    DistanceMatrix(const int size) {
-      holder.resize(size * size);
-      this->size = size;
+    DistanceMatrix(const int size, const int angleResolution) {
+      refMatrix.resize(size);
+      for (int i{0}; i < size; ++i) {
+        refMatrix[i].resize(size);
+        for (int j{0}; j < size; ++j) {
+          refMatrix[i][j].resize(angleResolution);
+          for (int k{0}; k < size; ++k) {
+            refMatrix[i][j][k].resize(angleResolution);
+          }
+        }
+      }
+
+      this->angleResolution = angleResolution;
     }
 
-    DistanceHolder<Node<Point2DDubins>>& operator()(int i, int j) {
-      return holder[i * size + j];
+    DistanceHolder<Node<Point2DDubins>>& operator()(int id1, int id2, int angleId1, int angleId2) {
+      return holder[refMatrix[id1][id2][angleId1][angleId2]];
     }
 
-    const bool Exists(int i, int j) {
-      return this->operator()(i, j).Exists();
+    const bool Exists(int id1, int id2, int angleId1, int angleId2) {
+      return this->operator()(id1, id2, angleId1, angleId2).Exists();
+    }
+
+    int AddLink(DistanceHolder<Node<Point2DDubins>> &link) {
+      holder.push_back(std::move(link));
+      return static_cast<int>(holder.size() - 1);
     }
 
   private:
     std::deque<DistanceHolder<Node<Point2DDubins>>> holder;
-    int size;
+    std::deque<std::deque<std::deque<std::deque<int>>>> refMatrix;
+    int angleResolution;
+
+    const int oppositeAngleID(const int angleID) {
+      return (angleID + angleResolution / 2) % angleResolution;
+    }
 };
 
 template<>
 class DistanceMatrix<std::deque<DistanceHolder<Node<Point2DDubins>>>> {
   public:
-    DistanceMatrix(const int size) {
-      holder.resize(size * size);
-      this->size = size;
+    DistanceMatrix(const int size, const int angleResolution) {
+      refMatrix.resize(size);
+      for (int i{0}; i < size; ++i) {
+        refMatrix[i].resize(size);
+        for (int j{0}; j < size; ++j) {
+          refMatrix[i][j].resize(angleResolution);
+          for (int k{0}; k < size; ++k) {
+            refMatrix[i][j][k].resize(angleResolution);
+          }
+        }
+      }
+
+      this->angleResolution = angleResolution;
     }
 
-    std::deque<DistanceHolder<Node<Point2DDubins>>>& operator()(int i, int j) {
-      return holder[i * size + j];
+    std::deque<DistanceHolder<Node<Point2DDubins>>> operator()(int id1, int id2, int angleId1, int angleId2) {
+      std::deque<DistanceHolder<Node<Point2DDubins>>> retVal;
+      std::deque<int> &references{refMatrix[id1][id2][angleId1][angleId2]};
+
+      for (auto &ind : references) {
+        retVal.emplace_back(holder[ind]);
+      }
+      return retVal;
     }
 
-    const bool Exists(int i, int j) {
-      return !this->operator()(i, j).empty();
+    const bool Exists(int id1, int id2, int angleId1, int angleId2) {
+      return !this->operator()(id1, id2, angleId1, angleId2).empty();
     }
 
   private:
-    std::deque<std::deque<DistanceHolder<Node<Point2DDubins>>>> holder;
+    std::deque<DistanceHolder<Node<Point2DDubins>>> holder;
+    std::deque<std::deque<std::deque<std::deque<std::deque<int>>>>> refMatrix;
     int size;
+    int angleResolution;
 };
 
 void StopWatch::Start() {

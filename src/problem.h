@@ -40,6 +40,7 @@ struct Problem {
   int MaxIterations;
   double PriorityBias{0};
   int MaxMisses{DEFAULT_THRES_MISS};
+  int DubinsResolution;
   
   SaveOptions SaveOpt{None};
   std::map<SaveOptions, FileStruct> FileNames;

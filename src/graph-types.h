@@ -84,23 +84,64 @@ template<>
 class Node<Point2DDubins> : public NodeBase<Point2DDubins> {
   using NodeBase<Point2DDubins>::NodeBase;
   public:
-    // TODO: CHANGE!!! more sampling angles, 
-   double DistanceToClosest;
+    std::deque<double> DistanceToClosest;
+    std::deque<int> ExpandedAngles;
 
-    Node(Point2DDubins position, Tree<Node<Point2DDubins>> *root, Node<Point2DDubins> *closest, double distanceToClosest, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration),
-      DistanceToClosest{distanceToClosest} {
-      }
+    Node(Point2DDubins position, Tree<Node<Point2DDubins>> *root, Node<Point2DDubins> *closest, double distanceToClosest, const std::deque<int> &expandedAngles, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration) {
+      this->DistanceToClosest = std::deque<double>(1, distanceToClosest);
+      this->ExpandedAngles = std::deque<int>(expandedAngles);
+    }
+
+    // special constructor for root
+    Node(Point2DDubins position, Tree<Node<Point2DDubins>> *root, Node<Point2DDubins> *closest, double distanceToClosest, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration) {
+      this->DistanceToClosest = std::deque<double>(1, distanceToClosest);
+    }
+
+    // special constructor for root's ancestors
+    Node(Point2DDubins position, Tree<Node<Point2DDubins>> *root, Node<Point2DDubins> *closest, std::deque<double> &distanceToClosest, std::deque<int> &expandedAngles, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration) {
+      this->DistanceToClosest = std::move(distanceToClosest);
+      isRootChild = true;
+      this->ExpandedAngles = std::move(expandedAngles);
+    }
 
     double DistanceToRoot() override {
-      Node<Point2DDubins> *previous{this->Closest};
-      double distance{this->DistanceToClosest};
+      Node<Point2DDubins> *previous{this};
+      double distance{0};
       while (previous != nullptr) {
-        distance += previous->DistanceToClosest;
+        if (!previous->isRootChild) {
+          distance += previous->DistanceToClosest[0];
+        } else {
+          double min{std::numeric_limits<double>::max()};
+          for (auto &item : DistanceToClosest) {
+            if (item < min) {
+              min = item;
+            }
+          }
+          distance += min;
+        }
         previous = previous->Closest;
       }
 
       return distance;
     }
+
+    double DistanceToRoot(const int angleID) {
+      Node<Point2DDubins> *previous{this};
+      double distance{0};
+      while (previous != nullptr) {
+        if (!previous->isRootChild) {
+          distance += previous->DistanceToClosest[0];
+        } else {
+          distance += previous->DistanceToClosest[angleID];
+        }
+        previous = previous->Closest;
+      }
+
+      return distance;
+    }
+
+  private:
+    bool isRootChild{false};
 };
 
 template<>

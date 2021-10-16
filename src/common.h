@@ -160,6 +160,7 @@ struct DistanceHolder {
   R *Node1;
   R *Node2;
   double Distance;
+  bool IsValid{false};
   std::deque<R *> Plan;
 
   DistanceHolder() : Node1{NULL}, Node2{NULL}, Distance{std::numeric_limits<double>::max()} {
