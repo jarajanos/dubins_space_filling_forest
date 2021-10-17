@@ -28,9 +28,9 @@ class LazyTSP : public Solver<R> {
     int numTrees;
     inline static std::string resultDelimiter = " , ";
     std::deque<Node<R>> rootNodes;
-    std::deque<Tree<Node<R>> *> treesToDel;
+    std::deque<Tree<R> *> treesToDel;
     
-    void runRRT(DistanceHolder<Node<R>> *edge, int &iterations);
+    void runRRT(DistanceHolder<R> *edge, int &iterations);
     void processResults(std::string &line, std::deque<std::tuple<int,int>> &edgePairs, double &pathLength);
 
     void getPaths() override;
@@ -51,7 +51,7 @@ LazyTSP<R>::LazyTSP(Problem<R> &problem) : Solver<R>(problem) {
       if (this->neighboringMatrix(i, j).Exists()) {
         continue;
       }
-      this->neighboringMatrix(i, j) = DistanceHolder<Node<R>>(&(rootNodes[i]), &(rootNodes[j]), rootNodes[i].Position.Distance(rootNodes[j].Position));
+      this->neighboringMatrix(i, j) = DistanceHolder<R>(&(rootNodes[i]), &(rootNodes[j]), rootNodes[i].Position.Distance(rootNodes[j].Position));
     }
   }
 }
@@ -121,7 +121,7 @@ void LazyTSP<R>::Solve() {
     for (auto &pair : selectedEdges) {
       int first, second;
       std::tie(first, second) = pair;
-      DistanceHolder<Node<R>> &edge{this->neighboringMatrix(first, second)};
+      DistanceHolder<R> &edge{this->neighboringMatrix(first, second)};
       if (edge.Plan.empty()) {
         runRRT(&edge, iter);
       } 
@@ -151,9 +151,9 @@ void LazyTSP<R>::getPaths() {
 }
 
 template <class R>
-void LazyTSP<R>::runRRT(DistanceHolder<Node<R>> *edge, int &iterations) {
+void LazyTSP<R>::runRRT(DistanceHolder<R> *edge, int &iterations) {
   Node<R> *goal{edge->Node2};
-  Tree<Node<R>> *rrtTree{new Tree<Node<R>>};
+  Tree<R> *rrtTree{new Tree<R>};
   treesToDel.push_back(rrtTree);
   
   Node<R> &start{rrtTree->Leaves.emplace_back(edge->Node1->Position, rrtTree, nullptr, 0, 0)};
@@ -257,12 +257,12 @@ void LazyTSP<R>::runRRT(DistanceHolder<Node<R>> *edge, int &iterations) {
       edge->Distance = goalDistance + newNode->DistanceToRoot();
       
       // fill-in plan
-      edge->Plan.push_front(goal);
+      edge->Plan.push_front(goal->Position);
       Node<R> *nodeToPush{newNode};
-      edge->Plan.push_front(nodeToPush);
+      edge->Plan.push_front(nodeToPush->Position);
       while (!nodeToPush->IsRoot()) {
         nodeToPush = nodeToPush->Closest;
-        edge->Plan.push_front(nodeToPush);
+        edge->Plan.push_front(nodeToPush->Position);
       }
     }
   }
@@ -337,34 +337,34 @@ void LazyTSP<R>::savePaths(const FileStruct file, const std::deque<std::tuple<in
   if (fileStream.is_open()) {
     int numRoots{this->problem.GetNumRoots()};
     if (file.type == Obj) {
-      fileStream << "o Paths\n";
-      for (int i{0}; i < this->allNodes.size(); ++i) {
-        R temp{this->allNodes[i]->Position / this->problem.Env.ScaleFactor};
-        fileStream << "v" << DELIMITER_OUT;
-        temp.PrintPosition(fileStream);
-        fileStream << "\n";
-      }
+      // fileStream << "o Paths\n";
+      // for (int i{0}; i < this->allNodes.size(); ++i) {
+      //   R temp{this->allNodes[i]->Position / this->problem.Env.ScaleFactor};
+      //   fileStream << "v" << DELIMITER_OUT;
+      //   temp.PrintPosition(fileStream);
+      //   fileStream << "\n";
+      // }
       
-      for (auto &pair : selectedPaths) {
-        int first, second;
-        std::tie(first, second) = pair;
-        DistanceHolder<Node<R>> &holder{this->neighboringMatrix(first, second)};
+      // for (auto &pair : selectedPaths) {
+      //   int first, second;
+      //   std::tie(first, second) = pair;
+      //   DistanceHolder<R> &holder{this->neighboringMatrix(first, second)};
 
-        std::deque<Node<R> *> &plan{holder.Plan};
-        for (int k{0}; k < plan.size() - 1; ++k) {
-          fileStream << "l" << DELIMITER_OUT << plan[k]->ID + 1 << DELIMITER_OUT << plan[k+1]->ID + 1 << "\n";
-        }
-      }
+      //   std::deque<R> &plan{holder.Plan};
+      //   for (int k{0}; k < plan.size() - 1; ++k) {
+      //     fileStream << "l" << DELIMITER_OUT << plan[k]->ID + 1 << DELIMITER_OUT << plan[k+1]->ID + 1 << "\n";
+      //   }
+      // }
     } else if (file.type == Map) {
       fileStream << "#Paths" << DELIMITER_OUT << this->problem.Dimension << "\n";
       for (auto &pair : selectedPaths) {
         int first, second;
         std::tie(first, second) = pair;
-        DistanceHolder<Node<R>> &holder{this->neighboringMatrix(first, second)};
+        DistanceHolder<R> &holder{this->neighboringMatrix(first, second)};
 
-        std::deque<Node<R> *> &plan{holder.Plan};
+        std::deque<R> &plan{holder.Plan};
         for (int k{0}; k < plan.size() - 1; ++k) {
-          fileStream << plan[k]->Position / this->problem.Env.ScaleFactor << DELIMITER_OUT << plan[k+1]->Position / this->problem.Env.ScaleFactor << "\n";
+          fileStream << plan[k] / this->problem.Env.ScaleFactor << DELIMITER_OUT << plan[k+1] / this->problem.Env.ScaleFactor << "\n";
         }
         fileStream << "\n";
     }

@@ -35,6 +35,8 @@
 #define WARN(mess)   std::cerr << "[\033[1;33m WAR\033[0m ]  " << mess << "\n"
 
 struct FileStruct;
+template<class R> struct DistanceHolder;
+template<class R> class Node;
 
 int ParseString(std::string &inp, std::string &outp1, std::string &outp2, std::string &delimiter);
 FileStruct PrefixFileName(const FileStruct &path, const std::string &insert);
@@ -129,9 +131,74 @@ struct Range {
   }
 };
 
+template<class R>
+struct DistanceHolder {
+  Node<R> *Node1;
+  Node<R> *Node2;
+  double Distance;
+  bool IsValid{false};
+  std::deque<R> Plan;
+
+  DistanceHolder() : Node1{NULL}, Node2{NULL}, Distance{std::numeric_limits<double>::max()} {
+  }
+
+  DistanceHolder(Node<R> *first, Node<R> *second, bool computeDistance=false) : Node1{first}, Node2{second} {
+    if (*first < *second) {
+      Node1 = first;
+      Node2 = second;
+    } else {
+      Node1 = second;
+      Node2 = first;
+    }
+    if (computeDistance) {
+      this->UpdateDistance();
+    }
+  }
+
+  DistanceHolder(Node<R> *first, Node<R> *second, double dist) : Distance{dist} {
+    if (*first < *second) {
+      Node1 = first;
+      Node2 = second;
+    } else {
+      Node1 = second;
+      Node2 = first;
+    }
+  }
+
+  DistanceHolder(Node<R> *first, Node<R> *second, double dist, std::deque<R> &plan) : Distance{dist}, Plan{plan} {
+    if (*first < *second) {
+      Node1 = first;
+      Node2 = second;
+    } else {
+      Node1 = second;
+      Node2 = first;
+      std::reverse(this->Plan.begin(), this->Plan.end());
+    }
+  }
+
+  friend bool operator<(const DistanceHolder<R> &l, const DistanceHolder<R> &r) {
+    return l.Distance < r.Distance;
+  }  
+
+  friend bool operator==(const DistanceHolder<R> &l, const DistanceHolder<R> &r) {
+    return (l.Node1 == r.Node1 && l.Node2 == r.Node2) || (l.Node1 == r.Node2 && l.Node2 == r.Node1);
+  }
+
+  const bool Exists() const {
+    return Node1 != nullptr;
+  }
+
+  void UpdateDistance(int angleId1 = -1, int angleId2 = -1) {
+    Distance = Node1->DistanceToRoot() + Node2->DistanceToRoot() + Node1->Position.Distance(Node2->Position);
+  }
+};
+
 template<class T>
 class DistanceMatrix {
   public:
+    DistanceMatrix() {
+    }
+
     DistanceMatrix(const int size) {
       holder.resize(size * (size+1) / 2);
       this->size = size;
@@ -155,66 +222,113 @@ class DistanceMatrix {
     int size;
 };
 
-template<class R>
-struct DistanceHolder {
-  R *Node1;
-  R *Node2;
-  double Distance;
-  bool IsValid{false};
-  std::deque<R *> Plan;
-
-  DistanceHolder() : Node1{NULL}, Node2{NULL}, Distance{std::numeric_limits<double>::max()} {
-  }
-
-  DistanceHolder(R *first, R *second, bool computeDistance=false) : Node1{first}, Node2{second} {
-    if (*first < *second) {
-      Node1 = first;
-      Node2 = second;
-    } else {
-      Node1 = second;
-      Node2 = first;
+// Distance matrix for Dubins problem = 4D matrix considering inlet/outlet angles
+template<>
+class DistanceMatrix<DistanceHolder<Point2DDubins>> {
+  public:
+    DistanceMatrix() {
     }
-    if (computeDistance) {
-      this->UpdateDistance();
+
+    DistanceMatrix(const int size, const int angleResolution) {
+      refMatrix.resize(size);
+      for (int i{0}; i < size; ++i) {
+        refMatrix[i].resize(size);
+        for (int j{0}; j < size; ++j) {
+          refMatrix[i][j].resize(angleResolution);
+          for (int k{0}; k < size; ++k) {
+            refMatrix[i][j][k].resize(angleResolution, -1);
+          }
+        }
+      }
+
+      this->angleResolution = angleResolution;
     }
-  }
 
-  DistanceHolder(R *first, R *second, double dist) : Distance{dist} {
-    if (*first < *second) {
-      Node1 = first;
-      Node2 = second;
-    } else {
-      Node1 = second;
-      Node2 = first;
+    DistanceHolder<Point2DDubins>& operator()(int id1, int id2, int angleId1, int angleId2) {
+      return holder[refMatrix[id1][id2][angleId1][angleId2]];
     }
-  }
 
-  DistanceHolder(R *first, R *second, double dist, std::deque<R *> &plan) : Distance{dist}, Plan{plan} {
-    if (*first < *second) {
-      Node1 = first;
-      Node2 = second;
-    } else {
-      Node1 = second;
-      Node2 = first;
-      std::reverse(this->Plan.begin(), this->Plan.end());
+    const bool Exists(int id1, int id2, int angleId1, int angleId2) {
+      return this->operator()(id1, id2, angleId1, angleId2).Exists();
     }
-  }
 
-  friend bool operator<(const DistanceHolder<R> &l, const DistanceHolder<R> &r) {
-    return l.Distance < r.Distance;
-  }  
+    void AddLink(DistanceHolder<Point2DDubins> &link, int id1, int id2, int angleId1, int angleId2, bool secondIsInlet=false) {
+      holder.push_back(std::move(link));
+      int holderId{static_cast<int>(holder.size() - 1)};
 
-  friend bool operator==(const DistanceHolder<R> &l, const DistanceHolder<R> &r) {
-    return l.Node1 == r.Node1 && l.Node2 == r.Node2;
-  }
+      if (!secondIsInlet) {
+        refMatrix[id1][id2][angleId1][OppositeAngleID(angleId2)] = holderId;
+        refMatrix[id2][id1][angleId2][OppositeAngleID(angleId1)] = holderId;
+      } else {
+        refMatrix[id1][id2][angleId1][angleId2] = holderId;
+        refMatrix[id2][id1][OppositeAngleID(angleId2)][OppositeAngleID(angleId1)] = holderId;
+      }
+      
+    }
 
-  const bool Exists() const {
-    return Node1 != nullptr;
-  }
+    std::deque<DistanceHolder<Point2DDubins>> &GetHolder() {
+      return holder;
+    }
 
-  void UpdateDistance() {
-    Distance = Node1->DistanceToRoot() + Node2->DistanceToRoot() + Node1->Position.Distance(Node2->Position);
-  }
+    const int OppositeAngleID(const int angleID) {
+      return (angleID + angleResolution / 2) % angleResolution;
+    }
+
+  private:
+    std::deque<DistanceHolder<Point2DDubins>> holder;
+    std::deque<std::deque<std::deque<std::deque<int>>>> refMatrix;
+    int angleResolution;
+};
+
+template<>
+class DistanceMatrix<std::deque<DistanceHolder<Point2DDubins>>> {
+  public:
+    DistanceMatrix() {
+    }
+    
+    DistanceMatrix(const int size, const int angleResolution) {
+      refMatrix.resize(size);
+      for (int i{0}; i < size; ++i) {
+        refMatrix[i].resize(size);
+        for (int j{0}; j < size; ++j) {
+          refMatrix[i][j].resize(angleResolution);
+          for (int k{0}; k < size; ++k) {
+            refMatrix[i][j][k].resize(angleResolution);
+          }
+        }
+      }
+
+      this->angleResolution = angleResolution;
+    }
+
+    std::deque<DistanceHolder<Point2DDubins>> &operator()(int id1, int id2, int angleId1, int angleId2) {
+      return refMatrix[id1][id2][angleId1][angleId2];
+    }
+
+    const bool Exists(int id1, int id2, int angleId1, int angleId2) {
+      return !this->operator()(id1, id2, angleId1, angleId2).empty();
+    }
+
+    void AddLink(DistanceHolder<Point2DDubins> &link, int id1, int id2, int angleId1, int angleId2, bool secondIsInlet=false) {
+      if (!secondIsInlet) {
+        // both trees' angles are considered as outlet angles -- inlet angles are the opposite ones
+        refMatrix[id1][id2][angleId1][OppositeAngleID(angleId2)].push_back(link);
+        refMatrix[id2][id1][angleId2][OppositeAngleID(angleId1)].push_back(link);
+      } else {
+        refMatrix[id1][id2][angleId1][angleId2].push_back(link);
+        refMatrix[id2][id1][OppositeAngleID(angleId2)][OppositeAngleID(angleId1)].push_back(link);
+      }
+      
+    }
+
+    const int OppositeAngleID(const int angleID) {
+      return (angleID + angleResolution / 2) % angleResolution;
+    }
+
+  private:
+    std::deque<std::deque<std::deque<std::deque<std::deque<DistanceHolder<Point2DDubins>>>>>> refMatrix;
+    int size;
+    int angleResolution;
 };
 
 template<class R>

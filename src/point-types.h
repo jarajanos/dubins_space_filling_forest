@@ -71,6 +71,7 @@ class Point2DDubins {
     friend Point2DDubins operator/(const Point2DDubins &p1, const double scale);    // scale position
     double Distance(const Point2DDubins &other) const;
     Point2DDubins GetStateInDistance(Point2DDubins &other, double dist) const;
+    Point2DDubins GetInvertedPoint();
     void FillRotationMatrix(double (&matrix)[3][3]) const;
     void PrintPosition(std::ostream &out);
   private:

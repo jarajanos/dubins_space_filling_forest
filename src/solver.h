@@ -34,17 +34,19 @@ class Solver {
     RandomGenerator<R> rnd;
 
     std::deque<Node<R> *> allNodes;
-    std::deque<Tree<Node<R>>> trees;
-    DistanceMatrix<DistanceHolder<Node<R>>> neighboringMatrix;
-    std::deque<Tree<Node<R>> *> connectedTrees;
+    std::deque<Tree<R>> trees;
+    DistanceMatrix<DistanceHolder<R>> neighboringMatrix;
+    std::deque<Tree<R> *> connectedTrees;
 
-    bool isPathFree(R &start, R &finish);
+    bool isPathFree(const R start, const R finish);
+
+    void initNeighboringMatrix();
 
     virtual void getPaths() = 0;
     virtual void getAllPaths();
     void checkPlan();
     void checkDistances(std::deque<Node<R> *> &plan, double distanceToCheck);
-    double computeDistance(std::deque<Node<R> *> &plan);
+    double computeDistance(std::deque<R> &plan);
 
     virtual void checkIterationSaves(const int iter);
     virtual void saveTrees(const FileStruct file);
@@ -55,18 +57,27 @@ class Solver {
 };
 
 template<class R>
-Solver<R>::Solver(Problem<R> &problem) : problem{problem}, rnd{problem.Env.Limits}, neighboringMatrix{problem.GetNumRoots()} {
+Solver<R>::Solver(Problem<R> &problem) : problem{problem}, rnd{problem.Env.Limits} {
+}
+
+template<class R>
+void Solver<R>::initNeighboringMatrix() {
+  this->neighboringMatrix = DistanceMatrix<DistanceHolder<R>>(problem.GetNumRoots());
 }
 
 template <class R>
-double Solver<R>::computeDistance(std::deque<Node<R> *> &plan) {
-  Node<R> *previous{nullptr};
+double Solver<R>::computeDistance(std::deque<R> &plan) {
+  R previous;
+  bool first{true};
   double distance{0};
-  for (Node<R> *node : plan) {
-    if (previous != nullptr) {
-      distance += previous->Position.Distance(node->Position);
+  for (R pos : plan) {
+    if (!first) {
+      distance += previous.Distance(pos);
+    } else {
+      first = false;
     }
-    previous = node;
+    
+    previous = pos;
   }
 
   return distance;
@@ -82,21 +93,21 @@ void Solver<R>::getAllPaths() {
       if (i == k || !this->neighboringMatrix.Exists(id1, id3)) {
         continue;
       }
-      DistanceHolder<Node<R>> &holder1{this->neighboringMatrix(id1, id3)};
+      DistanceHolder<R> &holder1{this->neighboringMatrix(id1, id3)};
       for (int j{0}; j < this->connectedTrees.size(); ++j) {
         int id2{connectedTrees[j]->Root->ID};
         if (i == j || !this->neighboringMatrix.Exists(id2, id3)) {
           continue;
         }
 
-        DistanceHolder<Node<R>> &link{this->neighboringMatrix(id1, id2)};
-        DistanceHolder<Node<R>> &holder2{this->neighboringMatrix(id3, id2)};
+        DistanceHolder<R> &link{this->neighboringMatrix(id1, id2)};
+        DistanceHolder<R> &holder2{this->neighboringMatrix(id3, id2)};
 
         Node<R> *node1;
         Node<R> *node2;
-        std::deque<Node<R> *> plan1;
-        std::deque<Node<R> *> plan2;
-        std::deque<Node<R> *> finalPlan;
+        std::deque<R> plan1;
+        std::deque<R> plan2;
+        std::deque<R> finalPlan;
 
         bool reversed1{false};
         bool reversed2{false};
@@ -124,7 +135,7 @@ void Solver<R>::getAllPaths() {
           reversed2 = true;
         }
 
-        Node<R> *last;
+        R last;
         while (!plan1.empty() && !plan2.empty() && plan1.back() == plan2.back()) {
           last = plan1.back();
           plan1.pop_back();
@@ -144,7 +155,7 @@ void Solver<R>::getAllPaths() {
 
         double distance{computeDistance(finalPlan)};
         if (distance < link.Distance - SFF_TOLERANCE) {     // for nonexisting connections always true (infinite distance at init)
-          this->neighboringMatrix(id1, id2) = DistanceHolder<Node<R>>(node1, node2, distance, finalPlan);
+          this->neighboringMatrix(id1, id2) = DistanceHolder<R>(node1, node2, distance, finalPlan);
         }
       }
     }
@@ -380,38 +391,50 @@ void Solver<R>::savePaths(const FileStruct file) {
     int numRoots{this->problem.GetNumRoots()};
     if (file.type == Obj) {
       fileStream << "o Paths\n";
-      for (int i{0}; i < this->allNodes.size(); ++i) {
-        R temp{this->allNodes[i]->Position / problem.Env.ScaleFactor};
-        fileStream << "v" << DELIMITER_OUT;
-        temp.PrintPosition(fileStream);
-        fileStream << "\n";
-      }
-      
       for (int i{0}; i < numRoots; ++i) {
         for (int j{i + 1}; j < numRoots; ++j) {
-          DistanceHolder<Node<R>> &holder{this->neighboringMatrix(i, j)};
+          DistanceHolder<R> &holder{this->neighboringMatrix(i, j)};
           if (holder.Node1 == NULL) {
             continue;
           }
 
-          std::deque<Node<R> *> &plan{holder.Plan};
-          for (int k{0}; k < plan.size() - 1; ++k) {
-            fileStream << "l" << DELIMITER_OUT << plan[k]->ID + 1 << DELIMITER_OUT << plan[k+1]->ID + 1 << "\n";
+          std::deque<R> &plan{holder.Plan};
+          for (int k{0}; k < plan.size(); ++k) {
+            R temp{plan[k] / problem.Env.ScaleFactor};
+            fileStream << "v" << DELIMITER_OUT;
+            temp.PrintPosition(fileStream);
+            fileStream << "\n";
           }
+        }
+      }
+      
+      uint32_t pointCounter{1};
+      for (int i{0}; i < numRoots; ++i) {
+        for (int j{i + 1}; j < numRoots; ++j) {
+          DistanceHolder<R> &holder{this->neighboringMatrix(i, j)};
+          if (holder.Node1 == NULL) {
+            continue;
+          }
+
+          std::deque<R> &plan{holder.Plan};
+          for (int k{0}; k < plan.size() - 1; ++k) {
+            fileStream << "l" << DELIMITER_OUT << pointCounter << DELIMITER_OUT << ++pointCounter << "\n";
+          }
+          ++pointCounter;
         }
       }
     } else if (file.type == Map) {
       fileStream << "#Paths" << DELIMITER_OUT << problem.Dimension << "\n";
       for (int i{0}; i < numRoots; ++i) {
         for (int j{i + 1}; j < numRoots; ++j) {
-          DistanceHolder<Node<R>> &holder{this->neighboringMatrix(i, j)};
+          DistanceHolder<R> &holder{this->neighboringMatrix(i, j)};
           if (holder.Node1 == NULL) {
             continue;
           }
 
-          std::deque<Node<R> *> &plan{holder.Plan};
+          std::deque<R> &plan{holder.Plan};
           for (int k{0}; k < plan.size() - 1; ++k) {
-            fileStream << plan[k]->Position / problem.Env.ScaleFactor << DELIMITER_OUT << plan[k+1]->Position / problem.Env.ScaleFactor << "\n";
+            fileStream << plan[k] / problem.Env.ScaleFactor << DELIMITER_OUT << plan[k+1] / problem.Env.ScaleFactor << "\n";
           }
           fileStream << "\n";
         }

@@ -29,11 +29,11 @@ class NodeBase {
     int ID;
     R Position;
     Node<R> *Closest;
-    Tree<Node<R>> *SourceTree;
+    Tree<R> *SourceTree;
     std::deque<Node<R> *> Children;
     virtual double DistanceToRoot() = 0;
 
-    NodeBase(R position, Tree<Node<R>> *root, Node<R> *closest, unsigned int iteration) : Position{position}, SourceTree{root}, 
+    NodeBase(R position, Tree<R> *root, Node<R> *closest, unsigned int iteration) : Position{position}, SourceTree{root}, 
       Closest{closest}, generation{iteration} {
         ID = globID++;
       }
@@ -64,7 +64,7 @@ class Node : public NodeBase<R> {
   public:
     double DistanceToClosest;
 
-    Node(R position, Tree<Node<R>> *root, Node<R> *closest, double distanceToClosest, unsigned int iteration) : NodeBase<R>(position, root, closest, iteration),
+    Node(R position, Tree<R> *root, Node<R> *closest, double distanceToClosest, unsigned int iteration) : NodeBase<R>(position, root, closest, iteration),
       DistanceToClosest{distanceToClosest} {
       }
 
@@ -87,18 +87,18 @@ class Node<Point2DDubins> : public NodeBase<Point2DDubins> {
     std::deque<double> DistanceToClosest;
     std::deque<int> ExpandedAngles;
 
-    Node(Point2DDubins position, Tree<Node<Point2DDubins>> *root, Node<Point2DDubins> *closest, double distanceToClosest, const std::deque<int> &expandedAngles, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration) {
+    Node(Point2DDubins position, Tree<Point2DDubins> *root, Node<Point2DDubins> *closest, double distanceToClosest, const std::deque<int> &expandedAngles, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration) {
       this->DistanceToClosest = std::deque<double>(1, distanceToClosest);
       this->ExpandedAngles = std::deque<int>(expandedAngles);
     }
 
     // special constructor for root
-    Node(Point2DDubins position, Tree<Node<Point2DDubins>> *root, Node<Point2DDubins> *closest, double distanceToClosest, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration) {
+    Node(Point2DDubins position, Tree<Point2DDubins> *root, Node<Point2DDubins> *closest, double distanceToClosest, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration) {
       this->DistanceToClosest = std::deque<double>(1, distanceToClosest);
     }
 
     // special constructor for root's ancestors
-    Node(Point2DDubins position, Tree<Node<Point2DDubins>> *root, Node<Point2DDubins> *closest, std::deque<double> &distanceToClosest, std::deque<int> &expandedAngles, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration) {
+    Node(Point2DDubins position, Tree<Point2DDubins> *root, Node<Point2DDubins> *closest, std::deque<double> &distanceToClosest, std::deque<int> &expandedAngles, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration) {
       this->DistanceToClosest = std::move(distanceToClosest);
       isRootChild = true;
       this->ExpandedAngles = std::move(expandedAngles);
@@ -181,14 +181,14 @@ class FlannHolder<Node<Point3D>> {
 template<class R>
 class Tree {
   public:
-    std::deque<R> Leaves;
-    FlannHolder<R> Flann;
-    R *Root;
+    std::deque<Node<R>> Leaves;
+    FlannHolder<Node<R>> Flann;
+    Node<R> *Root;
 
-    std::vector<Heap<R>> Frontiers;
+    std::vector<Heap<Node<R>>> Frontiers;
     std::deque<DistanceHolder<R>> Links;
 
-    void AddFrontier(R *reference) {
+    void AddFrontier(Node<R> *reference) {
       Frontiers.emplace_back(this->Leaves, reference);
     }
 

@@ -26,13 +26,19 @@ class SpaceForest : public Solver<R> {
     std::deque<Node<R>*> closed_list;
     Node<R> *goalNode{nullptr};
 
-    DistanceMatrix<std::deque<DistanceHolder<Node<R>>>> borders;
+    DistanceMatrix<std::deque<DistanceHolder<R>>> borders;
+
+    void initBorders();
+    void initNodeTypeSpecific(Node<R> &node);
 
     bool expandNode(Node<R> *expanded, bool &solved, const unsigned int iteration);
     bool getAndCheckNewPoint(Node<R> *expanded, R* newPoint);
     bool checkExpandedTree(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix);
     bool checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix, bool &solved);
+
     void optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>* &newNode, flann::Matrix<float> &matrix, int iteration);
+    void emplaceNewNode(Node<R> *expanded, R* newPoint, Node<R>* &newNode, int iteration);
+    void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance);
 
     int checkConnected();
     bool checkBorders(int id1, int id2);
@@ -42,10 +48,20 @@ class SpaceForest : public Solver<R> {
     void checkIterationSaves(const int iter) override;
 };
 
+template<> void SpaceForest<Point2DDubins>::initBorders();
+template<> void SpaceForest<Point2DDubins>::initNodeTypeSpecific(Node<Point2DDubins> &node);
+template<> bool SpaceForest<Point2DDubins>::expandNode(Node<Point2DDubins> *expanded, bool &solved, const unsigned int iteration);
+template<> bool SpaceForest<Point2DDubins>::checkOtherTrees(Node<Point2DDubins> *expanded, Point2DDubins* newPoint, flann::Matrix<float> &matrix, bool &solved);
+template<> void SpaceForest<Point2DDubins>::emplaceNewNode(Node<Point2DDubins> *expanded, Point2DDubins* newPoint, Node<Point2DDubins>* &newNode, int iteration);
+template<> void SpaceForest<Point2DDubins>::rewireNodes(Node<Point2DDubins> *newNode, Node<Point2DDubins> &neighbor, double newDistance);
+template<> bool SpaceForest<Point2DDubins>::checkBorders(int id1, int id2);
+template<> void SpaceForest<Point2DDubins>::getPaths();
+
 template<class R>
-SpaceForest<R>::SpaceForest(Problem<R> &problem) : Solver<R>(problem), borders{this->problem.GetNumRoots()} {
+SpaceForest<R>::SpaceForest(Problem<R> &problem) : Solver<R>(problem) {
+  initBorders();
   for (int j{0}; j < this->problem.Roots.size(); ++j) {
-    Tree<Node<R>> &tree{this->trees.emplace_back()};
+    Tree<R> &tree{this->trees.emplace_back()};
     Node<R> &node{tree.Leaves.emplace_back(this->problem.Roots[j], &tree, nullptr, 0, 0)};
     this->allNodes.push_back(&node);
     tree.Root = &node;
@@ -60,7 +76,7 @@ SpaceForest<R>::SpaceForest(Problem<R> &problem) : Solver<R>(problem), borders{t
 
   if (this->problem.PriorityBias != 0 && !this->problem.HasGoal) {
     for (int i{0}; i < this->trees.size(); ++i) {
-      Tree<Node<R>> &tree{this->trees[i]};
+      Tree<R> &tree{this->trees[i]};
       for (int j{0}; j < this->trees.size(); ++j) {
         if (i == j) {
           continue;
@@ -72,7 +88,7 @@ SpaceForest<R>::SpaceForest(Problem<R> &problem) : Solver<R>(problem), borders{t
 
   // add goal - it is not expanded
   if (this->problem.HasGoal) {
-    Tree<Node<R>> &tree{this->trees.emplace_back()};
+    Tree<R> &tree{this->trees.emplace_back()};
     Node<R> &node{tree.Leaves.emplace_back(this->problem.Goal, &tree, nullptr, 0, 0)};
     this->allNodes.push_back(&node);
     flann::Matrix<float> rootMat{new float[1 * PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
@@ -107,7 +123,7 @@ void SpaceForest<R>::Solve() {
   bool emptyFrontier{false};
   // iterate
   while (!solved && iter < this->problem.MaxIterations) {
-    Tree<Node<R>> *rndTree{nullptr};
+    Tree<R> *rndTree{nullptr};
     Heap<Node<R>> *prior{nullptr};
     int priorPos{-1};
     // get a random priority queue if applicable (priority bias is set and the open list is not empty)
@@ -226,7 +242,7 @@ bool SpaceForest<R>::expandNode(Node<R> *expanded, bool &solved, const unsigned 
   R newPoint;
   Node<R> *newNode; 
 
-  Tree<Node<R>> *expandedTree{expanded->SourceTree};
+  Tree<R> *expandedTree{expanded->SourceTree};
 
   // sample new point and check basic collisions with obstacles
   if (getAndCheckNewPoint(expanded, &newPoint)) {
@@ -278,7 +294,6 @@ bool SpaceForest<R>::expandNode(Node<R> *expanded, bool &solved, const unsigned 
   expandedTree->Flann.PtrsToDel.push_back(pointToAdd.ptr());
 
   if (solved) {
-    double distance{newPoint.Distance(this->problem.Goal)};
     this->borders(this->problem.GetNumRoots() - 1, expandedTree->Root->ID).emplace_back(newNode, goalNode);
   }
 
@@ -303,7 +318,7 @@ bool SpaceForest<R>::getAndCheckNewPoint(Node<R> *expanded, R* newPoint) {
 template<class R>
 bool SpaceForest<R>::checkExpandedTree(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix) {
   double parentDistance{expanded->Position.Distance(*newPoint)};
-  Tree<Node<R>> *expandedTree{expanded->SourceTree};
+  Tree<R> *expandedTree{expanded->SourceTree};
   int expandedRootID{expandedTree->Root->ID};
 
   //find nearest neighbors - perform radius search
@@ -337,7 +352,7 @@ bool SpaceForest<R>::checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matr
 
   double checkDist{FLANN_PREC_MULTIPLIER * this->problem.DistTree};
   for (int j{0}; j < this->trees.size(); ++j) {
-    Tree<Node<R>> &tree{this->trees[j]};
+    Tree<R> &tree{this->trees[j]};
     int neighbourRootID{tree.Root->ID};
     if (neighbourRootID == expandedRootID) {
       continue;
@@ -359,8 +374,8 @@ bool SpaceForest<R>::checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matr
         if (this->problem.HasGoal && neighbour->Position == this->problem.Goal) {
           solved = this->isPathFree(*newPoint, this->problem.Goal);  // when true, break the solve loop and after the creation of the new node, add it to the neighbouring matrix
         } else if (!this->problem.HasGoal) {   
-          std::deque<DistanceHolder<Node<R>>> &borderPoints{this->borders(neighbourRootID, expandedRootID)};
-          DistanceHolder<Node<R>> holder{neighbour, expanded};
+          std::deque<DistanceHolder<R>> &borderPoints{this->borders(neighbourRootID, expandedRootID)};
+          DistanceHolder<R> holder{neighbour, expanded};
           if (std::find(borderPoints.begin(), borderPoints.end(), holder) == borderPoints.end()) {  // is it necessary? maybe use sorted set?
             this->borders(neighbourRootID, expandedRootID).push_back(holder);
           }
@@ -395,7 +410,7 @@ void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>
     }
   }
 
-  newNode = &(expanded->SourceTree->Leaves.emplace_back(*newPoint, expanded->SourceTree, expanded, newPoint->Distance(expanded->Position), iteration));
+  emplaceNewNode(expanded, newPoint, newNode, iteration);
   expanded->Children.push_back(newNode);
 
   for (int &ind : indRow) {
@@ -404,18 +419,28 @@ void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>
     double proposedDist{bestDist + newPointDist};
     if (proposedDist < neighbor.DistanceToRoot() - SFF_TOLERANCE && this->isPathFree(*newPoint, neighbor.Position)) {
       // rewire
-      std::deque<Node<R> *> &children{neighbor.Closest->Children};
-      auto iter{std::find(children.begin(), children.end(), &neighbor)};
-      if (iter == children.end()) {
-        ERROR("Fatal error when rewiring SFF: Node not in children");
-        exit(1);
-      }
-      neighbor.Closest->Children.erase(iter);
-      neighbor.Closest = newNode;
-      neighbor.DistanceToClosest = newPointDist;
-      newNode->Children.push_back(&neighbor);
+      rewireNodes(newNode, neighbor, newPointDist);
     }
   }
+}
+
+template<class R>
+void SpaceForest<R>::emplaceNewNode(Node<R> *expanded, R* newPoint, Node<R>* &newNode, const int iteration) {
+  newNode = &(expanded->SourceTree->Leaves.emplace_back(*newPoint, expanded->SourceTree, expanded, newPoint->Distance(expanded->Position), iteration));
+}
+
+template<class R>
+void SpaceForest<R>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) {
+  std::deque<Node<R> *> &children{neighbor.Closest->Children};
+  auto iter{std::find(children.begin(), children.end(), &neighbor)};
+  if (iter == children.end()) {
+    ERROR("Fatal error when rewiring SFF: Node not in children");
+    exit(1);
+  }
+  neighbor.Closest->Children.erase(iter);
+  neighbor.Closest = newNode;
+  neighbor.DistanceToClosest = newDistance;
+  newNode->Children.push_back(&neighbor);
 }
 
 template<class R>
@@ -471,7 +496,7 @@ bool SpaceForest<R>::checkBorders(int id1, int id2) {
     return true;
   } else {
     while (!link.empty()) {
-      DistanceHolder<Node<R>> holder{link[0]};
+      DistanceHolder<R> holder{link[0]};
       if (this->isPathFree(holder.Node1->Position, holder.Node2->Position)) {
         link[0].IsValid = true;
         return true;
@@ -485,7 +510,6 @@ bool SpaceForest<R>::checkBorders(int id1, int id2) {
 
 template<class R>
 void SpaceForest<R>::getPaths() {
-  // TODO: override for Dubins, where the matrix is not symmetric
   // due to optimizations, the distance might have changed -> update it
   int numRoots{this->problem.GetNumRoots()};
   for (int i{0}; i < numRoots; ++i) {
@@ -494,8 +518,8 @@ void SpaceForest<R>::getPaths() {
         continue;
       }
 
-      std::deque<DistanceHolder<Node<R>>> &borderPoints{this->borders(i, j)};
-      for (DistanceHolder<Node<R>> &dist : borderPoints) {
+      std::deque<DistanceHolder<R>> &borderPoints{this->borders(i, j)};
+      for (DistanceHolder<R> &dist : borderPoints) {
         dist.UpdateDistance();
       }
       std::sort(borderPoints.begin(), borderPoints.end());
@@ -509,8 +533,8 @@ void SpaceForest<R>::getPaths() {
         continue;
       }
 
-      std::deque<DistanceHolder<Node<R>>> &borderPoints{this->borders(i, j)};
-      for (DistanceHolder<Node<R>> &dist : borderPoints) {
+      std::deque<DistanceHolder<R>> &borderPoints{this->borders(i, j)};
+      for (DistanceHolder<R> &dist : borderPoints) {
         if (dist.IsValid || this->isPathFree(dist.Node1->Position, dist.Node2->Position)) {
           this->neighboringMatrix(i, j) = dist;
           break;
@@ -521,22 +545,22 @@ void SpaceForest<R>::getPaths() {
         continue;
       }
 
-      DistanceHolder<Node<R>> &holder{this->neighboringMatrix(i, j)};
-      std::deque<Node<R> *> &plan{holder.Plan};
+      DistanceHolder<R> &holder{this->neighboringMatrix(i, j)};
+      std::deque<R> &plan{holder.Plan};
       // one tree
       Node<R> *nodeToPush{holder.Node1};
-      plan.push_front(nodeToPush);
+      plan.push_front(nodeToPush->Position);
       while (!nodeToPush->IsRoot()) {
         nodeToPush = nodeToPush->Closest;
-        plan.push_front(nodeToPush);
+        plan.push_front(nodeToPush->Position);
       }
 
       // second tree
       nodeToPush = holder.Node2;
-      plan.push_back(nodeToPush);
+      plan.push_back(nodeToPush->Position);
       while(!nodeToPush->IsRoot()) {
         nodeToPush = nodeToPush->Closest;
-        plan.push_back(nodeToPush);
+        plan.push_back(nodeToPush->Position);
       }
     }
   }
@@ -607,6 +631,15 @@ void SpaceForest<R>::checkIterationSaves(const int iter) {
     std::string prefix{"iter_" + std::to_string(iter) + "_"};
     this->saveFrontiers(PrefixFileName(this->problem.FileNames[SaveFrontiers], prefix));
   }
+}
+
+template<class R>
+void SpaceForest<R>::initBorders() {
+  this->borders = DistanceMatrix<std::deque<DistanceHolder<R>>>(this->problem.GetNumRoots());
+}
+
+template<class R>
+void SpaceForest<R>::initNodeTypeSpecific(Node<R> &node) {
 }
 
 #endif

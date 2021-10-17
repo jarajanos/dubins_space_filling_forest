@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
     Problem<Point2DDubins> problem;
     problem.Repetition = repetition;
     problem.Dimension = D2Dubins;
-    //SolveProblem(config, problem);
+    SolveProblem(config, problem);
   } else if (dim == "3D") {
     Problem<Point3D> problem;
     problem.Repetition = repetition;
@@ -166,6 +166,12 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     } else if (subNode.IsDefined()) {
       problem.DubinsRadius = subNode.as<double>() * scale;
       Point2DDubins::DubinsRadius = subNode.as<double>() * scale;
+    }
+    subNode = node["dubins-resolution"];
+    if ((problem.Dimension == D2Dubins || problem.Dimension == D3Dubins) && !subNode.IsDefined()) {
+      throw std::invalid_argument("dubins resolution missing");
+    } else if (subNode.IsDefined()) {
+      problem.DubinsResolution = subNode.as<int>();
     }
     subNode = node["bias"];
     if (subNode.IsDefined()) {

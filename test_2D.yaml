@@ -1,9 +1,9 @@
 ---
   problem:
-    solver: 'rrt'
+    solver: 'sff'
     optimize: true
     iterations: 100000
-    dimension: '2D'
+    dimension: '2DDubins'
   
   delimiters:
     standard: ' '
@@ -20,17 +20,17 @@
   obstacles:
     - path: './maps/dense.tri'
       type: 'map'
-      position: '[0; 0]'
+      position: '[0; 0;0]'
 
   cities:
-    - "[100; 100]"
+    - "[100; 100;0]"
   
   aa:
     - "[1500; 1600]"
     - "[500; 1700]"
     - "[1440; 330]"
 
-  goal: "[1500; 1600]"
+  goal: "[1500; 1600;0]"
 
   range:
     autodetect: true
@@ -45,6 +45,7 @@
     bias: 0.95
     misses: 5
     dubins-radius: 20
+    dubins-resolution: 64
   
   save:
     goals:
@@ -52,13 +53,13 @@
       type: 'map'
     params:
       path: 'output/params.csv'
-      id: 'rrt_2d'
-    TSP:
-      path: 'output/tsp.tsp'
+      id: 'sff_dubins'
+    #TSP:
+    #  path: 'output/tsp.tsp'
     tree:
       path: 'output//tree.tri'
       type: 'map'
       frequency: 0
-    roadmap:
-      path: 'output//rawPath.tri'
-      type: 'map'
+    #roadmap:
+    #  path: 'output//rawPath.tri'
+    #  type: 'map'

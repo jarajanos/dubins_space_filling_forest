@@ -257,6 +257,13 @@ Point2DDubins Point2DDubins::GetStateInDistance(Point2DDubins &other, double dis
   return retVal;
 }
 
+Point2DDubins Point2DDubins::GetInvertedPoint() {
+  Point2DDubins retVal{*this};
+  retVal.SetAngle(NormalizeAngle(this->GetAngle() + M_PI));
+
+  return retVal;
+}
+
 void Point2DDubins::FillRotationMatrix(double (&matrix)[3][3]) const {
   matrix[0][0] = cos(phi);
   matrix[0][1] = -sin(phi);
