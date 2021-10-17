@@ -11,6 +11,11 @@
 
 #include "solver.h"
 
+template<>
+void Solver<Point2DDubins>::initNeighboringMatrix() {
+  this->neighboringMatrix = DistanceMatrix<DistanceHolder<Point2DDubins>>(problem.GetNumRoots(), problem.DubinsResolution);
+}
+
 /**
  * @brief Optimized versions of local planners (might be also solved using GetStateInDistance which however results in more operations)
  * 
@@ -21,7 +26,7 @@
  * @return false When the path between start and finish is blocked for the robot
  */
 template<>
-bool Solver<Point2D>::isPathFree(Point2D &start, Point2D &finish) {
+bool Solver<Point2D>::isPathFree(const Point2D start, const Point2D finish) {
   double distance{start.Distance(finish)};
   double parts{distance / problem.CollisionDist};
   bool isFree{true};
@@ -38,7 +43,7 @@ bool Solver<Point2D>::isPathFree(Point2D &start, Point2D &finish) {
 }
 
 template<>
-bool Solver<Point2DDubins>::isPathFree(Point2DDubins &start, Point2DDubins &finish) {
+bool Solver<Point2DDubins>::isPathFree(const Point2DDubins start, const Point2DDubins finish) {
   opendubins::State startDub{start[0], start[1], start.GetAngle()};
   opendubins::State finishDub{finish[0], finish[1], finish.GetAngle()};
   opendubins::Dubins pathDub{startDub, finishDub, this->problem.DubinsRadius};
@@ -53,26 +58,11 @@ bool Solver<Point2DDubins>::isPathFree(Point2DDubins &start, Point2DDubins &fini
     isFree &= !problem.Env.Collide(position);
   }
 
-  // TODO checking both ways should be perhaps replaced by two point states
-  // it is useless to check path back when searching only path to an goal
-  if (!this->problem.HasGoal) {
-    opendubins::Dubins pathDubBack{finishDub, startDub, this->problem.DubinsRadius};
-    distance = pathDubBack.length;
-    parts = distance / problem.CollisionDist;
-
-    for (int index{1}; index < parts && isFree; ++index) {
-      opendubins::State temp{pathDubBack.getState(index * distance / parts)};
-      Point2DDubins position{temp};
-      
-      isFree &= !problem.Env.Collide(position);
-    }
-  }
-
   return isFree;
 }
 
 template<>
-bool Solver<Point3D>::isPathFree(Point3D &start, Point3D &finish) {
+bool Solver<Point3D>::isPathFree(const Point3D start, const Point3D finish) {
   double distance{start.Distance(finish)};
   double parts{distance / problem.CollisionDist};
   bool isFree{true};
@@ -166,82 +156,82 @@ void Solver<Point2DDubins>::saveTrees(const FileStruct file) {
   }
 }
 
-template<>
-void Solver<Point2DDubins>::savePaths(const FileStruct file) {
-  INFO("Saving paths");
-  std::ofstream fileStream{file.fileName.c_str()};
-  if (!fileStream.good()) {
-    std::stringstream message;
-    message << "Cannot create file at: " << file.fileName;
+// template<>
+// void Solver<Point2DDubins>::savePaths(const FileStruct file) {
+//   INFO("Saving paths");
+//   std::ofstream fileStream{file.fileName.c_str()};
+//   if (!fileStream.good()) {
+//     std::stringstream message;
+//     message << "Cannot create file at: " << file.fileName;
 
-    WARN(message.str());
-    return;
-  }
+//     WARN(message.str());
+//     return;
+//   }
 
-  if (fileStream.is_open()) {
-    int numRoots{this->problem.GetNumRoots()};
-    if (file.type == Obj) {
-      ERROR("Not implemented yet");
-      // fileStream << "o Paths\n";
-      // for (int i{0}; i < this->allNodes.size(); ++i) {
-      //   R temp{this->allNodes[i]->Position / problem.Env.ScaleFactor};
-      //   fileStream << "v" << DELIMITER_OUT;
-      //   temp.PrintPosition(fileStream);
-      //   fileStream << "\n";
-      // }
+//   if (fileStream.is_open()) {
+//     int numRoots{this->problem.GetNumRoots()};
+//     if (file.type == Obj) {
+//       ERROR("Not implemented yet");
+//       // fileStream << "o Paths\n";
+//       // for (int i{0}; i < this->allNodes.size(); ++i) {
+//       //   R temp{this->allNodes[i]->Position / problem.Env.ScaleFactor};
+//       //   fileStream << "v" << DELIMITER_OUT;
+//       //   temp.PrintPosition(fileStream);
+//       //   fileStream << "\n";
+//       // }
       
-      // for (int i{0}; i < numRoots; ++i) {
-      //   for (int j{i + 1}; j < numRoots; ++j) {
-      //     DistanceHolder<Node<R>> &holder{this->neighboringMatrix(i, j)};
-      //     if (holder.Node1 == NULL) {
-      //       continue;
-      //     }
+//       // for (int i{0}; i < numRoots; ++i) {
+//       //   for (int j{i + 1}; j < numRoots; ++j) {
+//       //     DistanceHolder<R> &holder{this->neighboringMatrix(i, j)};
+//       //     if (holder.Node1 == NULL) {
+//       //       continue;
+//       //     }
 
-      //     std::deque<Node<R> *> &plan{holder.Plan};
-      //     for (int k{0}; k < plan.size() - 1; ++k) {
-      //       fileStream << "l" << DELIMITER_OUT << plan[k]->ID + 1 << DELIMITER_OUT << plan[k+1]->ID + 1 << "\n";
-      //     }
-      //   }
-      // }
-    } else if (file.type == Map) {
-      fileStream << "#Paths" << DELIMITER_OUT << problem.Dimension << "\n";
-      for (int i{0}; i < numRoots; ++i) {
-        for (int j{0}; j < numRoots; ++j) {
-          DistanceHolder<Node<Point2DDubins>> &holder{this->neighboringMatrix(i, j)};
-          if (holder.Node1 == NULL) {
-            continue;
-          }
+//       //     std::deque<Node<R> *> &plan{holder.Plan};
+//       //     for (int k{0}; k < plan.size() - 1; ++k) {
+//       //       fileStream << "l" << DELIMITER_OUT << plan[k]->ID + 1 << DELIMITER_OUT << plan[k+1]->ID + 1 << "\n";
+//       //     }
+//       //   }
+//       // }
+//     } else if (file.type == Map) {
+//       fileStream << "#Paths" << DELIMITER_OUT << problem.Dimension << "\n";
+//       for (int i{0}; i < numRoots; ++i) {
+//         for (int j{0}; j < numRoots; ++j) {
+//           DistanceHolder<Point2DDubins> &holder{this->neighboringMatrix(i, j)};
+//           if (holder.Node1 == NULL) {
+//             continue;
+//           }
 
-          std::deque<Node<Point2DDubins> *> &plan{holder.Plan};
-          for (int k{0}; k < plan.size() - 1; ++k) {
-            opendubins::State finishDub{plan[k]->Position[0], plan[k]->Position[1], plan[k]->Position.GetAngle()};
-            opendubins::State startDub{plan[k+1]->Position[0], plan[k+1]->Position[1], plan[k+1]->Position.GetAngle()};
-            opendubins::Dubins pathFromClosest{startDub, finishDub, this->problem.DubinsRadius};
+//           std::deque<Node<Point2DDubins> *> &plan{holder.Plan};
+//           for (int k{0}; k < plan.size() - 1; ++k) {
+//             opendubins::State finishDub{plan[k]->Position[0], plan[k]->Position[1], plan[k]->Position.GetAngle()};
+//             opendubins::State startDub{plan[k+1]->Position[0], plan[k+1]->Position[1], plan[k+1]->Position.GetAngle()};
+//             opendubins::Dubins pathFromClosest{startDub, finishDub, this->problem.DubinsRadius};
             
-            Point2DDubins lastPoint{startDub};
-            Point2DDubins actPoint;
-            double length{pathFromClosest.length};
-            double parts{length / this->problem.CollisionDist};
-            for (int index{1}; index < parts; ++index) {
-              actPoint = Point2DDubins(pathFromClosest.getState(index * this->problem.CollisionDist));
-              fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << "\n";
-              lastPoint = actPoint;
-            }
-            actPoint = Point2DDubins(finishDub);
-            fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << "\n";
-          }
-          fileStream << "\n";
-        }
-      }
-    } else {
-      throw std::string("Unimplemented file type");
-    }
+//             Point2DDubins lastPoint{startDub};
+//             Point2DDubins actPoint;
+//             double length{pathFromClosest.length};
+//             double parts{length / this->problem.CollisionDist};
+//             for (int index{1}; index < parts; ++index) {
+//               actPoint = Point2DDubins(pathFromClosest.getState(index * this->problem.CollisionDist));
+//               fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << "\n";
+//               lastPoint = actPoint;
+//             }
+//             actPoint = Point2DDubins(finishDub);
+//             fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << "\n";
+//           }
+//           fileStream << "\n";
+//         }
+//       }
+//     } else {
+//       throw std::string("Unimplemented file type");
+//     }
 
-    fileStream.flush();
-    fileStream.close();
-  } else {
-    std::stringstream message;
-    message << "Cannot open file at: " << file.fileName;
-    WARN(message.str());
-  }  
-}
+//     fileStream.flush();
+//     fileStream.close();
+//   } else {
+//     std::stringstream message;
+//     message << "Cannot open file at: " << file.fileName;
+//     WARN(message.str());
+//   }  
+// }
