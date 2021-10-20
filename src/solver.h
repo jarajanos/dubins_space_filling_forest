@@ -56,8 +56,17 @@ class Solver {
     virtual void saveTsp(const FileStruct file);
 };
 
+template <> void Solver<Point2DDubins>::initNeighboringMatrix();
+template <> void Solver<Point2DDubins>::getAllPaths();
+
+template <> void Solver<Point2DDubins>::saveTrees(const FileStruct file);
+template <> void Solver<Point2DDubins>::saveTsp(const FileStruct file);
+template <> void Solver<Point2DDubins>::savePaths(const FileStruct file);
+template <> void Solver<Point2DDubins>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime);
+
 template<class R>
 Solver<R>::Solver(Problem<R> &problem) : problem{problem}, rnd{problem.Env.Limits} {
+  initNeighboringMatrix();
 }
 
 template<class R>

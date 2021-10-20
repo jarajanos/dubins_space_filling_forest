@@ -87,12 +87,6 @@ class Node<Point2DDubins> : public NodeBase<Point2DDubins> {
     std::deque<double> DistanceToClosest;
     std::deque<int> ExpandedAngles;
 
-    Node(Point2DDubins position, Tree<Point2DDubins> *root, Node<Point2DDubins> *closest, double distanceToClosest, const std::deque<int> &expandedAngles, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration) {
-      this->DistanceToClosest = std::deque<double>(1, distanceToClosest);
-      this->ExpandedAngles = std::deque<int>(expandedAngles);
-    }
-
-    // special constructor for root
     Node(Point2DDubins position, Tree<Point2DDubins> *root, Node<Point2DDubins> *closest, double distanceToClosest, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration) {
       this->DistanceToClosest = std::deque<double>(1, distanceToClosest);
     }
@@ -112,7 +106,7 @@ class Node<Point2DDubins> : public NodeBase<Point2DDubins> {
           distance += previous->DistanceToClosest[0];
         } else {
           double min{std::numeric_limits<double>::max()};
-          for (auto &item : DistanceToClosest) {
+          for (auto &item : previous->DistanceToClosest) {
             if (item < min) {
               min = item;
             }
@@ -138,6 +132,25 @@ class Node<Point2DDubins> : public NodeBase<Point2DDubins> {
       }
 
       return distance;
+    }
+
+    std::deque<int> &GetExpandedAngles() {
+      if (!this->isRootChild && !this->IsRoot()) {
+        return this->Closest->GetExpandedAngles();
+      } else {
+        return ExpandedAngles;
+      }
+    }
+
+    Point2DDubins DubinsPosition(int angleId, int angleResolution, bool reverse) {
+      Point2DDubins pos{this->Position};
+      if (this->IsRoot()) {
+        pos.SetAngle(angleId, angleResolution);
+      } else if (reverse) {
+        pos = pos.GetInvertedPoint();
+      }
+
+      return pos;
     }
 
   private:

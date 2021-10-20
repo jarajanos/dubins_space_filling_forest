@@ -61,9 +61,9 @@ void SolveProblem(YAML::Node &config, Problem<R> &problem) {
   if (problem.Solver == SFF) {
     solver = std::make_unique<SpaceForest<R>>(problem);
   } else if (problem.Solver == RRT) {
-    solver = std::make_unique<RapidExpTree<R>>(problem);
+    //solver = std::make_unique<RapidExpTree<R>>(problem);
   } else if (problem.Solver == Lazy) {
-    solver = std::make_unique<LazyTSP<R>>(problem);
+    //solver = std::make_unique<LazyTSP<R>>(problem);
   } else {
     ERROR("Unimplemented problem solver");
   }

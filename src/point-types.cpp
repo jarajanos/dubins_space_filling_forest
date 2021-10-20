@@ -171,6 +171,10 @@ void Point2DDubins::SetAngle(double angle) {
   this->phi = angle;
 }
 
+void Point2DDubins::SetAngle(int angleId, int angleResolution) {
+  this->phi = NormalizeAngle(this->phi + (angleId * 2 * M_PI) / angleResolution);
+}
+
 double Point2DDubins::GetAngle() const {
   return phi;
 }
@@ -191,7 +195,7 @@ const double* Point2DDubins::GetRawCoords() const {
 const double Point2DDubins::operator[](int i) const {
   if (i < 2) {
     return coords[i];
-  } else if (i == 3) {
+  } else if (i == 2) {
     return phi;
   } else {
     return 1;

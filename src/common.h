@@ -235,7 +235,7 @@ class DistanceMatrix<DistanceHolder<Point2DDubins>> {
         refMatrix[i].resize(size);
         for (int j{0}; j < size; ++j) {
           refMatrix[i][j].resize(angleResolution);
-          for (int k{0}; k < size; ++k) {
+          for (int k{0}; k < angleResolution; ++k) {
             refMatrix[i][j][k].resize(angleResolution, -1);
           }
         }
@@ -249,7 +249,7 @@ class DistanceMatrix<DistanceHolder<Point2DDubins>> {
     }
 
     const bool Exists(int id1, int id2, int angleId1, int angleId2) {
-      return this->operator()(id1, id2, angleId1, angleId2).Exists();
+      return refMatrix[id1][id2][angleId1][angleId2] != -1;
     }
 
     void AddLink(DistanceHolder<Point2DDubins> &link, int id1, int id2, int angleId1, int angleId2, bool secondIsInlet=false) {
@@ -258,10 +258,8 @@ class DistanceMatrix<DistanceHolder<Point2DDubins>> {
 
       if (!secondIsInlet) {
         refMatrix[id1][id2][angleId1][OppositeAngleID(angleId2)] = holderId;
-        refMatrix[id2][id1][angleId2][OppositeAngleID(angleId1)] = holderId;
       } else {
         refMatrix[id1][id2][angleId1][angleId2] = holderId;
-        refMatrix[id2][id1][OppositeAngleID(angleId2)][OppositeAngleID(angleId1)] = holderId;
       }
       
     }
@@ -292,7 +290,7 @@ class DistanceMatrix<std::deque<DistanceHolder<Point2DDubins>>> {
         refMatrix[i].resize(size);
         for (int j{0}; j < size; ++j) {
           refMatrix[i][j].resize(angleResolution);
-          for (int k{0}; k < size; ++k) {
+          for (int k{0}; k < angleResolution; ++k) {
             refMatrix[i][j][k].resize(angleResolution);
           }
         }
@@ -313,10 +311,8 @@ class DistanceMatrix<std::deque<DistanceHolder<Point2DDubins>>> {
       if (!secondIsInlet) {
         // both trees' angles are considered as outlet angles -- inlet angles are the opposite ones
         refMatrix[id1][id2][angleId1][OppositeAngleID(angleId2)].push_back(link);
-        refMatrix[id2][id1][angleId2][OppositeAngleID(angleId1)].push_back(link);
       } else {
         refMatrix[id1][id2][angleId1][angleId2].push_back(link);
-        refMatrix[id2][id1][OppositeAngleID(angleId2)][OppositeAngleID(angleId1)].push_back(link);
       }
       
     }
@@ -327,7 +323,6 @@ class DistanceMatrix<std::deque<DistanceHolder<Point2DDubins>>> {
 
   private:
     std::deque<std::deque<std::deque<std::deque<std::deque<DistanceHolder<Point2DDubins>>>>>> refMatrix;
-    int size;
     int angleResolution;
 };
 

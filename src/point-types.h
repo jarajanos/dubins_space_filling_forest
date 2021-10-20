@@ -60,6 +60,7 @@ class Point2DDubins {
     Point2DDubins& operator=(const Point2DDubins &p);
     void SetAngle(double angle);
     double GetAngle() const;
+    void SetAngle(int angleId, int angleResolution);
     void SetPosition(double x, double y);
     const double* GetPosition() const;
     const double* GetRawCoords() const;

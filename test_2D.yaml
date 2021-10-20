@@ -2,7 +2,7 @@
   problem:
     solver: 'sff'
     optimize: true
-    iterations: 100000
+    iterations: 10000
     dimension: '2DDubins'
   
   delimiters:
@@ -20,32 +20,30 @@
   obstacles:
     - path: './maps/dense.tri'
       type: 'map'
-      position: '[0; 0;0]'
+      position: '[0; 0; 0]'
 
   cities:
-    - "[100; 100;0]"
-  
-  aa:
-    - "[1500; 1600]"
-    - "[500; 1700]"
-    - "[1440; 330]"
+    - "[100; 100; 0]"
+    - "[1500; 1600; 0]"
+    - "[500; 1700; 0]"
+    - "[1440; 330; 0]"
 
-  goal: "[1500; 1600;0]"
+  agoal: "[1500; 1600;0]"
 
   range:
     autodetect: true
 
   distances:
     collision: 5
-    sampling: 20
-    tree: 20
+    sampling: 50
+    tree: 100
 
   algorithm:
     m2r-ratio: 10
     bias: 0.95
     misses: 5
     dubins-radius: 20
-    dubins-resolution: 64
+    dubins-resolution: 4
   
   save:
     goals:
@@ -60,6 +58,6 @@
       path: 'output//tree.tri'
       type: 'map'
       frequency: 0
-    #roadmap:
-    #  path: 'output//rawPath.tri'
-    #  type: 'map'
+    roadmap:
+      path: 'output//rawPath.tri'
+      type: 'map'

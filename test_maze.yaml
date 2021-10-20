@@ -33,14 +33,15 @@
 
   distances:
     collision: 10
-    sampling: 20
-    tree: 20
+    sampling: 50
+    tree: 50
 
   algorithm:
     m2r-ratio: 10
-    bias: 0.95
+    bias: 0.05
     misses: 5
     dubins-radius: 20
+    dubins-resolution: 64
   
   save:
     goals:
@@ -48,9 +49,9 @@
       type: 'map'
     params:
       path: 'output/params.csv'
-      id: 'sff_maze_bias'
-    TSP:
-      path: 'output/tsp.tsp'
+      id: 'sff_maze_dubins'
+    #TSP:
+    #  path: 'output/tsp.tsp'
     tree:
       path: 'output//tree.tri'
       type: 'map'

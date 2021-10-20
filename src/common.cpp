@@ -13,8 +13,7 @@
 
 template<>
 void DistanceHolder<Point2DDubins>::UpdateDistance(int angleId1, int angleId2) {
-  Point2DDubins invertedNode2{Node2->Position};
-  invertedNode2.SetAngle(invertedNode2.GetAngle() + M_PI); // both nodes have outlet angle - invert one to have one inlet angle
+  Point2DDubins invertedNode2{Node2->Position.GetInvertedPoint()}; // both nodes have outlet angle - invert one to have one inlet angle
 
   Distance = Node1->DistanceToRoot(angleId1) + Node2->DistanceToRoot(angleId2) + Node1->Position.Distance(invertedNode2);
 }
