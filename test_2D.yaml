@@ -1,7 +1,7 @@
 ---
   problem:
     solver: 'sff'
-    optimize: true
+    optimize: false
     iterations: 10000
     dimension: '2DDubins'
   
@@ -20,13 +20,13 @@
   obstacles:
     - path: './maps/dense.tri'
       type: 'map'
-      position: '[0; 0; 0]'
+      position: '[0; 0;0]'
 
   cities:
-    - "[100; 100; 0]"
-    - "[1500; 1600; 0]"
-    - "[500; 1700; 0]"
-    - "[1440; 330; 0]"
+    - "[100; 100;0]"
+    - "[1500; 1600;0]"
+    - "[500; 1700;0]"
+    - "[1440; 330;0]"
 
   agoal: "[1500; 1600;0]"
 

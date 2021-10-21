@@ -246,9 +246,9 @@ bool SpaceForest<Point2DDubins>::checkBorders(int id1, int id2) {
         while (!link.empty()) {
           DistanceHolder<Point2DDubins> holder{link[0]};
           
-          // both angles are "outlet", one has to be inverted (just one is sufficient)
+          // both angles are "outlet", one has to be inverted (just one)
           Point2DDubins point1{holder.Node1->DubinsPosition(i, this->problem.DubinsResolution, false)};
-          Point2DDubins point2{holder.Node2->DubinsPosition(j, this->problem.DubinsResolution, true)};
+          Point2DDubins point2{holder.Node2->DubinsPosition(j, this->problem.DubinsResolution, false)};
           if (this->isPathFree(point1, point2)) {
             link[0].IsValid = true;
             return true;
@@ -296,7 +296,7 @@ void SpaceForest<Point2DDubins>::getPaths() {
 
           std::deque<DistanceHolder<Point2DDubins>> &borderPoints{this->borders(i, j, k, l)};
           for (DistanceHolder<Point2DDubins> &dist : borderPoints) {
-            if (dist.IsValid || this->isPathFree(dist.Node1->DubinsPosition(k, numAngles, false), dist.Node2->DubinsPosition(l, numAngles, false))) {
+            if (dist.IsValid || this->isPathFree(dist.Node1->DubinsPosition(k, numAngles, false), dist.Node2->DubinsPosition(l, numAngles, true))) {
               this->neighboringMatrix.AddLink(dist, i, j, k, l, true);
               break;
             }

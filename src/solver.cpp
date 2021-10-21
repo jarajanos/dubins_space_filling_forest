@@ -326,9 +326,9 @@ void Solver<Point2DDubins>::savePaths(const FileStruct file) {
               }
               DistanceHolder<Point2DDubins> &holder{this->neighboringMatrix(i, j, k, l)};
               std::deque<Point2DDubins> &plan{holder.Plan};
-              for (int k{0}; k < plan.size() - 1; ++k) {
-                opendubins::State startDub{plan[k][0], plan[k][1], plan[k].GetAngle()};
-                opendubins::State finishDub{plan[k+1][0], plan[k+1][1], plan[k+1].GetAngle()};
+              for (int m{0}; m < plan.size() - 1; ++m) {
+                opendubins::State startDub{plan[m][0], plan[m][1], plan[m].GetAngle()};
+                opendubins::State finishDub{plan[m+1][0], plan[m+1][1], plan[m+1].GetAngle()};
                 opendubins::Dubins pathFromClosest{startDub, finishDub, this->problem.DubinsRadius};
                 
                 Point2DDubins lastPoint{startDub};

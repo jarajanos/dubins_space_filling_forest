@@ -53,6 +53,8 @@ RandomGenerator<R>::RandomGenerator(const Range samplingRange) : limits{sampling
   std::uint_fast64_t uSeed{static_cast<uint_fast64_t>(tSeed.time_since_epoch().count())};
 
   rndEng = randomEngine(uSeed);
+  //INFO(uSeed);
+  //rndEng = randomEngine(1634847683494374880); // deterministic behaviour
 
   uniDistAngle = std::uniform_real_distribution<double>(-M_PI, M_PI);
   uniSpaceX = std::uniform_real_distribution<double>(limits.mins[0], limits.maxs[0]);

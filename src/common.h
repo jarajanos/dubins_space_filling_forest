@@ -188,9 +188,54 @@ struct DistanceHolder {
     return Node1 != nullptr;
   }
 
-  void UpdateDistance(int angleId1 = -1, int angleId2 = -1) {
+  void UpdateDistance() {
     Distance = Node1->DistanceToRoot() + Node2->DistanceToRoot() + Node1->Position.Distance(Node2->Position);
   }
+};
+
+template<>
+struct DistanceHolder<Point2DDubins> {
+  Node<Point2DDubins> *Node1;
+  Node<Point2DDubins> *Node2;
+  double Distance;
+  bool IsValid{false};
+  std::deque<Point2DDubins> Plan;
+
+  DistanceHolder() : Node1{NULL}, Node2{NULL}, Distance{std::numeric_limits<double>::max()} {
+  }
+
+  DistanceHolder(Node<Point2DDubins> *first, Node<Point2DDubins> *second, bool computeDistance=false) : Node1{first}, Node2{second} {
+    Node1 = first;
+    Node2 = second;
+    
+    if (computeDistance) {
+      this->UpdateDistance();
+    }
+  }
+
+  DistanceHolder(Node<Point2DDubins> *first, Node<Point2DDubins> *second, double dist) : Distance{dist} {
+    Node1 = first;
+    Node2 = second;
+  }
+
+  DistanceHolder(Node<Point2DDubins> *first, Node<Point2DDubins> *second, double dist, std::deque<Point2DDubins> &plan) : Distance{dist}, Plan{plan} {
+    Node1 = first;
+    Node2 = second;
+  }
+
+  friend bool operator<(const DistanceHolder<Point2DDubins> &l, const DistanceHolder<Point2DDubins> &r) {
+    return l.Distance < r.Distance;
+  }  
+
+  friend bool operator==(const DistanceHolder<Point2DDubins> &l, const DistanceHolder<Point2DDubins> &r) {
+    return (l.Node1 == r.Node1 && l.Node2 == r.Node2) || (l.Node1 == r.Node2 && l.Node2 == r.Node1);
+  }
+
+  const bool Exists() const {
+    return Node1 != nullptr;
+  }
+
+  void UpdateDistance(int angleId1=-1, int angleId2=-1);
 };
 
 template<class T>

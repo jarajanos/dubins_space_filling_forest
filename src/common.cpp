@@ -11,11 +11,21 @@
 
 #include "common.h"
 
-template<>
-void DistanceHolder<Point2DDubins>::UpdateDistance(int angleId1, int angleId2) {
-  Point2DDubins invertedNode2{Node2->Position.GetInvertedPoint()}; // both nodes have outlet angle - invert one to have one inlet angle
 
-  Distance = Node1->DistanceToRoot(angleId1) + Node2->DistanceToRoot(angleId2) + Node1->Position.Distance(invertedNode2);
+void DistanceHolder<Point2DDubins>::UpdateDistance(int angleId1, int angleId2) {
+  Distance = Node1->Position.Distance(Node2->Position);
+
+  if (angleId1 != -1) {
+    Distance += Node1->DistanceToRoot(angleId1);
+  } else {
+    Distance += Node1->DistanceToRoot();
+  }
+
+  if (angleId2 != -1) {
+    Distance += Node2->DistanceToRoot(angleId2);
+  } else {
+    Distance += Node2->DistanceToRoot();
+  }
 }
 
 void StopWatch::Start() {
