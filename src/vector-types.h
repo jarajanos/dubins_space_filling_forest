@@ -21,6 +21,8 @@ class Vector {
  public:
   Vector(int capacity);
   Vector(const Vector &v);
+  ~Vector() {
+  }
   
   virtual double* GetRawCoords();
   double operator[](int i) const;
