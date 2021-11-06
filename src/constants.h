@@ -50,6 +50,8 @@
 #define FLANN_NUM_SEARCHES    128
 #define FLANN_PREC_MULTIPLIER 1.1
 
+#define CHECK_CONNECTED_ITER  50
+
 const std::string WHITESPACE = " \n\r\t\f\v";
 
 #endif 

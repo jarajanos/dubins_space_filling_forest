@@ -1,2 +1,8 @@
-Not random - revert random generator
-Weird rewiring
+Dubins in RRT - rework Lazy TSP to sample multiple source/destination angles?
+Dubins in RRT - rework (somehow) Multi-T-RRT*?
+
+SFF - more sampling angles for each node? => solve dubins touring problem, or DTSP?
+ - use uniform or informed sampling, use DIP solution?
+ 
+
+3D Dubins - write to Robert ?

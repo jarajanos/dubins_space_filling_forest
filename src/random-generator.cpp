@@ -72,6 +72,13 @@ bool RandomGenerator<Point2DDubins>::RandomPointInDistance(const Point2DDubins& 
   
   point.SetPosition(center[0] + cos(phi) * distance, center[1] + sin(phi) * distance);
   point.SetAngle(uniDistAngle(rndEng));
+
+  opendubins::State a{center[0], center[1], center.GetAngle()};
+  opendubins::State b{point[0], point[1], point.GetAngle()};
+  opendubins::Dubins dubPath{a, b, Point2DDubins::DubinsRadius};
+
+  // get point in exact distance
+  point = Point2DDubins(dubPath.getState(distance));
   return isInLimits(point);
 }
 

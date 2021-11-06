@@ -12,3 +12,4 @@ tests_2.zip
 lib/*
 perf.data
 perf.data.old
+img/*

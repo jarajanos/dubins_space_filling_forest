@@ -37,6 +37,7 @@ class SpaceForest : public Solver<R> {
     bool checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix, bool &solved);
 
     void optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>* &newNode, flann::Matrix<float> &matrix, int iteration);
+    bool filterNode(Node<R> &neighbor);
     void emplaceNewNode(Node<R> *expanded, R* newPoint, Node<R>* &newNode, int iteration);
     void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance);
 
@@ -52,6 +53,7 @@ template<> void SpaceForest<Point2DDubins>::initBorders();
 template<> void SpaceForest<Point2DDubins>::initNodeTypeSpecific(Node<Point2DDubins> &node);
 template<> bool SpaceForest<Point2DDubins>::expandNode(Node<Point2DDubins> *expanded, bool &solved, const unsigned int iteration);
 template<> bool SpaceForest<Point2DDubins>::checkOtherTrees(Node<Point2DDubins> *expanded, Point2DDubins* newPoint, flann::Matrix<float> &matrix, bool &solved);
+template<> bool SpaceForest<Point2DDubins>::filterNode(Node<Point2DDubins> &neighbor);
 template<> void SpaceForest<Point2DDubins>::emplaceNewNode(Node<Point2DDubins> *expanded, Point2DDubins* newPoint, Node<Point2DDubins>* &newNode, int iteration);
 template<> void SpaceForest<Point2DDubins>::rewireNodes(Node<Point2DDubins> *newNode, Node<Point2DDubins> &neighbor, double newDistance);
 template<> bool SpaceForest<Point2DDubins>::checkBorders(int id1, int id2);
@@ -119,6 +121,7 @@ void SpaceForest<R>::Solve() {
   timeMeasure.Start();
 
   int iter{0};
+  int checkConnIter{0};
   bool solved{false};
   bool emptyFrontier{false};
   // iterate
@@ -162,6 +165,7 @@ void SpaceForest<R>::Solve() {
     bool expandResult{true};
     for (int i{0}; i < this->problem.MaxMisses && expandResult && iter < this->problem.MaxIterations; ++i) {
       ++iter;
+      ++checkConnIter;
       expandResult &= expandNode(nodeToExpand, solved, iter);
       checkIterationSaves(iter);
     }
@@ -186,7 +190,9 @@ void SpaceForest<R>::Solve() {
       closed_list.push_back(nodeToExpand);
     }
 
-    if (!solved) {
+    if (!solved && checkConnIter >= CHECK_CONNECTED_ITER) {
+      checkConnIter = 0;
+
       // check whether all trees are connected
       bool connected{checkConnected() == this->problem.GetNumRoots()};
       
@@ -200,7 +206,7 @@ void SpaceForest<R>::Solve() {
         emptyFrontier = frontier.empty();
       }
       solved = (!this->problem.HasGoal && emptyFrontier && connected);
-    } else {
+    } else if (solved) {
       // update the connected trees to correct params output
       checkConnected(); 
     }
@@ -403,6 +409,9 @@ void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>
   std::vector<int> &indRow{indices[0]};
   for (int &ind : indRow) {
     Node<R> &neighbor{expanded->SourceTree->Leaves[ind]};
+    if (filterNode(neighbor)) {   // additional check of possible parent -- mainly becaused of Dubins (forbid connection with root)
+      continue;
+    }
     double neighborDist{neighbor.Position.Distance(*newPoint) + neighbor.DistanceToRoot()};
     if (neighborDist < bestDist - SFF_TOLERANCE && this->isPathFree(neighbor.Position, *newPoint)) {
       bestDist = neighborDist;
@@ -422,6 +431,11 @@ void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>
       rewireNodes(newNode, neighbor, newPointDist);
     }
   }
+}
+
+template<class R> 
+bool SpaceForest<R>::filterNode(Node<R> &neighbor) {
+  return false;
 }
 
 template<class R>

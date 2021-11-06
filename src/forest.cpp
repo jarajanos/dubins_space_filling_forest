@@ -211,6 +211,10 @@ bool SpaceForest<Point2DDubins>::expandNode(Node<Point2DDubins> *expanded, bool 
 }
 
 //optimize connections - same as for 2D and 3D, overriden only rewire and node emplacement
+template<> 
+bool SpaceForest<Point2DDubins>::filterNode(Node<Point2DDubins> &neighbor) {
+  return neighbor.IsRoot();
+}
 
 template<>
 void SpaceForest<Point2DDubins>::emplaceNewNode(Node<Point2DDubins> *expanded, Point2DDubins* newPoint, Node<Point2DDubins>* &newNode, const int iteration) {
@@ -246,7 +250,6 @@ bool SpaceForest<Point2DDubins>::checkBorders(int id1, int id2) {
         while (!link.empty()) {
           DistanceHolder<Point2DDubins> holder{link[0]};
           
-          // both angles are "outlet", one has to be inverted (just one)
           Point2DDubins point1{holder.Node1->DubinsPosition(i, this->problem.DubinsResolution, false)};
           Point2DDubins point2{holder.Node2->DubinsPosition(j, this->problem.DubinsResolution, false)};
           if (this->isPathFree(point1, point2)) {

@@ -1,7 +1,7 @@
 ---
   problem:
     solver: 'sff'
-    optimize: false
+    optimize: true
     iterations: 10000
     dimension: '2DDubins'
   
@@ -35,15 +35,15 @@
 
   distances:
     collision: 5
-    sampling: 50
-    tree: 100
+    sampling: 100
+    tree: 200
 
   algorithm:
     m2r-ratio: 10
     bias: 0.95
     misses: 5
-    dubins-radius: 20
-    dubins-resolution: 4
+    dubins-radius: 50
+    dubins-resolution: 32
   
   save:
     goals:
