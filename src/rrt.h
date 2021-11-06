@@ -32,10 +32,14 @@ class RapidExpTree : public Solver<R> {
     bool getAndCheckNewPoint(Tree<R> *treeToExpand, R *newPoint, Node<R>* &parent);
     bool optimizeConnections(Tree<R> *treeToExpand, R *newPoint, Node<R>* &parent, Node<R>* &newNode, const unsigned iteration);
     bool checkOtherRewire(Tree<R> *treeToExpand, R *newPoint, Node<R>* &newNode);
+    void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance);
     
     void getPaths() override;
     void getConnectedTrees();
 };
+
+template<> void RapidExpTree<Point2DDubins>::rewireNodes(Node<Point2DDubins> *newNode, Node<Point2DDubins> &neighbor, double newDistance);
+template<> void RapidExpTree<Point2DDubins>::getPaths();
 
 template<class R>
 RapidExpTree<R>::RapidExpTree(Problem<R> &problem) : Solver<R>(problem) {
@@ -180,21 +184,25 @@ bool RapidExpTree<R>::optimizeConnections(Tree<R> *treeToExpand, R *newPoint, No
     double proposedDist{bestDist + newPointDist};
     if (proposedDist < neighbor.DistanceToRoot() - SFF_TOLERANCE && this->isPathFree(*newPoint, neighbor.Position)) {
       // rewire
-      std::deque<Node<R> *> &children{neighbor.Closest->Children};
-      auto iter{find(children.begin(), children.end(), &neighbor)};
-      if (iter == children.end()) {
-        ERROR("Fatal error: Node not in children");
-        exit(1);
-      }
-      neighbor.Closest->Children.erase(iter);
-      neighbor.Closest = newNode;
-      neighbor.SourceTree = newNode->SourceTree;
-      neighbor.DistanceToClosest = newPointDist;
-      newNode->Children.push_back(&neighbor);
+      rewireNodes(newNode, neighbor, proposedDist);
     }
   }
 
   return false;
+}
+
+template<class R>
+void RapidExpTree<R>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) {
+  std::deque<Node<R> *> &children{neighbor.Closest->Children};
+  auto iter{std::find(children.begin(), children.end(), &neighbor)};
+  if (iter == children.end()) {
+    ERROR("Fatal error when rewiring RRT: Node not in children");
+    exit(1);
+  }
+  neighbor.Closest->Children.erase(iter);
+  neighbor.Closest = newNode;
+  neighbor.DistanceToClosest = newDistance;
+  newNode->Children.push_back(&neighbor);
 }
 
 template<class R>

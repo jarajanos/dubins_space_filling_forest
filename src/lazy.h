@@ -32,12 +32,21 @@ class LazyTSP : public Solver<R> {
     
     void runRRT(DistanceHolder<R> *edge, int &iterations);
     void processResults(std::string &line, std::deque<std::tuple<int,int>> &edgePairs, double &pathLength);
+    double updateEdge(std::tuple<int, int> selectedEdge, int iter);
+    void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance);
 
     void getPaths() override;
     void saveTsp(const FileStruct file) override;
     void savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
     void saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime, const std::deque<std::tuple<int,int>> &selectedEdges);
 };
+
+template<> LazyTSP<Point2DDubins>::LazyTSP(Problem<Point2DDubins> &problem);
+template<> double LazyTSP<Point2DDubins>::updateEdge(std::tuple<int, int> selectedEdge, int iter);
+template<> void LazyTSP<Point2DDubins>::rewireNodes(Node<Point2DDubins> *newNode, Node<Point2DDubins> &neighbor, double newDistance);
+template<> void LazyTSP<Point2DDubins>::saveTsp(const FileStruct file);
+template<> void LazyTSP<Point2DDubins>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
+template<> void LazyTSP<Point2DDubins>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime, const std::deque<std::tuple<int,int>> &selectedEdges);
 
 template<class R>
 LazyTSP<R>::LazyTSP(Problem<R> &problem) : Solver<R>(problem) {
@@ -119,13 +128,7 @@ void LazyTSP<R>::Solve() {
 
     // run RRT for selected edges, recompute new distance
     for (auto &pair : selectedEdges) {
-      int first, second;
-      std::tie(first, second) = pair;
-      DistanceHolder<R> &edge{this->neighboringMatrix(first, second)};
-      if (edge.Plan.empty()) {
-        runRRT(&edge, iter);
-      } 
-      newDist += edge.Distance;
+      newDist += updateEdge(pair, iter);
     }
 
     solved = (newDist >= prevDist - SFF_TOLERANCE && newDist <= prevDist + SFF_TOLERANCE);
@@ -143,6 +146,17 @@ void LazyTSP<R>::Solve() {
   if (SaveTSP <= this->problem.SaveOpt) {
     this->saveTsp(this->problem.FileNames[SaveTSP]);
   }
+}
+
+template<class R>
+double LazyTSP<R>::updateEdge(std::tuple<int, int> selectedEdge, int iter) {
+  int first, second;
+  std::tie(first, second) = selectedEdge;
+  DistanceHolder<R> &edge{this->neighboringMatrix(first, second)};
+  if (edge.Plan.empty()) {
+    runRRT(&edge, iter);
+  } 
+  return edge.Distance;
 }
 
 template <class R>
@@ -223,17 +237,7 @@ void LazyTSP<R>::runRRT(DistanceHolder<R> *edge, int &iterations) {
         double proposedDist{bestDist + newPointDist};
         if (proposedDist < neighbor.DistanceToRoot() - SFF_TOLERANCE && this->isPathFree(newPoint, neighbor.Position)) {
           // rewire
-          std::deque<Node<R> *> &children{neighbor.Closest->Children};
-          auto iter{find(children.begin(), children.end(), &neighbor)};
-          if (iter == children.end()) {
-            ERROR("Fatal error: Node not in children");
-            exit(1);
-          }
-          neighbor.Closest->Children.erase(iter);
-          neighbor.Closest = newNode;
-          neighbor.SourceTree = newNode->SourceTree;
-          neighbor.DistanceToClosest = newPointDist;
-          newNode->Children.push_back(&neighbor);
+          rewireNodes(newNode, neighbor, newPointDist);
         }
       }
     } else {
@@ -272,6 +276,20 @@ void LazyTSP<R>::runRRT(DistanceHolder<R> *edge, int &iterations) {
   }
 
   iterations += iter;
+}
+
+template<class R>
+void LazyTSP<R>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) {
+  std::deque<Node<R> *> &children{neighbor.Closest->Children};
+  auto iter{std::find(children.begin(), children.end(), &neighbor)};
+  if (iter == children.end()) {
+    ERROR("Fatal error when rewiring LazyTSP: Node not in children");
+    exit(1);
+  }
+  neighbor.Closest->Children.erase(iter);
+  neighbor.Closest = newNode;
+  neighbor.DistanceToClosest = newDistance;
+  newNode->Children.push_back(&neighbor);
 }
 
 template <class R>
