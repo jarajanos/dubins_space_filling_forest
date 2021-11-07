@@ -3,6 +3,8 @@ OBJDIR := obj
 DBGDIR := debug
 RELDIR := release
 
+CPLEX_ROOT_DIR := /opt/ibm/ILOG/CPLEX_Studio_Community201/cplex
+
 SOURCES := $(wildcard src/*.cpp)
 #SOURCES := src/main.cpp src/random-generator.cpp
 SOURCES := $(SOURCES:src/%=%)
@@ -23,7 +25,7 @@ RELEXE := $(RELDIR)/$(TARGET)
 RELOBJS := $(addprefix $(OBJDIR)/, $(addprefix $(RELDIR)/, $(OBJECTS)))
 RELFLAGS := $(CXXFLAGS) -O3
 
-.PHONY: all clean debug release prep rapid flann yaml install gdip
+.PHONY: all clean debug release prep rapid flann yaml install gdip concorde lkh solver
 
 all: release
 
@@ -54,7 +56,9 @@ prep:
 	@mkdir -p $(DBGDIR)
 	@mkdir -p $(RELDIR)
 
-install: rapid flann yaml release
+install: rapid flann yaml gdip release
+
+solver: concorde lkh
 
 rapid:
 	@echo "Installing RAPID..."
@@ -71,6 +75,14 @@ yaml:
 gdip:
 	@echo "Installing GDIP..."
 	@cd ./lib/gdip/gdip; ./install.sh
+
+concorde:
+	@echo "Preparing Concorde solver..."
+	@cd ./solver/concorde; ./install.sh $(CPLEX_ROOT_DIR)
+
+lkh:
+	@echo "Preparing LKH solver..."
+	@cd ./solver/lkh; ./install.sh
 
 clean:
 	@echo "Cleaning..."
