@@ -55,12 +55,14 @@
     params:
       path: 'output/params.csv'
       id: 'sff_3d'
-    TSP:
+    TSP-file:
       path: 'output/tsp.tsp'
+    TSP-paths:
+      path: 'output/tsp.tri'
     tree:
       path: 'output//tree5_normal_building.obj'
       type: 'obj'
       frequency: '0'
     roadmap:
-      path: 'output//rawPath5_normal_building.tri'
+      path: 'output//rawPath5_normal_building.obj'
       type: 'obj'

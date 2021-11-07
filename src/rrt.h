@@ -115,8 +115,8 @@ void RapidExpTree<R>::Solve() {
     this->saveParams(this->problem.FileNames[SaveParams], iter, solved, watch.GetElapsed());
   }
 
-  if (SaveTSP <= this->problem.SaveOpt) {
-    this->saveTsp(this->problem.FileNames[SaveTSP]);
+  if (SaveTSPFile <= this->problem.SaveOpt) {
+    this->saveTsp(this->problem.FileNames[SaveTSPFile]);
   }
 }
 

@@ -29,7 +29,8 @@ struct Problem {
   std::deque<R> Roots;
   R Goal;
   bool HasGoal{false};
-  
+  bool ComputeTSP{false};
+
   bool AutoRange{false};
 
   double DistTree;

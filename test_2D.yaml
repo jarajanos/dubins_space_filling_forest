@@ -52,8 +52,10 @@
     params:
       path: 'output/params.csv'
       id: 'sff_dubins'
-    #TSP:
+    #TSP-file:
     #  path: 'output/tsp.tsp'
+    #TSP-paths:
+    #  path: 'output/tsp.tri'
     tree:
       path: 'output//tree.tri'
       type: 'map'

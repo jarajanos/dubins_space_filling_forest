@@ -124,14 +124,12 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
       }
     }
 
-    // TSP solver for Lazy-RRT
+    // TSP solver
     node = config["TSP-solver"];
     if (!node.IsDefined() && problem.Solver == Lazy) {
       throw std::invalid_argument("missing TSP solver parameters for Lazy solver!");
     } else if (node.IsDefined()) {
-      if (problem.Solver != Lazy) {
-        WARN("TSP solver is called only in Lazy solver algorithm -- defined TSP parameters are redundant and will not be used.");
-      }
+      problem.ComputeTSP = true;
 
       subNode = node["path"];
       if (!subNode.IsDefined()) {
@@ -345,10 +343,19 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
         }
       }
 
-      subNode = node["TSP"];
+      subNode = node["TSP-file"];
       if (!GetFile(subNode, tempFile, problem.Repetition)) {
-        problem.SaveOpt = problem.SaveOpt | SaveTSP;
-        problem.FileNames[SaveTSP] = tempFile;
+        problem.SaveOpt = problem.SaveOpt | SaveTSPFile;
+        problem.FileNames[SaveTSPFile] = tempFile;
+      }
+
+      subNode = node["TSP-paths"];
+      if (!GetFile(subNode, tempFile, problem.Repetition)) {
+        if (!problem.ComputeTSP) {
+          WARN("TSP paths specified although the TSP is not solved -- maybe you forgot to specify TSP solver?");
+        }
+        problem.SaveOpt = problem.SaveOpt | SaveTSPPaths;
+        problem.FileNames[SaveTSPPaths] = tempFile;
       }
 
       subNode = node["frontiers"];

@@ -374,27 +374,28 @@ void Solver<Point2DDubins>::saveTsp(const FileStruct file) {
   }
 
   if (fileStream.is_open()) {
+    // must be transformed using Noon-Bean transformation to ATSP, then to TSP!
+    int numRoots{(int)this->connectedTrees.size()};
     fileStream << "NAME: " << this->problem.ID << "\n";
-    // fileStream << "COMMENT: ";
-    // for (int i{0}; i < this->connectedTrees.size(); ++i) {
-    //   fileStream << this->connectedTrees[i]->Root->ID;
-    //   if (i + 1 != connectedTrees.size()) {
-    //     fileStream << TSP_DELIMITER;
-    //   }
-    // }
-    // fileStream << "\n";
-    // fileStream << "TYPE: TSP\n";
-    // fileStream << "DIMENSION: " << this->connectedTrees.size() << "\n";
-    // fileStream << "EDGE_WEIGHT_TYPE : EXPLICIT\n";
-    // fileStream << "EDGE_WEIGHT_FORMAT : LOWER_DIAG_ROW\n";
+    fileStream << "COMMENT: ";
+    for (int i{0}; i < numRoots; ++i) {
+      fileStream << this->connectedTrees[i]->Root->ID;
+      if (i + 1 != connectedTrees.size()) {
+        fileStream << TSP_DELIMITER;
+      }
+    }
+    fileStream << "\n";
+    fileStream << "TYPE: TSP\n";
+    fileStream << "DIMENSION: " << numRoots * this->problem.DubinsResolution << "\n";
+    fileStream << "EDGE_WEIGHT_TYPE : EXPLICIT\n";
+    fileStream << "EDGE_WEIGHT_FORMAT : FULL_MATRIX\n";
 
     // fileStream << "EDGE_WEIGHT_SECTION\n";
-    // int numRoots{(int)this->connectedTrees.size()};
     // for (int i{0}; i < numRoots; ++i) {
     //   for (int j{0}; j < i; ++j) {
     //     int id1{this->connectedTrees[i]->Root->ID};
     //     int id2{this->connectedTrees[j]->Root->ID};
-    //     fileStream << neighboringMatrix(id1, id2).Distance / problem.Env.ScaleFactor << TSP_DELIMITER;
+    //     fileStream << this->neighboringMatrix(id1, id2).Distance / problem.Env.ScaleFactor << TSP_DELIMITER;
     //   }
     //   fileStream << "0\n";
     // }
@@ -426,28 +427,19 @@ void Solver<Point2DDubins>::saveParams(const FileStruct file, const int iteratio
     fileStream << iterations << CSV_DELIMITER;
     fileStream << (solved ? "solved" : "unsolved") << CSV_DELIMITER;
   
-    // TODO: try to not use the connected trees structure, rather use sorting by ID
-    // fileStream << "[";
-    // for (int i{0}; i < this->connectedTrees.size(); ++i) {
-    //   fileStream << this->connectedTrees[i]->Root->ID;
-    //   if (i + 1 != connectedTrees.size()) {
-    //     fileStream << CSV_DELIMITER_2;
-    //   }
-    // }
-    // fileStream << "]" << CSV_DELIMITER << "[";
+    fileStream << "[";
+    for (int i{0}; i < this->connectedTrees.size(); ++i) {
+      fileStream << this->connectedTrees[i]->Root->ID;
+      if (i + 1 != connectedTrees.size()) {
+        fileStream << CSV_DELIMITER_2;
+      }
+    }
+    fileStream << "]" << CSV_DELIMITER << "[";
   
-    // int numRoots{(int)this->connectedTrees.size()};
-    // for (int i{0}; i < numRoots; ++i) {
-    //   for (int j{0}; j < i; ++j) {
-    //     int id1{this->connectedTrees[i]->Root->ID};
-    //     int id2{this->connectedTrees[j]->Root->ID};
-    //     fileStream << neighboringMatrix(id1,id2).Distance / problem.Env.ScaleFactor;
-    //     if (i + 1 != numRoots || j + 1 != i) {
-    //       fileStream << CSV_DELIMITER_2;
-    //     }
-    //   }
-    // }
-    // fileStream << "]" << CSV_DELIMITER;
+    // do not print distance matrix as for non-dubins case -- would be too big
+    fileStream << CSV_NO_PATH;
+
+    fileStream << "]" << CSV_DELIMITER;
     fileStream << elapsedTime.count() << "\n";
 
     fileStream.flush();

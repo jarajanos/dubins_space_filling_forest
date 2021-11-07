@@ -31,6 +31,8 @@
 #define TSP_DELIMITER (" ")
 #endif
 
+#define CSV_NO_PATH   "NaN"
+
 // used for LazyTSP
 #ifndef TEMP_TSP
 #define TEMP_TSP      "tempTsp.tsp"

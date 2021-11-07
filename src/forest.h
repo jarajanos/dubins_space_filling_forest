@@ -234,8 +234,8 @@ void SpaceForest<R>::Solve() {
     this->saveParams(this->problem.FileNames[SaveParams], iter, solved, timeMeasure.GetElapsed());
   }
 
-  if (SaveTSP <= this->problem.SaveOpt) {
-    this->saveTsp(this->problem.FileNames[SaveTSP]);
+  if (SaveTSPFile <= this->problem.SaveOpt) {
+    this->saveTsp(this->problem.FileNames[SaveTSPFile]);
   }
 
   if (SaveFrontiers <= this->problem.SaveOpt) {

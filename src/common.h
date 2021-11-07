@@ -94,9 +94,10 @@ enum SaveOptions {
   SaveTree = 2,
   SaveRoadmap = 4,
   SaveParams = 8,
-  SaveTSP = 16,
+  SaveTSPFile = 16,
   SaveFrontiers = 32,
-  Invalid = 64
+  SaveTSPPaths = 64,
+  Invalid = 128
 };
 
 enum SolverType{

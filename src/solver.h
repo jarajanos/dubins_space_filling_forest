@@ -193,7 +193,7 @@ void Solver<R>::checkIterationSaves(const int iter) {
     this->saveParams(PrefixFileName(this->problem.FileNames[SaveParams], prefix), iter, false, std::chrono::duration<double>());
   }
 
-  if (this->problem.SaveFreq[SaveTSP] != 0 && iter % this->problem.SaveFreq[SaveTSP] == 0) {
+  if (this->problem.SaveFreq[SaveTSPFile] != 0 && iter % this->problem.SaveFreq[SaveTSPFile] == 0) {
     std::string prefix{"iter_" + std::to_string(iter) + "_"};
     this->saveTsp(PrefixFileName(this->problem.FileNames[SaveParams], prefix));
   }
@@ -304,7 +304,6 @@ void Solver<R>::saveParams(const FileStruct file, const int iterations, const bo
     fileStream << iterations << CSV_DELIMITER;
     fileStream << (solved ? "solved" : "unsolved") << CSV_DELIMITER;
   
-    // TODO: try to not use the connected trees structure, rather use sorting by ID
     fileStream << "[";
     for (int i{0}; i < this->connectedTrees.size(); ++i) {
       fileStream << this->connectedTrees[i]->Root->ID;
@@ -314,12 +313,16 @@ void Solver<R>::saveParams(const FileStruct file, const int iterations, const bo
     }
     fileStream << "]" << CSV_DELIMITER << "[";
   
-    int numRoots{(int)this->connectedTrees.size()};
+    // print out compressed lower-diagonal matrix for ALL nodes
+    int numRoots{this->problem.GetNumRoots()};
     for (int i{0}; i < numRoots; ++i) {
       for (int j{0}; j < i; ++j) {
-        int id1{this->connectedTrees[i]->Root->ID};
-        int id2{this->connectedTrees[j]->Root->ID};
-        fileStream << neighboringMatrix(id1,id2).Distance / problem.Env.ScaleFactor;
+        double dist{neighboringMatrix(i,j).Distance};
+        if (dist == std::numeric_limits<double>::max()) {
+          fileStream << CSV_NO_PATH;
+        } else {
+          fileStream << dist / problem.Env.ScaleFactor;
+        }
         if (i + 1 != numRoots || j + 1 != i) {
           fileStream << CSV_DELIMITER_2;
         }
