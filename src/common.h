@@ -43,6 +43,7 @@ FileStruct PrefixFileName(const FileStruct &path, const std::string &insert);
 std::string Ltrim(const std::string &s);
 std::string Rtrim(const std::string &s);
 std::string Trim(const std::string &s);
+std::string ToLower(std::string s);
 
 // FLANN FUNCTOR
 template<class T>
@@ -104,6 +105,11 @@ enum SolverType{
   SFF,
   RRT,
   Lazy
+};
+
+enum TSPType {
+  Concorde,
+  LKH
 };
 
 struct FileStruct {
@@ -263,6 +269,11 @@ class DistanceMatrix {
     const bool Exists(int i, int j) {
       return this->operator()(i, j).Exists();
     }
+
+    const int GetSize() {
+      return size;
+    }
+
   private:
     std::deque<T> holder;
     int size;
@@ -287,6 +298,7 @@ class DistanceMatrix<DistanceHolder<Point2DDubins>> {
         }
       }
 
+      this->size = size;
       this->angleResolution = angleResolution;
     }
 
@@ -318,9 +330,18 @@ class DistanceMatrix<DistanceHolder<Point2DDubins>> {
       return (angleID + angleResolution / 2) % angleResolution;
     }
 
+    const int GetSize() {
+      return size;
+    }
+
+    const int GetResolution() {
+      return angleResolution;
+    }
+
   private:
     std::deque<DistanceHolder<Point2DDubins>> holder;
     std::deque<std::deque<std::deque<std::deque<int>>>> refMatrix;
+    int size;
     int angleResolution;
 };
 
@@ -342,6 +363,7 @@ class DistanceMatrix<std::deque<DistanceHolder<Point2DDubins>>> {
         }
       }
 
+      this->size = size;
       this->angleResolution = angleResolution;
     }
 
@@ -367,9 +389,14 @@ class DistanceMatrix<std::deque<DistanceHolder<Point2DDubins>>> {
       return (angleID + angleResolution / 2) % angleResolution;
     }
 
+    const int GetSize() {
+      return size;
+    }
+
   private:
     std::deque<std::deque<std::deque<std::deque<std::deque<DistanceHolder<Point2DDubins>>>>>> refMatrix;
     int angleResolution;
+    int size;
 };
 
 template<class R>

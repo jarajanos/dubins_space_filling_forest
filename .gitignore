@@ -13,3 +13,5 @@ lib/*
 perf.data
 perf.data.old
 img/*
+solver/*
+.VSCodeCounter/*

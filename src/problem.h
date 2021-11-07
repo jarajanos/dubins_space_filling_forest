@@ -49,7 +49,7 @@ struct Problem {
   std::string ID{ "Solver" };
 
   std::string TspSolver;
-  std::string TspType;
+  TSPType TspType;
 
   Problem() {
     for (int i{1}; i < Invalid; i *= 2) {

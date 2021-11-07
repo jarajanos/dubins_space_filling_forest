@@ -99,29 +99,30 @@ void LazyTSP<R>::Solve() {
     prevDist = newDist;
 
     // run TSP = create file, execute, read output
-    std::string id{"id_" + std::to_string(this->problem.Repetition) + "_"};
-    FileStruct runFile{PrefixFileName(tempTsp, id)};
-    this->saveTsp(runFile);
-    std::string command{this->problem.TspSolver};
-    command.append(" --map-type=TSP_FILE --use-path-files-folder=false --use-prm=false --tsp-solver=");
-    command.append(this->problem.TspType);
-    command.append(" --problem=");
-    command.append(runFile.fileName);
-    system(command.c_str());
+    // TODO!!!!!!!!!!
+    // std::string id{"id_" + std::to_string(this->problem.Repetition) + "_"};
+    // FileStruct runFile{PrefixFileName(tempTsp, id)};
+    // this->saveTsp(runFile);
+    // std::string command{this->problem.TspSolver};
+    // command.append(" --map-type=TSP_FILE --use-path-files-folder=false --use-prm=false --tsp-solver=");
+    // command.append(this->problem.TspType);
+    // command.append(" --problem=");
+    // command.append(runFile.fileName);
+    // system(command.c_str());
 
-    std::string resultName{TEMP_RESULT};
-    std::ifstream resFile{resultName.insert(0, id), std::ios::in};
-    if (!resFile.good()) {
-      ERROR("Lazy TSP: temporary TSP file error");
-      return;
-    }
+    // std::string resultName{TEMP_RESULT};
+    // std::ifstream resFile{resultName.insert(0, id), std::ios::in};
+    // if (!resFile.good()) {
+    //   ERROR("Lazy TSP: temporary TSP file error");
+    //   return;
+    // }
 
-    if (resFile.is_open()) {
-      getline(resFile, resultLine);
-    } else {
-      ERROR("Lazy TSP: temporary TSP file not opened");
-      return;
-    }
+    // if (resFile.is_open()) {
+    //   getline(resFile, resultLine);
+    // } else {
+    //   ERROR("Lazy TSP: temporary TSP file not opened");
+    //   return;
+    // }
 
     processResults(resultLine, selectedEdges, newDist);
     newDist = 0;

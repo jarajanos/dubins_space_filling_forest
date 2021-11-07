@@ -35,13 +35,16 @@
 
 // used for LazyTSP
 #ifndef TEMP_TSP
-#define TEMP_TSP      "tempTsp.tsp"
+#define TEMP_TSP      "tempTsp"
 #endif
 
-#ifndef TEMP_RESULT
-#define TEMP_RESULT   "tempTsp.result"
+#ifndef TEMP_DIR
+#define TEMP_DIR   "temp/"
 #endif
 
+#define TSP_TOLERANCE     1e-5
+#define DEFAULT_CONCORDE  "solver/concorde/concorde/TSP/concorde"
+#define DEFUALT_LKH       "solver/lkh/LKH-3.0.6/LKH"
 
 #define DEFAULT_THRES_MISS 3
 #define SFF_TOLERANCE 1e-9

@@ -67,6 +67,13 @@ std::string Trim(const std::string &s) {
   return Ltrim(Rtrim(s));
 }
 
+std::string ToLower(std::string s) {
+  std::transform(s.begin(), s.end(), s.begin(), 
+                   [](unsigned char c){ return std::tolower(c); } 
+                  );
+    return s;
+}
+
 int ParseString(std::string &inp, std::string &outp1, std::string &outp2, std::string &delimiter) {
   size_t pos = inp.find(delimiter);
   int delimSize{static_cast<int>(delimiter.size())};

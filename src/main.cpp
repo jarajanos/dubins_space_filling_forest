@@ -131,17 +131,33 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     } else if (node.IsDefined()) {
       problem.ComputeTSP = true;
 
-      subNode = node["path"];
-      if (!subNode.IsDefined()) {
-        throw std::invalid_argument("invalid path node in \"TSP-solver\" root node");
-      }
-      problem.TspSolver = subNode.as<std::string>();
-
       subNode = node["type"];
       if (!subNode.IsDefined()) {
         throw std::invalid_argument("invalid type node in \"TSP-solver\" root node");
       }
-      problem.TspType = subNode.as<std::string>();
+
+      std::string inpTsp{ToLower(subNode.as<std::string>())};
+      if (inpTsp == "concorde") {
+        problem.TspType = Concorde;
+      } else if (inpTsp == "lkh") {
+        problem.TspType = LKH;
+      } else {
+        throw std::invalid_argument("unknown type node in \"TSP-solver\" root node");
+      }
+      
+      subNode = node["path"];
+      if (subNode.IsDefined()) {
+        problem.TspSolver = subNode.as<std::string>();
+      } else {
+        switch (problem.TspType) {
+          case Concorde:
+            problem.TspSolver = DEFAULT_CONCORDE;
+            break;
+          case LKH:
+            problem.TspSolver = DEFUALT_LKH;
+            break;
+        }
+      }
     }
 
     // algorithm node
