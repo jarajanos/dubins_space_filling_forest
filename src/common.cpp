@@ -14,6 +14,10 @@
 
 void DistanceHolder<Point2DDubins>::UpdateDistance(int angleId1, int angleId2) {
   Distance = Node1->Position.Distance(Node2->Position);
+  if (Distance >= std::numeric_limits<double>::max()) {
+    ERROR("Infinity distance between points");
+    return;
+  }
 
   if (angleId1 != -1) {
     Distance += Node1->DistanceToRoot(angleId1);
@@ -21,10 +25,20 @@ void DistanceHolder<Point2DDubins>::UpdateDistance(int angleId1, int angleId2) {
     Distance += Node1->DistanceToRoot();
   }
 
+  if (Distance >= std::numeric_limits<double>::max()) {
+    ERROR("Infinity distance to root 1");
+    return;
+  }
+
   if (angleId2 != -1) {
     Distance += Node2->DistanceToRoot(angleId2);
   } else {
     Distance += Node2->DistanceToRoot();
+  }
+
+  if (Distance >= std::numeric_limits<double>::max()) {
+    ERROR("Infinity distance to root 2");
+    return;
   }
 }
 

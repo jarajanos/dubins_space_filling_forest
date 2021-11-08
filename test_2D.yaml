@@ -1,7 +1,7 @@
 ---
   problem:
     solver: 'sff'
-    optimize: true
+    optimize: false
     iterations: 10000
     dimension: '2DDubins'
   
@@ -9,13 +9,12 @@
     standard: ' '
     name: '_'
 
-  TSP-solver:
-    path: '/home/jarajanos/Documents/obst_tsp/obst_tsp'
-    type: 'Concorde'
-
   robot:
     path: './models/robot_small.obj'
     type: 'obj'
+
+  TSP-solver:
+    type: 'LKH'
 
   obstacles:
     - path: './maps/dense.tri'
@@ -54,8 +53,9 @@
       id: 'sff_dubins'
     #TSP-file:
     #  path: 'output/tsp.tsp'
-    #TSP-paths:
-    #  path: 'output/tsp.tri'
+    TSP-paths:
+      path: 'output/tsp.tri'
+      type: 'map'
     tree:
       path: 'output//tree.tri'
       type: 'map'

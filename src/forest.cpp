@@ -280,7 +280,7 @@ void SpaceForest<Point2DDubins>::getPaths() {
 
           std::deque<DistanceHolder<Point2DDubins>> &borderPoints{this->borders(i, j, k, l)};
           for (DistanceHolder<Point2DDubins> &dist : borderPoints) {
-            dist.UpdateDistance(k, l);
+            dist.UpdateDistance(k, this->borders.OppositeAngleID(l));
           }
           std::sort(borderPoints.begin(), borderPoints.end());
         }
@@ -300,6 +300,10 @@ void SpaceForest<Point2DDubins>::getPaths() {
           std::deque<DistanceHolder<Point2DDubins>> &borderPoints{this->borders(i, j, k, l)};
           for (DistanceHolder<Point2DDubins> &dist : borderPoints) {
             if (dist.IsValid || this->isPathFree(dist.Node1->DubinsPosition(k, numAngles, false), dist.Node2->DubinsPosition(l, numAngles, true))) {
+              if (dist.Distance >= std::numeric_limits<double>::max()) {
+                //ERROR("Infinity distance getPaths");
+              }
+              
               this->neighboringMatrix.AddLink(dist, i, j, k, l, true);
               break;
             }

@@ -171,6 +171,9 @@ void Solver<Point2DDubins>::getAllPaths() {
               }
 
               double distance{computeDistance(finalPlan)};
+              if (distance >= std::numeric_limits<double>::max()) {
+                ERROR("Infinity in getAllPaths");
+              }
               if (!this->neighboringMatrix.Exists(id1, id2, angle1, angle2)) {
                 DistanceHolder<Point2DDubins> newLink{node1, node2, distance, finalPlan};
                 this->neighboringMatrix.AddLink(newLink, id1, id2, angle1, angle2, true);
@@ -193,6 +196,7 @@ void Solver<Point2DDubins>::getAllPaths() {
 
 template <> 
 void Solver<Point2DDubins>::computeTsp() {
+  INFO("Computing TSP");
   TSPMatrix<Point2DDubins> gatsp{this->problem, this->neighboringMatrix};
   TSPMatrix<Point2DDubins> atsp{gatsp.TransformGATSPtoATSP()};
 
@@ -416,12 +420,12 @@ void Solver<Point2DDubins>::saveTspPaths(const FileStruct file) {
       for (int i{0}; i < numRoots; ++i) {
         auto [ actNode, actAngle ] = gatspSolution[i];
         auto [ nextNode, nextAngle ] = gatspSolution[(i + 1) % numRoots];
-        if (!this->neighboringMatrix.Exists(actNode, actAngle, nextNode, nextAngle)) {
+        if (!this->neighboringMatrix.Exists(actNode, nextNode, actAngle, nextAngle)) {
           ERROR("Invalid TSP solution");
           exit(1);
         }
 
-        DistanceHolder<Point2DDubins> &holder{this->neighboringMatrix(actNode, actAngle, nextNode, nextAngle)};
+        DistanceHolder<Point2DDubins> &holder{this->neighboringMatrix(actNode, nextNode, actAngle, nextAngle)};
         std::deque<Point2DDubins> &plan{holder.Plan};
         for (int m{0}; m < plan.size() - 1; ++m) {
           opendubins::State startDub{plan[m][0], plan[m][1], plan[m].GetAngle()};

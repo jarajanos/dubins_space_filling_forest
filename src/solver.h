@@ -182,6 +182,7 @@ void Solver<R>::getAllPaths() {
 
 template<class R>
 void Solver<R>::computeTsp() {
+  INFO("Computing TSP");
   TSPMatrix<R> tsp{this->problem, this->neighboringMatrix};
 
   // already TSP, run desired solver

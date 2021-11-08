@@ -121,7 +121,6 @@ void SpaceForest<R>::Solve() {
   timeMeasure.Start();
 
   int iter{0};
-  int checkConnIter{0};
   bool solved{false};
   bool emptyFrontier{false};
   // iterate
@@ -165,7 +164,6 @@ void SpaceForest<R>::Solve() {
     bool expandResult{true};
     for (int i{0}; i < this->problem.MaxMisses && expandResult && iter < this->problem.MaxIterations; ++i) {
       ++iter;
-      ++checkConnIter;
       expandResult &= expandNode(nodeToExpand, solved, iter);
       checkIterationSaves(iter);
     }
@@ -190,12 +188,7 @@ void SpaceForest<R>::Solve() {
       closed_list.push_back(nodeToExpand);
     }
 
-    if (!solved && checkConnIter >= CHECK_CONNECTED_ITER) {
-      checkConnIter = 0;
-
-      // check whether all trees are connected
-      bool connected{checkConnected() == this->problem.GetNumRoots()};
-      
+    if (!solved) {
       // check, whether all frontiers are empty
       if (this->problem.PriorityBias != 0) {  // uses priority bias
         emptyFrontier = true;
@@ -205,6 +198,13 @@ void SpaceForest<R>::Solve() {
       } else {
         emptyFrontier = frontier.empty();
       }
+
+      bool connected{false};
+      if (emptyFrontier) {
+        // check whether all trees are connected
+        connected = checkConnected() == this->problem.GetNumRoots();
+      }
+
       solved = (!this->problem.HasGoal && emptyFrontier && connected);
     } else if (solved) {
       // update the connected trees to correct params output
@@ -226,6 +226,10 @@ void SpaceForest<R>::Solve() {
   getPaths();
   this->getAllPaths();
 
+  if (this->problem.ComputeTSP) {
+    this->computeTsp();
+  }
+
   if (SaveRoadmap <= this->problem.SaveOpt) {
     this->savePaths(this->problem.FileNames[SaveRoadmap]);
   }
@@ -236,6 +240,10 @@ void SpaceForest<R>::Solve() {
 
   if (SaveTSPFile <= this->problem.SaveOpt) {
     this->saveTsp(this->problem.FileNames[SaveTSPFile]);
+  }
+
+  if (this->problem.ComputeTSP && SaveTSPPaths <= this->problem.SaveOpt) {
+    this->saveTspPaths(this->problem.FileNames[SaveTSPPaths]);
   }
 
   if (SaveFrontiers <= this->problem.SaveOpt) {

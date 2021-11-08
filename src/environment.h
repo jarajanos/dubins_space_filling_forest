@@ -50,7 +50,9 @@ class Environment {
     }
 
     ~Environment() {
-      delete Robot;
+      if (Robot != nullptr) {
+        delete Robot;
+      }
     }
 
     bool Collide(R position); // whether robot in such position collides with any known obstacle

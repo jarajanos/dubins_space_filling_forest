@@ -50,7 +50,7 @@ public:
   TSPOrder SolveByLKH();
 
 protected:
-  Problem<R> problem;
+  Problem<R> *problem;
 
   int dubinsResolution{-1};
   int size;
@@ -113,7 +113,7 @@ template <class R> TSPMatrix<R>::TSPMatrix(int size, double value) : size{size} 
 template <class R>
 TSPMatrix<R>::TSPMatrix(Problem<R> &problem, DistanceMatrix<DistanceHolder<R>> &neighboringMatrix)
     : TSPMatrix(neighboringMatrix.GetSize(), -1) {
-      this->problem = problem;
+      this->problem = &problem;
       
       isTSP = true;
       for (int i{0}; i < size; ++i) {
@@ -155,7 +155,7 @@ TSPMatrix<R> TSPMatrix<R>::TransformGATSPtoATSP() {
   double biggerM{bigM * size};
 
   // init new matrix
-  TSPMatrix<R> atsp(size, biggerM);
+  TSPMatrix<R> atsp(size, bigM);
   atsp.problem = this->problem;
   atsp.dubinsResolution = dubinsResolution;
   atsp.isATSP = true;
@@ -169,7 +169,7 @@ TSPMatrix<R> TSPMatrix<R>::TransformGATSPtoATSP() {
       for (int j{0}; j < dimension; ++j) {
         for (int l{0}; l < dubinsResolution; ++l) {
           int toId{j * dubinsResolution + l};
-          int toTfId{j + dubinsResolution + ((l + 1) % dubinsResolution)};
+          int toTfId{j * dubinsResolution + ((l + 1) % dubinsResolution)};
 
           if (i == j && k == l) {
             // zero cycle
@@ -274,17 +274,17 @@ TSPOrder TSPMatrix<R>::SolveByConcorde() {
     exit(1);
   }
 
-  ConcordeWrapper wrapper(this->problem.TspSolver, TEMP_DIR);
+  ConcordeWrapper wrapper(this->problem->TspSolver, TEMP_DIR);
 
   FileStruct tempTsp;
   tempTsp.fileName = TEMP_TSP;
-  std::string id{"id_" + std::to_string(this->problem.Repetition) + "_"};
+  std::string id{"id_" + std::to_string(this->problem->Repetition) + "_"};
   FileStruct runFile{PrefixFileName(tempTsp, id)};
 
   IntegerMatrix valueMatrix{tsp->getIntegerMatrix()};
 
   wrapper.WriteTSPLIBFile(runFile.fileName, valueMatrix, id, false);
-  bool run_ret{wrapper.RunSolverCmd(runFile.fileName, true)};
+  bool run_ret{wrapper.RunSolverCmd(runFile.fileName, false)};
   TSPOrder solution{wrapper.ReadResultCmd(runFile.fileName)};
   bool delete_ret{wrapper.RmSolutionFileCmd(runFile.fileName)};
 
@@ -306,17 +306,17 @@ TSPOrder TSPMatrix<R>::SolveByLKH() {
     tsp = this;
   }
 
-  LKHWrapper wrapper(this->problem.TspSolver, TEMP_DIR);
+  LKHWrapper wrapper(this->problem->TspSolver, TEMP_DIR);
 
   FileStruct tempTsp;
   tempTsp.fileName = TEMP_TSP;
-  std::string id{"id_" + std::to_string(this->problem.Repetition) + "_"};
+  std::string id{"id_" + std::to_string(this->problem->Repetition) + "_"};
   FileStruct runFile{PrefixFileName(tempTsp, id)};
 
   IntegerMatrix valueMatrix{tsp->getIntegerMatrix()};
 
   wrapper.WriteTSPLIBFile(runFile.fileName, valueMatrix, id, tsp->isATSP);
-  bool run_ret{wrapper.RunSolverCmd(runFile.fileName, true)};
+  bool run_ret{wrapper.RunSolverCmd(runFile.fileName, false)};
   TSPOrder solution{wrapper.ReadResultCmd(runFile.fileName)};
   bool delete_ret{wrapper.RmSolutionFileCmd(runFile.fileName)};
 
@@ -333,7 +333,7 @@ IntegerMatrix TSPMatrix<R>::getIntegerMatrix() {
   } else if (this->size <= 100) {
     maxValue = 1 << 12;
   } else {
-    maxValue = 1 << 22;
+    maxValue = 1 << 20;
   }
 
   valueMatrix.resize(this->size);

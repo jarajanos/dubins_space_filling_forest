@@ -17,7 +17,7 @@ TSPMatrix<Point2DDubins>::TSPMatrix(Problem<Point2DDubins> &problem,
     DistanceMatrix<DistanceHolder<Point2DDubins>> &neighboringMatrix)
     : TSPMatrix(neighboringMatrix.GetSize() * neighboringMatrix.GetResolution(), -1) {
         this->dubinsResolution = neighboringMatrix.GetResolution();
-        this->problem = problem;
+        this->problem = &problem;
 
         int dimension{neighboringMatrix.GetSize()};
         int resolution{neighboringMatrix.GetResolution()};
@@ -66,9 +66,8 @@ std::string Wrapper::WriteTSPLIBFile(std::string &fname_basis,
   }
   int dims_tsp = valuematrix.size();
   std::string name_line = "NAME : " + fname_basis + "\n";
-  std::string type_line = isATSP ? "TYPE: ATSP\n" : "TYPE: TSP\n";
   std::string comment_line = "COMMENT : " + user_comment + "\n";
-  std::string tsp_line = "TYPE : ATSP\n";
+  std::string tsp_line = isATSP ? "TYPE: ATSP\n" : "TYPE: TSP\n";
   std::string dimension_line = "DIMENSION : " + std::to_string(dims_tsp) + "\n";
   std::string edge_weight_type_line =
       "EDGE_WEIGHT_TYPE : EXPLICIT\n"; // explicit only
@@ -133,7 +132,7 @@ std::string Wrapper::WriteTSPLIBFile(std::string &fname_basis,
 
 bool Wrapper::RmSolutionFileCmd(std::string fname_basis) {
   std::stringstream rm_sol_cmd;
-  rm_sol_cmd << "rm " << fname_basis << ".txt";
+  rm_sol_cmd << "rm " << tsplib_dir << fname_basis << ".txt";
   int retval = std::system(rm_sol_cmd.str().c_str());
   return retval == 0;
 }
