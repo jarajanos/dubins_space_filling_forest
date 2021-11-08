@@ -498,8 +498,12 @@ T AngleDifference(T a1, T a2) {
  * @param b Flag to be added
  * @return SaveOptions New save options 
  */
-inline SaveOptions operator|(SaveOptions a, SaveOptions b) {
+inline SaveOptions operator+(SaveOptions a, SaveOptions b) {
   return static_cast<SaveOptions>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+inline SaveOptions operator-(SaveOptions a, SaveOptions b) {
+  return static_cast<SaveOptions>(static_cast<int>(a) - static_cast<int>(b));
 }
 
 /**

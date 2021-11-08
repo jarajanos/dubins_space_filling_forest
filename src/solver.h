@@ -17,6 +17,7 @@
 #include "problem.h"
 #include "random-generator.h"
 #include "common.h"
+#include "tsp-handler.h"
 
 #include "opendubins/dubins.h"
 
@@ -37,6 +38,8 @@ class Solver {
     std::deque<Tree<R>> trees;
     DistanceMatrix<DistanceHolder<R>> neighboringMatrix;
     std::deque<Tree<R> *> connectedTrees;
+    TSPOrder tspSolution;
+    GATSPOrder gatspSolution;
 
     bool isPathFree(const R start, const R finish);
 
@@ -48,16 +51,22 @@ class Solver {
     void checkDistances(std::deque<Node<R> *> &plan, double distanceToCheck);
     double computeDistance(std::deque<R> &plan);
 
+    void computeTsp();
+
     virtual void checkIterationSaves(const int iter);
     virtual void saveTrees(const FileStruct file);
     virtual void saveCities(const FileStruct file);
     virtual void savePaths(const FileStruct file);
     virtual void saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime);
     virtual void saveTsp(const FileStruct file);
+    virtual void saveTspPaths(const FileStruct file);
 };
 
 template <> void Solver<Point2DDubins>::initNeighboringMatrix();
 template <> void Solver<Point2DDubins>::getAllPaths();
+
+template <> void Solver<Point2DDubins>::computeTsp();
+template <> void Solver<Point2DDubins>::saveTspPaths(const FileStruct file);
 
 template <> void Solver<Point2DDubins>::saveTrees(const FileStruct file);
 template <> void Solver<Point2DDubins>::saveTsp(const FileStruct file);
@@ -167,6 +176,28 @@ void Solver<R>::getAllPaths() {
           this->neighboringMatrix(id1, id2) = DistanceHolder<R>(node1, node2, distance, finalPlan);
         }
       }
+    }
+  }
+}
+
+template<class R>
+void Solver<R>::computeTsp() {
+  TSPMatrix<R> tsp{this->problem, this->neighboringMatrix};
+
+  // already TSP, run desired solver
+  if (this->problem.TspType == Concorde) {
+    tspSolution = tsp.SolveByConcorde();
+  } else if (this->problem.TspType == LKH) {
+    tspSolution = tsp.SolveByLKH();
+  } else {
+    ERROR("TSP solver not implemented");
+    exit(1);
+  }
+
+  if (tspSolution.size() == 0) {
+    WARN("TSP not solved");
+    if (SaveTSPPaths <= this->problem.SaveOpt) {
+      this->problem.SaveOpt = this->problem.SaveOpt - SaveTSPPaths;
     }
   }
 }
@@ -450,6 +481,89 @@ void Solver<R>::savePaths(const FileStruct file) {
           }
           fileStream << "\n";
         }
+      }
+    } else {
+      throw std::string("Unimplemented file type");
+    }
+
+    fileStream.flush();
+    fileStream.close();
+  } else {
+    std::stringstream message;
+    message << "Cannot open file at: " << file.fileName;
+    WARN(message.str());
+  }  
+}
+
+template<class R>
+void Solver<R>::saveTspPaths(const FileStruct file) {
+  INFO("Saving TSP paths");
+  std::ofstream fileStream{file.fileName.c_str()};
+  if (!fileStream.good()) {
+    std::stringstream message;
+    message << "Cannot create file at: " << file.fileName;
+
+    WARN(message.str());
+    return;
+  }
+
+  if (fileStream.is_open()) {
+    int numRoots{this->problem.GetNumRoots()};
+    if (file.type == Obj) {
+      fileStream << "o TspPaths\n";
+      for (int i{0}; i < numRoots; ++i) {
+        int actNode{tspSolution[i]};
+        int nextNode{tspSolution[(i + 1) % numRoots]};
+        DistanceHolder<R> &holder{this->neighboringMatrix(actNode, nextNode)};
+        
+        if (holder.Node1 == NULL) {
+          ERROR("Invalid TSP solution");
+          exit(1);
+        }
+
+        std::deque<R> &plan{holder.Plan};
+        for (int k{0}; k < plan.size(); ++k) {
+          R temp{plan[k] / problem.Env.ScaleFactor};
+          fileStream << "v" << DELIMITER_OUT;
+          temp.PrintPosition(fileStream);
+          fileStream << "\n";
+        }
+      }
+      
+      uint32_t pointCounter{1};
+      for (int i{0}; i < numRoots; ++i) {
+        int actNode{tspSolution[i]};
+        int nextNode{tspSolution[(i + 1) % numRoots]};
+        DistanceHolder<R> &holder{this->neighboringMatrix(actNode, nextNode)};
+
+        if (holder.Node1 == NULL) {
+          ERROR("Invalid TSP solution");
+          exit(1);
+        }
+
+        std::deque<R> &plan{holder.Plan};
+        for (int k{0}; k < plan.size() - 1; ++k) {
+          fileStream << "l" << DELIMITER_OUT << pointCounter << DELIMITER_OUT << ++pointCounter << "\n";
+        }
+        ++pointCounter;
+      }
+    } else if (file.type == Map) {
+      fileStream << "#TspPaths" << DELIMITER_OUT << problem.Dimension << "\n";;
+      for (int i{0}; i < numRoots; ++i) {
+        int actNode{tspSolution[i]};
+        int nextNode{tspSolution[(i + 1) % numRoots]};
+        DistanceHolder<R> &holder{this->neighboringMatrix(actNode, nextNode)};
+
+        if (holder.Node1 == NULL) {
+          ERROR("Invalid TSP solution");
+          exit(1);
+        }
+
+        std::deque<R> &plan{holder.Plan};
+        for (int k{0}; k < plan.size() - 1; ++k) {
+          fileStream << plan[k] / problem.Env.ScaleFactor << DELIMITER_OUT << plan[k+1] / problem.Env.ScaleFactor << "\n";
+        }
+        fileStream << "\n";
       }
     } else {
       throw std::string("Unimplemented file type");

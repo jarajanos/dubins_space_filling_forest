@@ -67,14 +67,14 @@ template<> TSPMatrix<Point2DDubins>::TSPMatrix(Problem<Point2DDubins> &problem, 
 
 class Wrapper {
 public: 
-  Wrapper(std::string &solver_dir, std::string &run_dir);
+  Wrapper(std::string solver_dir, std::string run_dir);
   std::string WriteTSPLIBFile(std::string &fname_basis,
                                  IntegerMatrix &valuematrix,
                                  std::string &user_comment,
                                  bool isATSP);
-  virtual TSPOrder ReadResultCmd(std::string &fname_basis) = 0;
-  virtual bool RunSolverCmd(std::string &fname_basis, bool silent) = 0;
-  bool RmSolutionFileCmd(std::string &fname_basis);
+  virtual TSPOrder ReadResultCmd(std::string fname_basis) = 0;
+  virtual bool RunSolverCmd(std::string fname_basis, bool silent) = 0;
+  bool RmSolutionFileCmd(std::string fname_basis);
 protected:
   std::string solver_dir;
   std::string tsplib_dir;
@@ -84,16 +84,16 @@ class LKHWrapper : public Wrapper {
 public:
   using Wrapper::Wrapper;
 
-  TSPOrder ReadResultCmd(std::string &fname_basis) override;
-  bool RunSolverCmd(std::string &fname_basis, bool silent) override;
+  TSPOrder ReadResultCmd(std::string fname_basis) override;
+  bool RunSolverCmd(std::string fname_basis, bool silent) override;
 };
 
 class ConcordeWrapper : public Wrapper {
 public:
   using Wrapper::Wrapper;
 
-  TSPOrder ReadResultCmd(std::string &fname_basis) override;
-  bool RunSolverCmd(std::string &fname_basis, bool silent) override;
+  TSPOrder ReadResultCmd(std::string fname_basis) override;
+  bool RunSolverCmd(std::string fname_basis, bool silent) override;
 };
 
 template <class R> TSPMatrix<R>::TSPMatrix(int size) : size{size} {
@@ -189,7 +189,7 @@ template<class R>
 GATSPOrder TSPMatrix<R>::TransformATSPSolToGATSP(TSPOrder &atspSeq) {
   GATSPOrder gatspSolution;
 
-  int seqSize{atspSeq.size()};
+  int seqSize{(int)atspSeq.size()};
   int last{atspSeq[0] / dubinsResolution};
   for (int i{seqSize - 1}; i >= 0; --i) {
     int val{atspSeq[i]};
@@ -265,13 +265,13 @@ TSPOrder TSPMatrix<R>::SolveByConcorde() {
   TSPMatrix<R> *tsp;
   TSPMatrix<R> dummy;
   if (isTSP) {
-    tsp = *this;
+    tsp = this;
   } else if (isATSP) {
     dummy = TransformATSPtoTSP();
     tsp = &dummy;
   } else {
-    dummy = TransformGATSPtoATSP().TransformATSPtoTSP();
-    tsp = &dummy;
+    ERROR("Trying to solve TSP from GATSP -- convert matrix to ATSP/TSP first");
+    exit(1);
   }
 
   ConcordeWrapper wrapper(this->problem.TspSolver, TEMP_DIR);
@@ -290,10 +290,8 @@ TSPOrder TSPMatrix<R>::SolveByConcorde() {
 
   if (isTSP) {
     return solution;
-  } else if (isATSP) {
-    return TransformTSPSolToATSP(solution);
   } else {
-    return TransformATSPSolToGATSP(TransformTSPSolToATSP(solution));
+    return TransformTSPSolToATSP(solution);
   }
 }
 
@@ -302,8 +300,8 @@ TSPOrder TSPMatrix<R>::SolveByLKH() {
   TSPMatrix *tsp;
   TSPMatrix dummy;
   if (!isTSP && !isATSP) {
-    dummy = TransformGATSPtoATSP();
-    tsp = &dummy;
+    ERROR("Trying to solve TSP from GATSP -- convert matrix to ATSP/TSP first");
+    exit(1);
   } else {
     tsp = this;
   }
@@ -322,11 +320,7 @@ TSPOrder TSPMatrix<R>::SolveByLKH() {
   TSPOrder solution{wrapper.ReadResultCmd(runFile.fileName)};
   bool delete_ret{wrapper.RmSolutionFileCmd(runFile.fileName)};
 
-  if (!isTSP && !isATSP) {
-    return TransformATSPSolToGATSP(solution);
-  } else {
-    return solution;
-  }
+  return solution;
 }
 
 template<class R>

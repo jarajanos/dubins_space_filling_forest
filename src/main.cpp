@@ -327,13 +327,13 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     if (node.IsDefined()) {
       subNode = node["goals"];
       if (!GetFile(subNode, tempFile, problem.Repetition)) {
-        problem.SaveOpt = problem.SaveOpt | SaveGoals;
+        problem.SaveOpt = problem.SaveOpt + SaveGoals;
         problem.FileNames[SaveGoals] = tempFile;
       }
 
       subNode = node["tree"];
       if (!GetFile(subNode, tempFile, problem.Repetition)) {
-        problem.SaveOpt = problem.SaveOpt | SaveTree;
+        problem.SaveOpt = problem.SaveOpt + SaveTree;
         problem.FileNames[SaveTree] = tempFile;
 
         subNode = subNode["frequency"];
@@ -344,13 +344,13 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
 
       subNode = node["roadmap"];
       if (!GetFile(subNode, tempFile, problem.Repetition)) {
-        problem.SaveOpt = problem.SaveOpt | SaveRoadmap;
+        problem.SaveOpt = problem.SaveOpt + SaveRoadmap;
         problem.FileNames[SaveRoadmap] = tempFile;
       }
 
       subNode = node["params"];
       if (!GetFile(subNode, tempFile, problem.Repetition, false)) {
-        problem.SaveOpt = problem.SaveOpt | SaveParams;
+        problem.SaveOpt = problem.SaveOpt + SaveParams;
         problem.FileNames[SaveParams] = tempFile;
 
         subNode = subNode["id"];
@@ -361,7 +361,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
 
       subNode = node["TSP-file"];
       if (!GetFile(subNode, tempFile, problem.Repetition)) {
-        problem.SaveOpt = problem.SaveOpt | SaveTSPFile;
+        problem.SaveOpt = problem.SaveOpt + SaveTSPFile;
         problem.FileNames[SaveTSPFile] = tempFile;
       }
 
@@ -370,7 +370,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
         if (!problem.ComputeTSP) {
           WARN("TSP paths specified although the TSP is not solved -- maybe you forgot to specify TSP solver?");
         }
-        problem.SaveOpt = problem.SaveOpt | SaveTSPPaths;
+        problem.SaveOpt = problem.SaveOpt + SaveTSPPaths;
         problem.FileNames[SaveTSPPaths] = tempFile;
       }
 
@@ -379,7 +379,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
         if (problem.Solver != SFF) {
           throw std::invalid_argument("frontier output defined only for SFF-based solvers");
         }
-        problem.SaveOpt = problem.SaveOpt | SaveFrontiers;
+        problem.SaveOpt = problem.SaveOpt + SaveFrontiers;
         problem.FileNames[SaveFrontiers] = tempFile;
 
         subNode = subNode["frequency"];

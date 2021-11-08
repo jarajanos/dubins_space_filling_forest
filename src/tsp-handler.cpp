@@ -48,7 +48,7 @@ TSPMatrix<Point2DDubins>::TSPMatrix(Problem<Point2DDubins> &problem,
         }
       }
 
-Wrapper::Wrapper(std::string &solver_dir, std::string &run_dir) {
+Wrapper::Wrapper(std::string solver_dir, std::string run_dir) {
   std::filesystem::path current_path = std::filesystem::current_path();
 
   std::filesystem::path full_lkh_dir = current_path;
@@ -131,7 +131,7 @@ std::string Wrapper::WriteTSPLIBFile(std::string &fname_basis,
 }
 
 
-bool Wrapper::RmSolutionFileCmd(std::string &fname_basis) {
+bool Wrapper::RmSolutionFileCmd(std::string fname_basis) {
   std::stringstream rm_sol_cmd;
   rm_sol_cmd << "rm " << fname_basis << ".txt";
   int retval = std::system(rm_sol_cmd.str().c_str());
@@ -140,7 +140,7 @@ bool Wrapper::RmSolutionFileCmd(std::string &fname_basis) {
 
 ///////////////////////////////// LKH section ////////////////////////////
 
-bool LKHWrapper::RunSolverCmd(std::string &fname_basis,
+bool LKHWrapper::RunSolverCmd(std::string fname_basis,
                                    bool silent = false) {
   std::stringstream run_lkh_cmd;
   run_lkh_cmd << solver_dir << " " << tsplib_dir << fname_basis
@@ -154,7 +154,7 @@ bool LKHWrapper::RunSolverCmd(std::string &fname_basis,
   return retval == 0;
 }
 
-TSPOrder LKHWrapper::ReadResultCmd(std::string &fname_basis) {
+TSPOrder LKHWrapper::ReadResultCmd(std::string fname_basis) {
   TSPOrder sequence;
   std::stringstream outfilename;
   outfilename << tsplib_dir << fname_basis << ".txt";
@@ -182,7 +182,7 @@ TSPOrder LKHWrapper::ReadResultCmd(std::string &fname_basis) {
 
 //////////////////// Concorde section //////////////////////////////////
 
-bool ConcordeWrapper::RunSolverCmd(std::string &fname_basis,
+bool ConcordeWrapper::RunSolverCmd(std::string fname_basis,
                                    bool silent = false) {
   std::stringstream run_conc_cmd;
   run_conc_cmd << solver_dir << " -o " << tsplib_dir << fname_basis << ".txt -x " << tsplib_dir << fname_basis
@@ -197,7 +197,7 @@ bool ConcordeWrapper::RunSolverCmd(std::string &fname_basis,
   return retval == 0;
 }
 
-TSPOrder ConcordeWrapper::ReadResultCmd(std::string &fname_basis) {
+TSPOrder ConcordeWrapper::ReadResultCmd(std::string fname_basis) {
   TSPOrder sequence;
   std::stringstream outfilename;
   outfilename << tsplib_dir << fname_basis << ".txt";

@@ -191,6 +191,38 @@ void Solver<Point2DDubins>::getAllPaths() {
   }
 }
 
+template <> 
+void Solver<Point2DDubins>::computeTsp() {
+  TSPMatrix<Point2DDubins> gatsp{this->problem, this->neighboringMatrix};
+  TSPMatrix<Point2DDubins> atsp{gatsp.TransformGATSPtoATSP()};
+
+  // converted to ATSP, run desired solver
+  TSPOrder tempSol;
+  if (this->problem.TspType == Concorde) {
+    tempSol = atsp.SolveByConcorde();
+  } else if (this->problem.TspType == LKH) {
+    tempSol = atsp.SolveByLKH();
+  } else {
+    ERROR("TSP solver not implemented");
+    exit(1);
+  }
+
+  if (tempSol.size() == 0) {
+    WARN("TSP not solved");
+    if (SaveTSPPaths <= this->problem.SaveOpt) {
+      this->problem.SaveOpt = this->problem.SaveOpt - SaveTSPPaths;
+    }
+  }
+
+  gatspSolution = atsp.TransformATSPSolToGATSP(tempSol);
+
+  // convert also to tsp solution
+  for (auto &pair : gatspSolution) {
+    auto [ nodeId, angleId ] = pair;
+    tspSolution.push_back(nodeId);
+  }
+}
+
 template<>
 void Solver<Point2DDubins>::saveTrees(const FileStruct file) {
   INFO("Saving trees");
@@ -347,6 +379,68 @@ void Solver<Point2DDubins>::savePaths(const FileStruct file) {
             }
           }
         }
+      }
+    } else {
+      throw std::string("Unimplemented file type");
+    }
+
+    fileStream.flush();
+    fileStream.close();
+  } else {
+    std::stringstream message;
+    message << "Cannot open file at: " << file.fileName;
+    WARN(message.str());
+  }  
+}
+
+
+template <> 
+void Solver<Point2DDubins>::saveTspPaths(const FileStruct file) {
+  INFO("Saving TSP paths");
+  std::ofstream fileStream{file.fileName.c_str()};
+  if (!fileStream.good()) {
+    std::stringstream message;
+    message << "Cannot create file at: " << file.fileName;
+
+    WARN(message.str());
+    return;
+  }
+
+  if (fileStream.is_open()) {
+    int numRoots{this->problem.GetNumRoots()};
+    int numAngles{this->problem.DubinsResolution};
+    if (file.type == Obj) {
+      ERROR("Not implemented yet");
+    } else if (file.type == Map) {
+      fileStream << "#TspPaths" << DELIMITER_OUT << problem.Dimension << "\n";
+      for (int i{0}; i < numRoots; ++i) {
+        auto [ actNode, actAngle ] = gatspSolution[i];
+        auto [ nextNode, nextAngle ] = gatspSolution[(i + 1) % numRoots];
+        if (!this->neighboringMatrix.Exists(actNode, actAngle, nextNode, nextAngle)) {
+          ERROR("Invalid TSP solution");
+          exit(1);
+        }
+
+        DistanceHolder<Point2DDubins> &holder{this->neighboringMatrix(actNode, actAngle, nextNode, nextAngle)};
+        std::deque<Point2DDubins> &plan{holder.Plan};
+        for (int m{0}; m < plan.size() - 1; ++m) {
+          opendubins::State startDub{plan[m][0], plan[m][1], plan[m].GetAngle()};
+          opendubins::State finishDub{plan[m+1][0], plan[m+1][1], plan[m+1].GetAngle()};
+          opendubins::Dubins pathFromClosest{startDub, finishDub, this->problem.DubinsRadius};
+          
+          Point2DDubins lastPoint{startDub};
+          Point2DDubins actPoint;
+          double length{pathFromClosest.length};
+          double parts{length / this->problem.CollisionDist};
+          for (int index{1}; index < parts; ++index) {
+            actPoint = Point2DDubins(pathFromClosest.getState(index * this->problem.CollisionDist));
+            fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << "\n";
+            lastPoint = actPoint;
+          }
+          actPoint = Point2DDubins(finishDub);
+          fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << "\n";
+        }
+        fileStream << "\n";    
       }
     } else {
       throw std::string("Unimplemented file type");
