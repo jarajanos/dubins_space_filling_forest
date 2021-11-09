@@ -28,13 +28,13 @@ class SpaceForest : public Solver<R> {
 
     DistanceMatrix<std::deque<DistanceHolder<R>>> borders;
 
-    void initBorders();
     void initNodeTypeSpecific(Node<R> &node);
 
     bool expandNode(Node<R> *expanded, bool &solved, const unsigned int iteration);
     bool getAndCheckNewPoint(Node<R> *expanded, R* newPoint);
     bool checkExpandedTree(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix);
     bool checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix, bool &solved);
+    bool pathToGoalExists(R &newPoint);
 
     void optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>* &newNode, flann::Matrix<float> &matrix, int iteration);
     bool filterNode(Node<R> &neighbor);
@@ -49,10 +49,9 @@ class SpaceForest : public Solver<R> {
     void checkIterationSaves(const int iter) override;
 };
 
-template<> void SpaceForest<Point2DDubins>::initBorders();
 template<> void SpaceForest<Point2DDubins>::initNodeTypeSpecific(Node<Point2DDubins> &node);
 template<> bool SpaceForest<Point2DDubins>::expandNode(Node<Point2DDubins> *expanded, bool &solved, const unsigned int iteration);
-template<> bool SpaceForest<Point2DDubins>::checkOtherTrees(Node<Point2DDubins> *expanded, Point2DDubins* newPoint, flann::Matrix<float> &matrix, bool &solved);
+template<> bool SpaceForest<Point2DDubins>::pathToGoalExists(Point2DDubins &newPoint);
 template<> bool SpaceForest<Point2DDubins>::filterNode(Node<Point2DDubins> &neighbor);
 template<> void SpaceForest<Point2DDubins>::emplaceNewNode(Node<Point2DDubins> *expanded, Point2DDubins* newPoint, Node<Point2DDubins>* &newNode, int iteration);
 template<> void SpaceForest<Point2DDubins>::rewireNodes(Node<Point2DDubins> *newNode, Node<Point2DDubins> &neighbor, double newDistance);
@@ -60,8 +59,7 @@ template<> bool SpaceForest<Point2DDubins>::checkBorders(int id1, int id2);
 template<> void SpaceForest<Point2DDubins>::getPaths();
 
 template<class R>
-SpaceForest<R>::SpaceForest(Problem<R> &problem) : Solver<R>(problem) {
-  initBorders();
+SpaceForest<R>::SpaceForest(Problem<R> &problem) : Solver<R>(problem), borders{this->problem.GetNumRoots()} {
   for (int j{0}; j < this->problem.Roots.size(); ++j) {
     Tree<R> &tree{this->trees.emplace_back()};
     Node<R> &node{tree.Leaves.emplace_back(this->problem.Roots[j], &tree, nullptr, 0, 0)};
@@ -386,7 +384,7 @@ bool SpaceForest<R>::checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matr
         // neighbouring trees, add to neighboring matrix and below dTree distance -> invalid point, but save expanded
         // check whether the goal was achieved
         if (this->problem.HasGoal && neighbour->Position == this->problem.Goal) {
-          solved = this->isPathFree(*newPoint, this->problem.Goal);  // when true, break the solve loop and after the creation of the new node, add it to the neighbouring matrix
+          solved = pathToGoalExists(*newPoint);  // when true, break the solve loop and after the creation of the new node, add it to the neighbouring matrix
         } else if (!this->problem.HasGoal) {   
           std::deque<DistanceHolder<R>> &borderPoints{this->borders(neighbourRootID, expandedRootID)};
           DistanceHolder<R> holder{neighbour, expanded};
@@ -403,6 +401,11 @@ bool SpaceForest<R>::checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matr
   }
 
   return false;
+}
+
+template<class R>
+bool SpaceForest<R>::pathToGoalExists(R &newPoint) {
+  return this->isPathFree(newPoint, this->problem.Goal);
 }
 
 template<class R>
@@ -653,11 +656,6 @@ void SpaceForest<R>::checkIterationSaves(const int iter) {
     std::string prefix{"iter_" + std::to_string(iter) + "_"};
     this->saveFrontiers(PrefixFileName(this->problem.FileNames[SaveFrontiers], prefix));
   }
-}
-
-template<class R>
-void SpaceForest<R>::initBorders() {
-  this->borders = DistanceMatrix<std::deque<DistanceHolder<R>>>(this->problem.GetNumRoots());
 }
 
 template<class R>

@@ -1,7 +1,7 @@
 ---
   problem:
     solver: 'sff'
-    optimize: false
+    optimize: true
     iterations: 10000
     dimension: '2DDubins'
   

@@ -208,7 +208,7 @@ struct DistanceHolder<Point2DDubins> {
   bool IsValid{false};
   std::deque<Point2DDubins> Plan;
 
-  DistanceHolder() : Node1{NULL}, Node2{NULL}, Distance{std::numeric_limits<double>::max()} {
+  DistanceHolder() : Node1{nullptr}, Node2{nullptr}, Distance{std::numeric_limits<double>::max()} {
   }
 
   DistanceHolder(Node<Point2DDubins> *first, Node<Point2DDubins> *second, bool computeDistance=false) : Node1{first}, Node2{second} {
@@ -239,7 +239,7 @@ struct DistanceHolder<Point2DDubins> {
   }
 
   const bool Exists() const {
-    return Node1 != nullptr;
+    return Distance != std::numeric_limits<double>::max();
   }
 
   void UpdateDistance(int angleId1=-1, int angleId2=-1);
@@ -276,6 +276,38 @@ class DistanceMatrix {
 
   private:
     std::deque<T> holder;
+    int size;
+};
+
+template<>
+class DistanceMatrix<std::deque<DistanceHolder<Point2DDubins>>> {
+  public:
+    DistanceMatrix() {
+    }
+
+    DistanceMatrix(const int size) {
+      holder.resize(size);
+      for (int i{0}; i < size; ++i) {
+        holder[i].resize(size);
+      }
+
+      this->size = size;
+    }
+
+    std::deque<DistanceHolder<Point2DDubins>>& operator()(int i, int j) {
+      return holder[i][j];
+    }
+
+    const bool Exists(int i, int j) {
+      return !this->operator()(i, j).empty();
+    }
+
+    const int GetSize() {
+      return size;
+    }
+
+  private:
+    std::vector<std::vector<std::deque<DistanceHolder<Point2DDubins>>>> holder;
     int size;
 };
 
@@ -343,60 +375,6 @@ class DistanceMatrix<DistanceHolder<Point2DDubins>> {
     std::deque<std::deque<std::deque<std::deque<int>>>> refMatrix;
     int size;
     int angleResolution;
-};
-
-template<>
-class DistanceMatrix<std::deque<DistanceHolder<Point2DDubins>>> {
-  public:
-    DistanceMatrix() {
-    }
-    
-    DistanceMatrix(const int size, const int angleResolution) {
-      refMatrix.resize(size);
-      for (int i{0}; i < size; ++i) {
-        refMatrix[i].resize(size);
-        for (int j{0}; j < size; ++j) {
-          refMatrix[i][j].resize(angleResolution);
-          for (int k{0}; k < angleResolution; ++k) {
-            refMatrix[i][j][k].resize(angleResolution);
-          }
-        }
-      }
-
-      this->size = size;
-      this->angleResolution = angleResolution;
-    }
-
-    std::deque<DistanceHolder<Point2DDubins>> &operator()(int id1, int id2, int angleId1, int angleId2) {
-      return refMatrix[id1][id2][angleId1][angleId2];
-    }
-
-    const bool Exists(int id1, int id2, int angleId1, int angleId2) {
-      return !this->operator()(id1, id2, angleId1, angleId2).empty();
-    }
-
-    void AddLink(DistanceHolder<Point2DDubins> &link, int id1, int id2, int angleId1, int angleId2, bool secondIsInlet=false) {
-      if (!secondIsInlet) {
-        // both trees' angles are considered as outlet angles -- inlet angles are the opposite ones
-        refMatrix[id1][id2][angleId1][OppositeAngleID(angleId2)].push_back(link);
-      } else {
-        refMatrix[id1][id2][angleId1][angleId2].push_back(link);
-      }
-      
-    }
-
-    const int OppositeAngleID(const int angleID) {
-      return (angleID + angleResolution / 2) % angleResolution;
-    }
-
-    const int GetSize() {
-      return size;
-    }
-
-  private:
-    std::deque<std::deque<std::deque<std::deque<std::deque<DistanceHolder<Point2DDubins>>>>>> refMatrix;
-    int angleResolution;
-    int size;
 };
 
 template<class R>

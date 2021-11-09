@@ -12,11 +12,6 @@
 #include "forest.h"
 
 /************************************************** 2D Dubins specialization *******************************************************/
-  
-template<>
-void SpaceForest<Point2DDubins>::initBorders() {
-  this->borders = DistanceMatrix<std::deque<DistanceHolder<Point2DDubins>>>(this->problem.GetNumRoots(), this->problem.DubinsResolution);
-}
 
 template<>
 void SpaceForest<Point2DDubins>::initNodeTypeSpecific(Node<Point2DDubins> &node) {
@@ -28,63 +23,15 @@ void SpaceForest<Point2DDubins>::initNodeTypeSpecific(Node<Point2DDubins> &node)
 }
 
 template<>
-bool SpaceForest<Point2DDubins>::checkOtherTrees(Node<Point2DDubins> *expanded, Point2DDubins* newPoint, flann::Matrix<float> &matrix, bool &solved) {
-  int expandedRootID{expanded->SourceTree->Root->ID};
-  std::vector<std::vector<int>> indices;
-  std::vector<std::vector<float>> dists;
-
-  double checkDist{FLANN_PREC_MULTIPLIER * this->problem.DistTree};
-  for (int j{0}; j < this->trees.size(); ++j) {
-    Tree<Point2DDubins> &tree{this->trees[j]};
-    int neighbourRootID{tree.Root->ID};
-    if (neighbourRootID == expandedRootID) {
-      continue;
-    } 
-
-    int neighbours{tree.Flann.Index->radiusSearch(matrix, indices, dists, SQR(checkDist), 
-      flann::SearchParams(FLANN_NUM_SEARCHES))};
-    
-    std::vector<int> &indRow{indices[0]}; // just one point
-    for (int i{0}; i < neighbours; ++i) {
-      int neighID{indRow[i]};
-      Node<Point2DDubins> *neighbour{&(tree.Leaves[neighID])};
-      
-      double realDist{neighbour->Position.Distance(*newPoint)};
-  
-      if (realDist < (this->problem.DistTree - SFF_TOLERANCE)) {   // if realDist is bigger than tree distance, it might get expanded later
-        // neighbouring trees, add to neighboring matrix and below dTree distance -> invalid point, but save expanded
-        // check whether the goal was achieved from at least one angle
-        if (this->problem.HasGoal && neighbour->Position == this->problem.Goal) {
-          for (int j{0}; j < this->problem.DubinsResolution && !solved; ++j) {
-            Point2DDubins temp{this->problem.Goal};
-            temp.SetAngle(j, this->problem.DubinsResolution);
-            solved |= this->isPathFree(*newPoint, temp);
-          }
-          // when true, break the solve loop and after the creation of the new node, add it to the neighbouring matrix
-        } else if (!this->problem.HasGoal) {   
-          // lazy behaviour - do not check collisions/connectivity yet
-          // connect with every possible angle
-          DistanceHolder<Point2DDubins> holder{neighbour, expanded};
-          DistanceHolder<Point2DDubins> inverseHolder{expanded, neighbour};
-          
-          // no check of duplicities -- at worst it has more elements
-          for (auto &angleOne : neighbour->GetExpandedAngles()) {
-            for (auto &angleTwo : expanded->GetExpandedAngles()) {
-              this->borders.AddLink(holder, neighbourRootID, expandedRootID, angleOne, angleTwo);
-              this->borders.AddLink(inverseHolder, expandedRootID, neighbourRootID, angleTwo, angleOne);
-            }
-          }
-                     
-        }
-
-        if (!solved) {  // if solved, the new node lies near the goal and should be created
-          return true;
-        }
-      }
-    }
+bool SpaceForest<Point2DDubins>::pathToGoalExists(Point2DDubins &newPoint) {
+  bool solved{false};
+  for (int j{0}; j < this->problem.DubinsResolution && !solved; ++j) {
+    Point2DDubins temp{this->problem.Goal};
+    temp.SetAngle(j, this->problem.DubinsResolution);
+    solved |= this->isPathFree(newPoint, temp);
   }
 
-  return false;
+  return solved;
 }
 
 template<>
@@ -171,40 +118,41 @@ bool SpaceForest<Point2DDubins>::expandNode(Node<Point2DDubins> *expanded, bool 
   expandedTree->Flann.PtrsToDel.push_back(pointToAdd.ptr());
 
   if (solved) {
-    // this means the problem has goal and a path has been found
-    int goalRootId{this->problem.GetNumRoots() - 1};
-    int expandedRootId{expandedTree->Root->ID};
+    // // this means the problem has goal and a path has been found
+    // int goalRootId{this->problem.GetNumRoots() - 1};
+    // int expandedRootId{expandedTree->Root->ID};
 
-    // temporal solution - select root angle with shortest path
-    double bestDist{std::numeric_limits<double>::max()};
-    int selectedRootAngleId;
-    for (auto &angleId : expanded->GetExpandedAngles()) {
-      double dist{expanded->DistanceToRoot(angleId)};
-      if (dist < bestDist) {
-        bestDist = dist;
-        selectedRootAngleId = angleId;
-      }
-    }
+    // // temporal solution - select root angle with shortest path
+    // double bestDist{std::numeric_limits<double>::max()};
+    // int selectedRootAngleId;
+    // for (auto &angleId : expanded->GetExpandedAngles()) {
+    //   double dist{expanded->DistanceToRoot(angleId)};
+    //   if (dist < bestDist) {
+    //     bestDist = dist;
+    //     selectedRootAngleId = angleId;
+    //   }
+    // }
     
-    // again - select the shortest possible path
-    bestDist = std::numeric_limits<double>::max();
-    int selectedGoalAngle, selectedGoalAngleId;
-    for (int i{0}; i < this->problem.DubinsResolution; ++i) {
-      Point2DDubins tempGoal{this->problem.Goal};
-      tempGoal.SetAngle(i, this->problem.DubinsResolution);
+    // // again - select the shortest possible path
+    // bestDist = std::numeric_limits<double>::max();
+    // int selectedGoalAngle, selectedGoalAngleId;
+    // for (int i{0}; i < this->problem.DubinsResolution; ++i) {
+    //   Point2DDubins tempGoal{this->problem.Goal};
+    //   tempGoal.SetAngle(i, this->problem.DubinsResolution);
 
-      if (isPathFree(newNode->Position, tempGoal)) {
-        double dist{newNode->Position.Distance(tempGoal)};
-        if (dist < bestDist) {
-          bestDist = dist;
-          selectedGoalAngle = tempGoal.GetAngle();
-          selectedGoalAngleId = i;
-        }
-      }
-    }
+    //   if (isPathFree(newNode->Position, tempGoal)) {
+    //     double dist{newNode->Position.Distance(tempGoal)};
+    //     if (dist < bestDist) {
+    //       bestDist = dist;
+    //       selectedGoalAngle = tempGoal.GetAngle();
+    //       selectedGoalAngleId = i;
+    //     }
+    //   }
+    // }
     
-    DistanceHolder<Point2DDubins> holder{newNode, goalNode};
-    this->borders.AddLink(holder, expandedRootId, goalRootId, selectedRootAngleId, selectedGoalAngleId, true);  // true = second angle is "inlet" and shall not be inverted
+    // DistanceHolder<Point2DDubins> holder{newNode, goalNode};
+    // this->borders.AddLink(holder, expandedRootId, goalRootId, selectedRootAngleId, selectedGoalAngleId, true);  // true = second angle is "inlet" and shall not be inverted
+    this->borders(this->problem.GetNumRoots() - 1, expandedTree->Root->ID).emplace_back(newNode, goalNode);
   }
 
   return false;
@@ -239,27 +187,35 @@ void SpaceForest<Point2DDubins>::rewireNodes(Node<Point2DDubins> *newNode, Node<
 // solved = there exists ANY path connecting all roots, BUT IT MIGHT NOT BE CONTINUOUS
 template<>
 bool SpaceForest<Point2DDubins>::checkBorders(int id1, int id2) {
-  for (int i{0}; i < this->problem.DubinsResolution; ++i) {
-    for (int j{0}; j < this->problem.DubinsResolution; ++j) {
-      auto link{this->borders(id1, id2, i, j)}; 
-      if (link.empty()) {
-        continue;
-      } else if (link[0].IsValid) {
-        return true;
-      } else {
-        while (!link.empty()) {
-          DistanceHolder<Point2DDubins> holder{link[0]};
-          
-          Point2DDubins point1{holder.Node1->DubinsPosition(i, this->problem.DubinsResolution, false)};
-          Point2DDubins point2{holder.Node2->DubinsPosition(j, this->problem.DubinsResolution, false)};
-          if (this->isPathFree(point1, point2)) {
-            link[0].IsValid = true;
-            return true;
-          } 
+  auto link{this->borders(id1, id2)}; 
+  if (link.empty()) {
+    return false;
+  } else if (link[0].IsValid) {
+    return true;
+  } else {
+    while (!link.empty()) {
+      DistanceHolder<Point2DDubins> holder{link.front()};
 
-          link.pop_front();
+      if (!holder.Node1->IsRoot() && !holder.Node2->IsRoot()) {
+        // shortcut solution
+        if (this->isPathFree(holder.Node1->Position, holder.Node2->Position.GetInvertedPoint())) {
+          link[0].IsValid = true;
+          return true;
+        } 
+      } else {
+        for (auto angle1 : holder.Node1->GetExpandedAngles()) {
+          for (auto angle2 : holder.Node2->GetExpandedAngles()) {
+            Point2DDubins point1{holder.Node1->DubinsPosition(angle1, this->problem.DubinsResolution, false)};
+            Point2DDubins point2{holder.Node2->DubinsPosition(angle2, this->problem.DubinsResolution, true)};
+            if (this->isPathFree(point1, point2)) {
+              link[0].IsValid = true;
+              return true;
+            } 
+          }
         }
       }
+
+      link.pop_front();
     }
   }
   return false;
@@ -272,44 +228,34 @@ void SpaceForest<Point2DDubins>::getPaths() {
   int numAngles{this->problem.DubinsResolution};
   for (int i{0}; i < numRoots; ++i) {
     for (int j{0}; j < numRoots; ++j) {
-      for (int k{0}; k < numAngles; ++k) {
-        for (int l{0}; l < numAngles; ++l) {
-          if (this->borders(i, j, k, l).empty()) {
+      std::deque<DistanceHolder<Point2DDubins>> &borderPoints{this->borders(i, j)};
+      for (DistanceHolder<Point2DDubins> holder : borderPoints) { // intentional copy
+        bool checkAngles{true};
+        if (!holder.Node1->IsRoot() && !holder.Node2->IsRoot()) {
+          if (holder.IsValid || this->isPathFree(holder.Node1->Position, holder.Node2->Position.GetInvertedPoint())) {
+            checkAngles = false;
+          } else {
             continue;
           }
+        } 
 
-          std::deque<DistanceHolder<Point2DDubins>> &borderPoints{this->borders(i, j, k, l)};
-          for (DistanceHolder<Point2DDubins> &dist : borderPoints) {
-            dist.UpdateDistance(k, this->borders.OppositeAngleID(l));
-          }
-          std::sort(borderPoints.begin(), borderPoints.end());
-        }
-      }
-    }
-  }
-
-  // go through borders, select one with the shortest distance, then update neighboring matrix and create paths
-  for (int i{0}; i < numRoots; ++i) {
-    for (int j{0}; j < numRoots; ++j) {
-      for (int k{0}; k < numAngles; ++k) {
-        for (int l{0}; l < numAngles; ++l) {
-          if (this->borders(i, j, k, l).empty()) {
-            continue;
-          }
-
-          std::deque<DistanceHolder<Point2DDubins>> &borderPoints{this->borders(i, j, k, l)};
-          for (DistanceHolder<Point2DDubins> &dist : borderPoints) {
-            if (dist.IsValid || this->isPathFree(dist.Node1->DubinsPosition(k, numAngles, false), dist.Node2->DubinsPosition(l, numAngles, true))) {
-              if (dist.Distance >= std::numeric_limits<double>::max()) {
-                //ERROR("Infinity distance getPaths");
-              }
-              
-              this->neighboringMatrix.AddLink(dist, i, j, k, l, true);
-              break;
+        for (int angle1 : holder.Node1->GetExpandedAngles()) {
+          for (int angle2 : holder.Node2->GetExpandedAngles()) {
+            Point2DDubins point1{holder.Node1->DubinsPosition(angle1, numAngles, false)};
+            Point2DDubins point2{holder.Node2->DubinsPosition(angle2, numAngles, true)};
+            if (!checkAngles || this->isPathFree(point1, point2)) {
+              // update distance for angle pair angle1 & angle2, but the "angle2" part is flown in opposite direction -> 
+              // save it for oposite expanded angle (which should be the same trajectory) (ensured by AddLink, with secondIsInlet==false)
+              holder.UpdateDistance(angle1, angle2);
+              this->neighboringMatrix.AddLink(holder, i, j, angle1, angle2, false);
             }
           }
+        }
+      }
 
-          if (!this->neighboringMatrix.Exists(i,j,k,l)) {
+     for (int k{0}; k < numAngles; ++k) {
+        for (int l{0}; l < numAngles; ++l) {
+          if (!this->neighboringMatrix.Exists(i, j, k, l)) {
             continue;
           }
 

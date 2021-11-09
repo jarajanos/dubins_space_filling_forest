@@ -171,9 +171,6 @@ void Solver<Point2DDubins>::getAllPaths() {
               }
 
               double distance{computeDistance(finalPlan)};
-              if (distance >= std::numeric_limits<double>::max()) {
-                ERROR("Infinity in getAllPaths");
-              }
               if (!this->neighboringMatrix.Exists(id1, id2, angle1, angle2)) {
                 DistanceHolder<Point2DDubins> newLink{node1, node2, distance, finalPlan};
                 this->neighboringMatrix.AddLink(newLink, id1, id2, angle1, angle2, true);
@@ -461,50 +458,7 @@ void Solver<Point2DDubins>::saveTspPaths(const FileStruct file) {
 
 template <>
 void Solver<Point2DDubins>::saveTsp(const FileStruct file) {
-  INFO("Saving TSP file");
-  std::ofstream fileStream{file.fileName.c_str()};
-  if (!fileStream.good()) {
-    std::stringstream message;
-    message << "Cannot create file at: " << file.fileName;
-
-    WARN(message.str());
-    return;
-  }
-
-  if (fileStream.is_open()) {
-    // must be transformed using Noon-Bean transformation to ATSP, then to TSP!
-    int numRoots{(int)this->connectedTrees.size()};
-    fileStream << "NAME: " << this->problem.ID << "\n";
-    fileStream << "COMMENT: ";
-    for (int i{0}; i < numRoots; ++i) {
-      fileStream << this->connectedTrees[i]->Root->ID;
-      if (i + 1 != connectedTrees.size()) {
-        fileStream << TSP_DELIMITER;
-      }
-    }
-    fileStream << "\n";
-    fileStream << "TYPE: TSP\n";
-    fileStream << "DIMENSION: " << numRoots * this->problem.DubinsResolution << "\n";
-    fileStream << "EDGE_WEIGHT_TYPE : EXPLICIT\n";
-    fileStream << "EDGE_WEIGHT_FORMAT : FULL_MATRIX\n";
-
-    // fileStream << "EDGE_WEIGHT_SECTION\n";
-    // for (int i{0}; i < numRoots; ++i) {
-    //   for (int j{0}; j < i; ++j) {
-    //     int id1{this->connectedTrees[i]->Root->ID};
-    //     int id2{this->connectedTrees[j]->Root->ID};
-    //     fileStream << this->neighboringMatrix(id1, id2).Distance / problem.Env.ScaleFactor << TSP_DELIMITER;
-    //   }
-    //   fileStream << "0\n";
-    // }
-
-    fileStream.flush();
-    fileStream.close();
-  } else {
-    std::stringstream message;
-    message << "Cannot open file at: " << file.fileName;
-    WARN(message.str());
-  }
+  ERROR("Saving DTSP file is not supported");
 }
 
 template<>
