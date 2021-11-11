@@ -291,6 +291,11 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
       } else if (problem.Roots.size() > 1) {
         WARN("Multi-source planning with one goal has not been tested");
       }
+
+      if (problem.ComputeTSP) {
+        WARN("TSP solver specified for single goal -- TSP computation switched off!");
+        problem.ComputeTSP = false;
+      }
       problem.HasGoal = true;
       problem.Goal = R(node.as<std::string>(), scale);
     }

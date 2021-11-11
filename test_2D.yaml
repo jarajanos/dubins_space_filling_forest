@@ -1,8 +1,8 @@
 ---
   problem:
     solver: 'sff'
-    optimize: true
-    iterations: 10000
+    optimize: false
+    iterations: 20000
     dimension: '2DDubins'
   
   delimiters:
@@ -23,11 +23,16 @@
 
   cities:
     - "[100; 100;0]"
+
+  acities:
+    - "[100; 100;0]"
     - "[1500; 1600;0]"
     - "[500; 1700;0]"
     - "[1440; 330;0]"
+    - "[962; 828;0]"
+    - "[1624; 1057;0]"
 
-  agoal: "[1500; 1600;0]"
+  goal: "[1500; 1600;0]"
 
   range:
     autodetect: true
@@ -42,7 +47,7 @@
     bias: 0.95
     misses: 5
     dubins-radius: 50
-    dubins-resolution: 32
+    dubins-resolution: 1
   
   save:
     goals:

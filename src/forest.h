@@ -63,6 +63,7 @@ SpaceForest<R>::SpaceForest(Problem<R> &problem) : Solver<R>(problem), borders{t
   for (int j{0}; j < this->problem.Roots.size(); ++j) {
     Tree<R> &tree{this->trees.emplace_back()};
     Node<R> &node{tree.Leaves.emplace_back(this->problem.Roots[j], &tree, nullptr, 0, 0)};
+    initNodeTypeSpecific(node);
     this->allNodes.push_back(&node);
     tree.Root = &node;
     flann::Matrix<float> rootMat{new float[1 * PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
@@ -90,6 +91,7 @@ SpaceForest<R>::SpaceForest(Problem<R> &problem) : Solver<R>(problem), borders{t
   if (this->problem.HasGoal) {
     Tree<R> &tree{this->trees.emplace_back()};
     Node<R> &node{tree.Leaves.emplace_back(this->problem.Goal, &tree, nullptr, 0, 0)};
+    initNodeTypeSpecific(node);
     this->allNodes.push_back(&node);
     flann::Matrix<float> rootMat{new float[1 * PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
     for (int i{0}; i < PROBLEM_DIMENSION; ++i) {

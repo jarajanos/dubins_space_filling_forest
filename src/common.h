@@ -212,9 +212,6 @@ struct DistanceHolder<Point2DDubins> {
   }
 
   DistanceHolder(Node<Point2DDubins> *first, Node<Point2DDubins> *second, bool computeDistance=false) : Node1{first}, Node2{second} {
-    Node1 = first;
-    Node2 = second;
-    
     if (computeDistance) {
       this->UpdateDistance();
     }

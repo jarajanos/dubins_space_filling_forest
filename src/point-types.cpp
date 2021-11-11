@@ -250,15 +250,11 @@ double Point2DDubins::Distance(const Point2DDubins &other) const {
 }
 
 Point2DDubins Point2DDubins::GetStateInDistance(Point2DDubins &other, double dist) const {
-  double realDist{Distance(other)};
-  PointVector2D direction(*this, other);
-  Point2DDubins retVal;
-  double ratio{dist / realDist};
+  opendubins::State a{coords[0], coords[1], GetAngle()};
+  opendubins::State b{other[0], other[1], other.GetAngle()};
+  opendubins::Dubins dubPath{a, b, DubinsRadius};
 
-  retVal.SetPosition(coords[0] + direction[0] * ratio, coords[1] + direction[1] * ratio);
-  retVal.SetAngle(GetAngle() + AngleDifference(this->GetAngle(), other.GetAngle()) * ratio);
-
-  return retVal;
+  return Point2DDubins(dubPath.getState(dist));
 }
 
 Point2DDubins Point2DDubins::GetInvertedPoint() {

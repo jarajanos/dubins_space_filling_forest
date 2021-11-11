@@ -152,7 +152,7 @@ bool SpaceForest<Point2DDubins>::expandNode(Node<Point2DDubins> *expanded, bool 
     
     // DistanceHolder<Point2DDubins> holder{newNode, goalNode};
     // this->borders.AddLink(holder, expandedRootId, goalRootId, selectedRootAngleId, selectedGoalAngleId, true);  // true = second angle is "inlet" and shall not be inverted
-    this->borders(this->problem.GetNumRoots() - 1, expandedTree->Root->ID).emplace_back(newNode, goalNode);
+    this->borders(expandedTree->Root->ID, this->problem.GetNumRoots() - 1).emplace_back(newNode, goalNode);
   }
 
   return false;
