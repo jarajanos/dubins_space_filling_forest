@@ -28,15 +28,24 @@ class NodeBase {
   public:
     int ID;
     R Position;
-    Node<R> *Closest;
-    Tree<R> *SourceTree;
+    Node<R> *Closest{nullptr};
+    Tree<R> *SourceTree{nullptr};
     std::deque<Node<R> *> Children;
     virtual double DistanceToRoot() = 0;
 
     NodeBase(R position, Tree<R> *root, Node<R> *closest, unsigned int iteration) : Position{position}, SourceTree{root}, 
       Closest{closest}, generation{iteration} {
         ID = globID++;
+        isRoot = !iteration;
       }
+
+    virtual double Distance(const NodeBase<R> &b) {
+      return this->Position.Distance(b.Position);
+    }
+
+    virtual double Distance(const R &point) {
+      return this->Position.Distance(point);
+    }
 
     friend bool operator==(const NodeBase<R> &r, const NodeBase<R> &l) {
       return r.ID == l.ID;
@@ -49,12 +58,13 @@ class NodeBase {
     }
 
     bool IsRoot() const {
-      return this->SourceTree->Root->ID == this->ID;
+      return isRoot;
     }
 
   private:
     inline static int globID = 0;
     unsigned int generation;
+    bool isRoot;
 };
 
 
@@ -78,6 +88,31 @@ class Node : public NodeBase<R> {
 
       return distance;
     }
+};
+
+template<class R>
+class PrmNode : public NodeBase<R> {
+  using NodeBase<R>::NodeBase;
+  public:
+    std::map<PrmNode<R>*, double> VisibleNodes;
+
+    PrmNode() {
+    }
+
+    double DistanceToRoot() {
+      return distanceToRoot;
+    }
+
+    void SetDistanceToRoot(double distance) {
+      distanceToRoot = distance;
+    }
+    
+    void Reset() {
+      this->SetDistanceToRoot(std::numeric_limits<double>::max());
+      this->Closest = nullptr;
+    }
+  private:
+    double distanceToRoot{std::numeric_limits<double>::max()};
 };
 
 template<>
@@ -160,7 +195,7 @@ class Node<Point2DDubins> : public NodeBase<Point2DDubins> {
 template<>
 class FlannHolder<Node<Point2D>> {
   public:
-    flann::Index<flann::L2<float>> *Index;
+    flann::Index<flann::L2<float>> *Index{nullptr};
     std::deque<float *> PtrsToDel;
 
     ~FlannHolder();
@@ -171,7 +206,7 @@ class FlannHolder<Node<Point2D>> {
 template<>
 class FlannHolder<Node<Point2DDubins>> {
   public:
-    flann::Index<flann::L2Dubins<float>> *Index;
+    flann::Index<flann::L2Dubins<float>> *Index{nullptr};
     std::deque<float *> PtrsToDel;
 
     ~FlannHolder();
@@ -183,7 +218,7 @@ template<>
 class FlannHolder<Node<Point3D>> {
   public:
     //flann::Index<D6Distance<float>> *Index;
-    flann::Index<flann::L2_3D<float>> *Index;
+    flann::Index<flann::L2_3D<float>> *Index{nullptr};
     std::deque<float *> PtrsToDel;
 
     ~FlannHolder();

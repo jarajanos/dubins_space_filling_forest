@@ -41,11 +41,14 @@ class Solver {
     TSPOrder tspSolution;
     GATSPOrder gatspSolution;
 
+    std::vector<bool> connected;
+
     bool isPathFree(const R start, const R finish);
 
     void initNeighboringMatrix();
 
     virtual void getPaths() = 0;
+    virtual void getConnected();
     virtual void getAllPaths();
     void checkPlan();
     void checkDistances(std::deque<Node<R> *> &plan, double distanceToCheck);
@@ -76,6 +79,7 @@ template <> void Solver<Point2DDubins>::saveParams(const FileStruct file, const 
 template<class R>
 Solver<R>::Solver(Problem<R> &problem) : problem{problem}, rnd{problem.Env.Limits} {
   initNeighboringMatrix();
+  this->connected = std::vector<bool>((size_t)problem.GetNumRoots(), false);
 }
 
 template<class R>
@@ -99,6 +103,13 @@ double Solver<R>::computeDistance(std::deque<R> &plan) {
   }
 
   return distance;
+}
+
+template<class R>
+void Solver<R>::getConnected() {
+  for (int i{0}; i < connectedTrees.size(); ++i) {
+    this->connected[this->connectedTrees[i]->Root->ID] = true;
+  }
 }
 
 template<class R>
@@ -337,11 +348,16 @@ void Solver<R>::saveParams(const FileStruct file, const int iterations, const bo
     fileStream << (solved ? "solved" : "unsolved") << CSV_DELIMITER;
   
     fileStream << "[";
-    for (int i{0}; i < this->connectedTrees.size(); ++i) {
-      fileStream << this->connectedTrees[i]->Root->ID;
-      if (i + 1 != connectedTrees.size()) {
-        fileStream << CSV_DELIMITER_2;
-      }
+    bool first{true};
+    for (int i{0}; i < this->connected.size(); ++i) {
+        if (!first) {
+          fileStream << CSV_DELIMITER_2;
+        }
+
+        if (this->connected[i]) {
+            fileStream << i + 1;
+            first = false;
+        }
     }
     fileStream << "]" << CSV_DELIMITER << "[";
   
@@ -385,29 +401,47 @@ void Solver<R>::saveTsp(const FileStruct file) {
   }
 
   if (fileStream.is_open()) {
+    double resolution{TSP_MAX * problem.Env.ScaleFactor / neighboringMatrix.GetMaximum() / 2};
+
     fileStream << "NAME: " << this->problem.ID << "\n";
     fileStream << "COMMENT: ";
-    for (int i{0}; i < this->connectedTrees.size(); ++i) {
-      fileStream << this->connectedTrees[i]->Root->ID;
-      if (i + 1 != connectedTrees.size()) {
+    bool first{true};
+    for (int i{0}; i < this->connected.size(); ++i) {
+      if (!first) {
         fileStream << TSP_DELIMITER;
       }
+
+      if (connected[i]) {
+        fileStream << i;
+        first = false;
+      }
     }
-    fileStream << "\n";
+    fileStream << ", resolution: " << resolution << "\n";
     fileStream << "TYPE: TSP\n";
-    fileStream << "DIMENSION: " << this->connectedTrees.size() << "\n";
+    fileStream << "DIMENSION: " << connected.size() << "\n";
     fileStream << "EDGE_WEIGHT_TYPE : EXPLICIT\n";
     fileStream << "EDGE_WEIGHT_FORMAT : LOWER_DIAG_ROW\n";
 
     fileStream << "EDGE_WEIGHT_SECTION\n";
-    int numRoots{(int)this->connectedTrees.size()};
+    int numRoots{(int)this->connected.size()};
     for (int i{0}; i < numRoots; ++i) {
-      for (int j{0}; j < i; ++j) {
-        int id1{this->connectedTrees[i]->Root->ID};
-        int id2{this->connectedTrees[j]->Root->ID};
-        fileStream << neighboringMatrix(id1, id2).Distance / problem.Env.ScaleFactor << TSP_DELIMITER;
+      if (!connected[i]) {
+        continue;
       }
-      fileStream << "0\n";
+
+      for (int j{0}; j < i; ++j) {
+        if (!connected[j]) {
+          continue;
+        }
+        
+        double dist{this->neighboringMatrix(i, j).Distance}; 
+        if (dist != std::numeric_limits<double>::max()) {
+          fileStream << (int)(dist / problem.Env.ScaleFactor * resolution) << TSP_DELIMITER;        
+        } else {
+          fileStream << TSP_MAX << TSP_DELIMITER;
+        }
+      }
+      fileStream << TSP_MAX << "\n";
     }
 
     fileStream.flush();
@@ -589,7 +623,7 @@ void Solver<R>::checkDistances(std::deque<Node<R> *> &plan, double distanceToChe
         ERROR("Path not feasible!");
         exit(1);
       }
-      distance += previous->Position.Distance(node->Position);
+      distance += previous->Distance(*node);
     }
     previous = node;
   }

@@ -22,23 +22,48 @@
 template<class R>
 struct HeapNode {
   R *Node;
-  double Distance;
+  double distance;
 
   HeapNode(R* node, R *refPoint) : Node{node} {
-    Distance = Node->Position.Distance(refPoint->Position);
+    distance = Node->Distance(*refPoint);
+  }
+
+  double Distance() {
+    return distance;
+  }
+
+  friend bool operator==(const HeapNode<R> &a, const HeapNode<R> &b) {
+    return a.Node == b.Node;
+  }
+};
+
+template<class R>
+struct HeapNode<PrmNode<R>> {
+  PrmNode<R> *Node;
+
+  HeapNode(PrmNode<R>* node, PrmNode<R> *refPoint) : Node{node} {
+  }
+
+  double Distance() {
+    return Node->DistanceToRoot();
+  }
+
+  friend bool operator==(const HeapNode<PrmNode<R>> &a, const HeapNode<PrmNode<R>> &b) {
+    return a.Node == b.Node;
   }
 };
 
 template<class R>
 class Heap {
   public:
-    Heap(std::deque<R> &leaves, R *refPoint);
+    Heap(std::deque<R> &leaves, R *refPoint, bool sort=false);
     
     R *Get();
     R *Get(int index);
     void Pop();
     void Pop(int index);
     void Push(R *item);
+    void BubbleUp(R *item);
 
     std::deque<HeapNode<R>> &GetHeapVector();
 
@@ -50,14 +75,18 @@ class Heap {
 
     void bubbleDown(int index);
     void bubbleUp(int index);
-    void sort();
+    void Sort();
     double getCost(int Index);
 };
 
 template<class R>
-Heap<R>::Heap(std::deque<R> &leaves, R *refPoint) : goalNode{refPoint} {
+Heap<R>::Heap(std::deque<R> &leaves, R *refPoint, bool sort) : goalNode{refPoint} {
   for (int i{0}; i < leaves.size(); ++i) {
     heapVector.emplace_back(&(leaves[i]), refPoint);
+  }
+
+  if (sort) {
+    this->Sort();
   }
 }
 
@@ -95,8 +124,8 @@ void Heap<R>::Pop(int index) {
   int maxSize{Size()};
 
   if (index < maxSize - 1) {
-    double oldCost{heapVector[index].Distance};
-    double newCost{heapVector[maxSize - 1].Distance};
+    double oldCost{heapVector[index].Distance()};
+    double newCost{heapVector[maxSize - 1].Distance()};
 
     std::swap(heapVector[index], heapVector[maxSize - 1]);
     heapVector.pop_back();
@@ -115,6 +144,17 @@ void Heap<R>::Push(R *item) {
   int index{Size()};
   heapVector.emplace_back(item, this->goalNode);
   bubbleUp(index);
+}
+
+template<class R>
+void Heap<R>::BubbleUp(R *item) {
+  int index;
+  HeapNode<R> dummy{item, this->goalNode};
+  auto iter{std::find(heapVector.begin(), heapVector.end(), dummy)};
+  if (iter != heapVector.end()) {
+    index = std::distance(heapVector.begin(), iter);
+    this->bubbleUp(index);
+  }
 }
 
 template<class R>
@@ -169,7 +209,7 @@ void Heap<R>::bubbleUp(int index) {
 }
 
 template<class R>
-void Heap<R>::sort() {
+void Heap<R>::Sort() {
   for (int i{Size() / 2}; i >= 0; --i) {
     bubbleDown(i);
   }
@@ -177,7 +217,7 @@ void Heap<R>::sort() {
 
 template<class R>
 double Heap<R>::getCost(int index) {
-  return heapVector[index].Distance;
+  return heapVector[index].Distance();
 }
 
 #endif

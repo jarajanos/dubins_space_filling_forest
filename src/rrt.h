@@ -111,6 +111,7 @@ void RapidExpTree<R>::Solve() {
     }
   }
   
+  this->getConnected();
   if (SaveParams <= this->problem.SaveOpt) {
     this->saveParams(this->problem.FileNames[SaveParams], iter, solved, watch.GetElapsed());
   }
@@ -168,14 +169,14 @@ bool RapidExpTree<R>::optimizeConnections(Tree<R> *treeToExpand, R *newPoint, No
   std::vector<int> &indRow{indices[0]};
   for (int &ind : indRow) {
     Node<R> &neighbor{treeToExpand->Leaves[ind]};
-    double neighDist{neighbor.Position.Distance(*newPoint) + neighbor.DistanceToRoot()};
+    double neighDist{neighbor.Distance(*newPoint) + neighbor.DistanceToRoot()};
     if (neighDist < bestDist - SFF_TOLERANCE && this->isPathFree(neighbor.Position, *newPoint)) {
       bestDist = neighDist;
       parent = &neighbor;
     }
   }
 
-  newNode = &(treeToExpand->Leaves.emplace_back(*newPoint, parent->SourceTree, parent, parent->Position.Distance(*newPoint), iteration));
+  newNode = &(treeToExpand->Leaves.emplace_back(*newPoint, parent->SourceTree, parent, parent->Distance(*newPoint), iteration));
   parent->Children.push_back(newNode);
 
   for (int &ind : indRow) {
@@ -223,7 +224,7 @@ bool RapidExpTree<R>::checkOtherRewire(Tree<R> *treeToExpand, R *newPoint, Node<
 
     tree->Flann.Index->knnSearch(refPoint, indices, dists, 1, flann::SearchParams(FLANN_NUM_SEARCHES));
     Node<R> &neighbor{tree->Leaves[indices[0][0]]}; // just one-to-one connection
-    double neighDist{neighbor.Position.Distance(*newPoint)};
+    double neighDist{neighbor.Distance(*newPoint)};
 
     if (neighDist < this->problem.DistTree && this->isPathFree(*newPoint, neighbor.Position)) {
       // create link

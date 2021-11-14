@@ -166,7 +166,7 @@ bool SpaceForest<Point2DDubins>::filterNode(Node<Point2DDubins> &neighbor) {
 
 template<>
 void SpaceForest<Point2DDubins>::emplaceNewNode(Node<Point2DDubins> *expanded, Point2DDubins* newPoint, Node<Point2DDubins>* &newNode, const int iteration) {
-  newNode = &(expanded->SourceTree->Leaves.emplace_back(*newPoint, expanded->SourceTree, expanded, expanded->Position.Distance(*newPoint), iteration));
+  newNode = &(expanded->SourceTree->Leaves.emplace_back(*newPoint, expanded->SourceTree, expanded, expanded->Distance(*newPoint), iteration));
 }
 
 template<>

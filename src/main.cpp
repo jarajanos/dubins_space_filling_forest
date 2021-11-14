@@ -64,6 +64,8 @@ void SolveProblem(YAML::Node &config, Problem<R> &problem) {
     solver = std::make_unique<RapidExpTree<R>>(problem);
   } else if (problem.Solver == Lazy) {
     solver = std::make_unique<LazyTSP<R>>(problem);
+  } else if (problem.Solver == PRM) {
+    solver = std::make_unique<ProbRoadMaps<R>>(problem);
   } else {
     ERROR("Unimplemented problem solver");
   }
@@ -94,6 +96,8 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
       problem.Solver = RRT;
     } else if (!strcmp(value.c_str(), "lazy")) {
       problem.Solver = Lazy;
+    } else if (!strcmp(value.c_str(), "prm")) {
+      problem.Solver = PRM;
     } else {
       throw std::invalid_argument("unknown solver type in \"problem\" root node, use either sff, rrt or lazy");
     }

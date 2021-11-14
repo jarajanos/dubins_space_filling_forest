@@ -37,6 +37,7 @@
 struct FileStruct;
 template<class R> struct DistanceHolder;
 template<class R> class Node;
+template<class R> class PrmNode;
 
 int ParseString(std::string &inp, std::string &outp1, std::string &outp2, std::string &delimiter);
 FileStruct PrefixFileName(const FileStruct &path, const std::string &insert);
@@ -104,7 +105,8 @@ enum SaveOptions {
 enum SolverType{
   SFF,
   RRT,
-  Lazy
+  Lazy,
+  PRM
 };
 
 enum TSPType {
@@ -196,7 +198,7 @@ struct DistanceHolder {
   }
 
   void UpdateDistance() {
-    Distance = Node1->DistanceToRoot() + Node2->DistanceToRoot() + Node1->Position.Distance(Node2->Position);
+    Distance = Node1->DistanceToRoot() + Node2->DistanceToRoot() + Node1->Distance(*Node2);
   }
 };
 
@@ -265,6 +267,20 @@ class DistanceMatrix {
 
     const bool Exists(int i, int j) {
       return this->operator()(i, j).Exists();
+    }
+
+    const double GetMaximum() {
+      double max{0};
+      for (int i{0}; i < size; ++i) {
+        for (int j{i}; j < size; ++j) {
+          double dist{this->operator()(i, j).Distance};
+          if (dist != std::numeric_limits<double>::max() && dist > max) {
+            max = dist;
+          }
+        }
+      }
+
+      return max;
     }
 
     const int GetSize() {
@@ -357,6 +373,17 @@ class DistanceMatrix<DistanceHolder<Point2DDubins>> {
 
     const int OppositeAngleID(const int angleID) {
       return (angleID + angleResolution / 2) % angleResolution;
+    }
+
+    const double GetMaximum() {
+      double max{0};
+      for (auto &plan : holder) {
+        if (plan.Distance != std::numeric_limits<double>::max() && plan.Distance < max) {
+          max = plan.Distance;
+        }
+      }
+
+      return max;
     }
 
     const int GetSize() {

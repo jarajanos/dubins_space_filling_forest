@@ -480,11 +480,16 @@ void Solver<Point2DDubins>::saveParams(const FileStruct file, const int iteratio
     fileStream << (solved ? "solved" : "unsolved") << CSV_DELIMITER;
   
     fileStream << "[";
-    for (int i{0}; i < this->connectedTrees.size(); ++i) {
-      fileStream << this->connectedTrees[i]->Root->ID;
-      if (i + 1 != connectedTrees.size()) {
-        fileStream << CSV_DELIMITER_2;
-      }
+    bool first{true};
+    for (int i{0}; i < this->connected.size(); ++i) {
+        if (!first) {
+          fileStream << CSV_DELIMITER_2;
+        }
+        
+        if (this->connected[i]) {
+            fileStream << i + 1;
+            first = false;
+        }
     }
     fileStream << "]" << CSV_DELIMITER << "[";
   

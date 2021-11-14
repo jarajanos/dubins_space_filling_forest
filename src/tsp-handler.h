@@ -333,7 +333,7 @@ IntegerMatrix TSPMatrix<R>::getIntegerMatrix() {
   } else if (this->size <= 100) {
     maxValue = 1 << 12;
   } else {
-    maxValue = 1 << 20;
+    maxValue = TSP_MAX;
   }
 
   valueMatrix.resize(this->size);

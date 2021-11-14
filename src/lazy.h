@@ -16,6 +16,7 @@
 #include <flann/flann.hpp>
 #include "solver.h"
 #include "common.h"
+#include "tsp-handler.h"
 
 template<class R>
 class LazyTSP : public Solver<R> {
@@ -26,17 +27,15 @@ class LazyTSP : public Solver<R> {
     void Solve() override;
   private:
     int numTrees;
-    inline static std::string resultDelimiter = " , ";
     std::deque<Node<R>> rootNodes;
     std::deque<Tree<R> *> treesToDel;
     
     void runRRT(DistanceHolder<R> *edge, int &iterations);
-    void processResults(std::string &line, std::deque<std::tuple<int,int>> &edgePairs, double &pathLength);
+    void processResults(TSPOrder &solution, std::deque<std::tuple<int,int>> &edgePairs);
     double updateEdge(std::tuple<int, int> selectedEdge, int iter);
     void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance);
 
     void getPaths() override;
-    void saveTsp(const FileStruct file) override;
     void savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
     void saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime, const std::deque<std::tuple<int,int>> &selectedEdges);
 };
@@ -44,7 +43,6 @@ class LazyTSP : public Solver<R> {
 template<> LazyTSP<Point2DDubins>::LazyTSP(Problem<Point2DDubins> &problem);
 template<> double LazyTSP<Point2DDubins>::updateEdge(std::tuple<int, int> selectedEdge, int iter);
 template<> void LazyTSP<Point2DDubins>::rewireNodes(Node<Point2DDubins> *newNode, Node<Point2DDubins> &neighbor, double newDistance);
-template<> void LazyTSP<Point2DDubins>::saveTsp(const FileStruct file);
 template<> void LazyTSP<Point2DDubins>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
 template<> void LazyTSP<Point2DDubins>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime, const std::deque<std::tuple<int,int>> &selectedEdges);
 
@@ -60,7 +58,7 @@ LazyTSP<R>::LazyTSP(Problem<R> &problem) : Solver<R>(problem) {
       if (this->neighboringMatrix(i, j).Exists()) {
         continue;
       }
-      this->neighboringMatrix(i, j) = DistanceHolder<R>(&(rootNodes[i]), &(rootNodes[j]), rootNodes[i].Position.Distance(rootNodes[j].Position));
+      this->neighboringMatrix(i, j) = DistanceHolder<R>(&(rootNodes[i]), &(rootNodes[j]), rootNodes[i].Distance(rootNodes[j]));
     }
   }
 }
@@ -78,7 +76,6 @@ template <class R>
 void LazyTSP<R>::Solve() {
   double prevDist{-1}, newDist{0};
   StopWatch watches;
-  std::string resultLine;
   std::deque<std::tuple<int, int>> selectedEdges;
 
   if (SaveGoals <= this->problem.SaveOpt) {
@@ -95,39 +92,29 @@ void LazyTSP<R>::Solve() {
   int iter{0};
   int maxNumTrees{this->problem.GetNumRoots() * (this->problem.GetNumRoots() - 1) / 2};
   while (!solved && iter != maxNumTrees * this->problem.MaxIterations) {
-    selectedEdges.clear();
     prevDist = newDist;
 
     // run TSP = create file, execute, read output
-    // TODO!!!!!!!!!!
-    // std::string id{"id_" + std::to_string(this->problem.Repetition) + "_"};
-    // FileStruct runFile{PrefixFileName(tempTsp, id)};
-    // this->saveTsp(runFile);
-    // std::string command{this->problem.TspSolver};
-    // command.append(" --map-type=TSP_FILE --use-path-files-folder=false --use-prm=false --tsp-solver=");
-    // command.append(this->problem.TspType);
-    // command.append(" --problem=");
-    // command.append(runFile.fileName);
-    // system(command.c_str());
+    TSPMatrix tsp{this->problem, this->neighboringMatrix};
+    TSPOrder tspSolution;
+    if (this->problem.TspType == Concorde) {
+      tspSolution = tsp.SolveByConcorde();
+    } else if (this->problem.TspType == LKH) {
+      tspSolution = tsp.SolveByLKH();
+    } else {
+      ERROR("TSP solver not implemented");
+      exit(1);
+    }
 
-    // std::string resultName{TEMP_RESULT};
-    // std::ifstream resFile{resultName.insert(0, id), std::ios::in};
-    // if (!resFile.good()) {
-    //   ERROR("Lazy TSP: temporary TSP file error");
-    //   return;
-    // }
+    if (tspSolution.size() == 0) {
+      ERROR("Lazy TSP: temporary TSP file error");
+      return;
+    }
 
-    // if (resFile.is_open()) {
-    //   getline(resFile, resultLine);
-    // } else {
-    //   ERROR("Lazy TSP: temporary TSP file not opened");
-    //   return;
-    // }
-
-    processResults(resultLine, selectedEdges, newDist);
-    newDist = 0;
+    processResults(tspSolution, selectedEdges);
 
     // run RRT for selected edges, recompute new distance
+    newDist = 0;
     for (auto &pair : selectedEdges) {
       newDist += updateEdge(pair, iter);
     }
@@ -208,7 +195,7 @@ void LazyTSP<R>::runRRT(DistanceHolder<R> *edge, int &iterations) {
 
     // rrt star
     if (this->problem.Optimize) {
-      double bestDist{nearest->Position.Distance(newPoint) + nearest->DistanceToRoot()};
+      double bestDist{nearest->Distance(newPoint) + nearest->DistanceToRoot()};
       double krrt{2 * M_E * log10(rrtTree->Leaves.size() + 1)};
       indices.clear();
       dists.clear();
@@ -222,19 +209,19 @@ void LazyTSP<R>::runRRT(DistanceHolder<R> *edge, int &iterations) {
       std::vector<int> &indRow{indices[0]};
       for (int &ind : indRow) {
         Node<R> &neighbor{rrtTree->Leaves[ind]};
-        double neighDist{neighbor.Position.Distance(newPoint) + neighbor.DistanceToRoot()};
+        double neighDist{neighbor.Distance(newPoint) + neighbor.DistanceToRoot()};
         if (neighDist < bestDist - SFF_TOLERANCE && this->isPathFree(neighbor.Position, newPoint)) {
           bestDist = neighDist;
           nearest = &neighbor;
         }
       }
 
-      newNode = &(rrtTree->Leaves.emplace_back(newPoint, rrtTree, nearest, nearest->Position.Distance(newPoint), iter));
+      newNode = &(rrtTree->Leaves.emplace_back(newPoint, rrtTree, nearest, nearest->Distance(newPoint), iter));
       nearest->Children.push_back(newNode);
 
       for (int &ind : indRow) {
         Node<R> &neighbor{rrtTree->Leaves[ind]}; // offset goal node
-        double newPointDist{neighbor.Position.Distance(newPoint)};
+        double newPointDist{neighbor.Distance(newPoint)};
         double proposedDist{bestDist + newPointDist};
         if (proposedDist < neighbor.DistanceToRoot() - SFF_TOLERANCE && this->isPathFree(newPoint, neighbor.Position)) {
           // rewire
@@ -256,7 +243,7 @@ void LazyTSP<R>::runRRT(DistanceHolder<R> *edge, int &iterations) {
     rrtTree->Flann.PtrsToDel.push_back(pointToAdd.ptr());
 
     // check goal
-    double goalDistance{goal->Position.Distance(newNode->Position)};
+    double goalDistance{goal->Distance(*newNode)};
     if (goalDistance < this->problem.DistTree && this->isPathFree(newNode->Position, goal->Position)) {
       solved = true;
       edge->Distance = goalDistance + newNode->DistanceToRoot();
@@ -294,51 +281,14 @@ void LazyTSP<R>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDist
 }
 
 template <class R>
-void LazyTSP<R>::processResults(std::string &line, std::deque<std::tuple<int,int>> &edgePairs, double &pathLength) {
-  std::string parsedPart;
-  ParseString(line, parsedPart, line, resultDelimiter);
-  pathLength = std::stod(parsedPart);
+void LazyTSP<R>::processResults(TSPOrder &solution, std::deque<std::tuple<int,int>> &edgePairs) {
+  edgePairs.clear();
 
-  ParseString(line, parsedPart, line, resultDelimiter);
-  int prevPoint{std::stoi(parsedPart)};
-  for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
-    ParseString(line, parsedPart, line, resultDelimiter);
-    int actPoint{std::stoi(parsedPart)};
+  int prevPoint{solution.back()}; // last point of the solution
+  for (int i{0}; i < solution.size(); ++i) {
+    int actPoint{solution[i]};
     edgePairs.push_back(std::tuple<int, int>(prevPoint, actPoint));
     prevPoint = actPoint;
-  }
-}
-
-template <class R>
-void LazyTSP<R>::saveTsp(const FileStruct file) {
-  INFO("Saving TSP file");
-  std::ofstream fileStream{file.fileName.c_str()};
-  if (!fileStream.good()) {
-    std::stringstream message;
-    message << "Cannot create file at: " << file.fileName;
-    ERROR(message.str());
-    return;
-  }
-
-  if (fileStream.is_open()) {
-    fileStream << "NAME: " << this->problem.ID << "\n";
-    fileStream << "COMMENT:\n";
-    fileStream << "TYPE: TSP\n";
-    fileStream << "DIMENSION: " << this->problem.GetNumRoots() << "\n";
-    fileStream << "EDGE_WEIGHT_TYPE : EXPLICIT\n";
-    fileStream << "EDGE_WEIGHT_FORMAT : LOWER_DIAG_ROW\n";
-
-    fileStream << "EDGE_WEIGHT_SECTION\n";
-    for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
-      for (int j{0}; j < i; ++j) {
-        fileStream << this->neighboringMatrix(i, j).Distance / this->problem.Env.ScaleFactor << TSP_DELIMITER;
-      }
-      fileStream << "0\n";
-    }
-  } else {
-    std::stringstream message;
-    message << "Cannot open file at: " << file.fileName;
-    ERROR(message.str());
   }
 }
 

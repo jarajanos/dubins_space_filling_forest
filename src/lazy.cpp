@@ -23,7 +23,7 @@ LazyTSP<Point2DDubins>::LazyTSP(Problem<Point2DDubins> &problem) : Solver<Point2
       if (this->neighboringMatrix(i, j, 0, 0).Exists()) {
         continue;
       }
-      DistanceHolder<Point2DDubins> dist{&(rootNodes[i]), &(rootNodes[j]), rootNodes[i].Position.Distance(rootNodes[j].Position)};
+      DistanceHolder<Point2DDubins> dist{&(rootNodes[i]), &(rootNodes[j]), rootNodes[i].Distance(rootNodes[j])};
       this->neighboringMatrix.AddLink(dist, i, j, 0, 0);
     }
   }
@@ -52,39 +52,6 @@ void LazyTSP<Point2DDubins>::rewireNodes(Node<Point2DDubins> *newNode, Node<Poin
   neighbor.Closest = newNode;
   neighbor.DistanceToClosest[0] = newDistance;
   newNode->Children.push_back(&neighbor);
-}
-
-template <>
-void LazyTSP<Point2DDubins>::saveTsp(const FileStruct file) {
-  INFO("Saving TSP file");
-  std::ofstream fileStream{file.fileName.c_str()};
-  if (!fileStream.good()) {
-    std::stringstream message;
-    message << "Cannot create file at: " << file.fileName;
-    ERROR(message.str());
-    return;
-  }
-
-  if (fileStream.is_open()) {
-    fileStream << "NAME: " << this->problem.ID << "\n";
-    fileStream << "COMMENT:\n";
-    fileStream << "TYPE: TSP\n";
-    fileStream << "DIMENSION: " << this->problem.GetNumRoots() << "\n";
-    fileStream << "EDGE_WEIGHT_TYPE : EXPLICIT\n";
-    fileStream << "EDGE_WEIGHT_FORMAT : LOWER_DIAG_ROW\n";
-
-    fileStream << "EDGE_WEIGHT_SECTION\n";
-    for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
-      for (int j{0}; j < i; ++j) {
-        fileStream << this->neighboringMatrix(i, j, 0, 0).Distance / this->problem.Env.ScaleFactor << TSP_DELIMITER;
-      }
-      fileStream << "0\n";
-    }
-  } else {
-    std::stringstream message;
-    message << "Cannot open file at: " << file.fileName;
-    ERROR(message.str());
-  }
 }
 
 template<>

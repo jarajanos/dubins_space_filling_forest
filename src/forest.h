@@ -234,6 +234,7 @@ void SpaceForest<R>::Solve() {
     this->savePaths(this->problem.FileNames[SaveRoadmap]);
   }
 
+  this->getConnected();
   if (SaveParams <= this->problem.SaveOpt) {
     this->saveParams(this->problem.FileNames[SaveParams], iter, solved, timeMeasure.GetElapsed());
   }
@@ -286,7 +287,7 @@ bool SpaceForest<R>::expandNode(Node<R> *expanded, bool &solved, const unsigned 
     return true;
   }
 
-  double parentDistance{expanded->Position.Distance(newPoint)};
+  double parentDistance{expanded->Distance(newPoint)};
   if (this->problem.Optimize) {
     // sff star
     optimizeConnections(expanded, &newPoint, newNode, pointToAdd, iteration);
@@ -331,7 +332,7 @@ bool SpaceForest<R>::getAndCheckNewPoint(Node<R> *expanded, R* newPoint) {
 
 template<class R>
 bool SpaceForest<R>::checkExpandedTree(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix) {
-  double parentDistance{expanded->Position.Distance(*newPoint)};
+  double parentDistance{expanded->Distance(*newPoint)};
   Tree<R> *expandedTree{expanded->SourceTree};
   int expandedRootID{expandedTree->Root->ID};
 
@@ -347,7 +348,7 @@ bool SpaceForest<R>::checkExpandedTree(Node<R> *expanded, R* newPoint, flann::Ma
     int neighID{indRow[i]};
     Node<R> *neighbour{&(expandedTree->Leaves[neighID])};
     
-    double realDist{neighbour->Position.Distance(*newPoint)};
+    double realDist{neighbour->Distance(*newPoint)};
     
     if (realDist < (parentDistance - SFF_TOLERANCE) && this->isPathFree(neighbour->Position, *newPoint)) {
       // closer node available in the same tree
@@ -380,7 +381,7 @@ bool SpaceForest<R>::checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matr
       int neighID{indRow[i]};
       Node<R> *neighbour{&(tree.Leaves[neighID])};
       
-      double realDist{neighbour->Position.Distance(*newPoint)};
+      double realDist{neighbour->Distance(*newPoint)};
   
       if (realDist < (this->problem.DistTree - SFF_TOLERANCE)) {   // if realDist is bigger than tree distance, it might get expanded later
         // neighbouring trees, add to neighboring matrix and below dTree distance -> invalid point, but save expanded
@@ -425,7 +426,7 @@ void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>
     if (filterNode(neighbor)) {   // additional check of possible parent -- mainly becaused of Dubins (forbid connection with root)
       continue;
     }
-    double neighborDist{neighbor.Position.Distance(*newPoint) + neighbor.DistanceToRoot()};
+    double neighborDist{neighbor.Distance(*newPoint) + neighbor.DistanceToRoot()};
     if (neighborDist < bestDist - SFF_TOLERANCE && this->isPathFree(neighbor.Position, *newPoint)) {
       bestDist = neighborDist;
       expanded = &neighbor;

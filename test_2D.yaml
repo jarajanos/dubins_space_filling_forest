@@ -1,8 +1,8 @@
 ---
   problem:
-    solver: 'sff'
+    solver: 'prm'
     optimize: false
-    iterations: 20000
+    iterations: 1000
     dimension: '2DDubins'
   
   delimiters:
@@ -21,10 +21,10 @@
       type: 'map'
       position: '[0; 0;0]'
 
-  cities:
-    - "[100; 100;0]"
-
   acities:
+    - "[100; 100]"
+
+  cities:
     - "[100; 100;0]"
     - "[1500; 1600;0]"
     - "[500; 1700;0]"
@@ -32,7 +32,7 @@
     - "[962; 828;0]"
     - "[1624; 1057;0]"
 
-  goal: "[1500; 1600;0]"
+  agoal: "[1500; 1600]"
 
   range:
     autodetect: true
@@ -44,7 +44,7 @@
 
   algorithm:
     m2r-ratio: 10
-    bias: 0.95
+    bias: 0.05
     misses: 5
     dubins-radius: 50
     dubins-resolution: 1
@@ -56,8 +56,8 @@
     params:
       path: 'output/params.csv'
       id: 'sff_dubins'
-    #TSP-file:
-    #  path: 'output/tsp.tsp'
+    TSP-file:
+      path: 'output/tsp.tsp'
     TSP-paths:
       path: 'output/tsp.tri'
       type: 'map'

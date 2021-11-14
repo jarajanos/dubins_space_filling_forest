@@ -43,6 +43,9 @@
 #endif
 
 #define TSP_TOLERANCE     1e-5
+#define TSP_MAX_10        (1 << 10)
+#define TSP_MAX_100       (1 << 12)
+#define TSP_MAX           (1 << 20)
 #define DEFAULT_CONCORDE  "solver/concorde/concorde/TSP/concorde"
 #define DEFUALT_LKH       "solver/lkh/LKH-3.0.6/LKH"
 

@@ -13,7 +13,7 @@
 
 
 void DistanceHolder<Point2DDubins>::UpdateDistance(int angleId1, int angleId2) {
-  Distance = Node1->Position.Distance(Node2->Position);
+  Distance = Node1->Distance(*Node2);
   if (Distance >= std::numeric_limits<double>::max()) {
     ERROR("Infinity distance between points");
     return;
