@@ -83,7 +83,9 @@ std::deque<DistanceHolder<R>> Dijkstra<R>::findPath(int start, std::vector<int> 
 				plan.Plan.push_front(actNode->Position);
 			}
 		} else {
-			//empty plan
+			//invalidate
+			plan.Node1 = nullptr;
+			plan.Node2 = nullptr;
 			plan.Distance = DIJKSTRA_MAX;
 		}
 	}

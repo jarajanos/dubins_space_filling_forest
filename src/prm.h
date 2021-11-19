@@ -34,16 +34,19 @@ private:
 
 template <> void ProbRoadMaps<Point2DDubins>::getPaths();
 template <> void ProbRoadMaps<Point2DDubins>::getConnected();
+template <> void ProbRoadMaps<Point2DDubins>::saveTrees(const FileStruct file);
 
 template <class R>
 ProbRoadMaps<R>::ProbRoadMaps(Problem<R> &problem) : Solver<R>(problem) {
   for (int j{0}; j < this->problem.Roots.size(); ++j) {
-    PrmNode<R> &node{allPoints.emplace_back(this->problem.Roots[j], nullptr, nullptr, 0)};
+    PrmNode<R> &node{
+        allPoints.emplace_back(this->problem.Roots[j], nullptr, nullptr, 0)};
     this->allNodes.emplace_back((Node<R> *)&node);
   }
 
   if (this->problem.HasGoal) {
-    PrmNode<R> &node{allPoints.emplace_back(this->problem.Goal, nullptr, nullptr, 0)};
+    PrmNode<R> &node{
+        allPoints.emplace_back(this->problem.Goal, nullptr, nullptr, 0)};
     this->allNodes.emplace_back((Node<R> *)&node);
   }
 }
@@ -86,7 +89,7 @@ template <class R> void ProbRoadMaps<R>::Solve() {
   std::vector<std::vector<float>> dists;
   // (euler * (1 + 1 / config_dimension) + 1) * log(num_points) -> k_PRM_Class*
   // = (euler * (1 + 1 / config_dimension) + 1)
-  double nnD{10 * (M_E * (1 + 1 / 3.0) + 1) * log10(allPoints.size())};
+  double nnD{(M_E * (1 + 1 / 3.0) + 1) * log10(allPoints.size())};
   int nn{static_cast<int>(nnD)};
   flannIndex.Index->knnSearch(newPoints, indices, dists, nn,
                               flann::SearchParams(FLANN_NUM_SEARCHES));
@@ -166,7 +169,9 @@ template <class R> void ProbRoadMaps<R>::getPaths() {
 template <class R> void ProbRoadMaps<R>::getConnected() {
   for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
     for (int j{i}; j < this->problem.GetNumRoots(); ++j) {
-      if (!this->neighboringMatrix.Exists(i, j)) {
+      if (!this->neighboringMatrix.Exists(i, j) ||
+          this->neighboringMatrix(i, j).Distance ==
+              std::numeric_limits<double>::max()) {
         continue;
       }
 

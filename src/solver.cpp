@@ -493,8 +493,17 @@ void Solver<Point2DDubins>::saveParams(const FileStruct file, const int iteratio
     }
     fileStream << "]" << CSV_DELIMITER << "[";
   
-    // do not print distance matrix as for non-dubins case -- would be too big
-    fileStream << CSV_NO_PATH;
+    // do not print distance matrix as for non-dubins case -- would be too big (except single-goal)
+    if (!this->problem.HasGoal || !this->neighboringMatrix.Exists(0, 1, 0, 0)) {
+      fileStream << CSV_NO_PATH;
+    } else {
+      double dist{this->neighboringMatrix(0, 1, 0, 0).Distance};
+      if (dist == std::numeric_limits<double>::max()) {
+        fileStream << CSV_NO_PATH;
+      } else {
+        fileStream << dist / problem.Env.ScaleFactor;
+      }
+    }
 
     fileStream << "]" << CSV_DELIMITER;
     fileStream << elapsedTime.count() << "\n";

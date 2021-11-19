@@ -92,7 +92,7 @@ bool SpaceForest<Point2DDubins>::expandNode(Node<Point2DDubins> *expanded, bool 
     return true;
   }
 
-  double parentDistance{newPoint.Distance(expanded->Position)};
+  double parentDistance{expanded->Position.Distance(newPoint)};
   if (this->problem.Optimize && !expanded->IsRoot()) {
     // sff star -- do not optimize root children (optimization not needed, would mess up the expandedAngles list)
     optimizeConnections(expanded, &newPoint, newNode, pointToAdd, iteration);

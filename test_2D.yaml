@@ -1,8 +1,8 @@
 ---
   problem:
-    solver: 'prm'
-    optimize: false
-    iterations: 1000
+    solver: 'sff'
+    optimize: true
+    iterations: 10000
     dimension: '2DDubins'
   
   delimiters:
@@ -21,10 +21,10 @@
       type: 'map'
       position: '[0; 0;0]'
 
-  acities:
-    - "[100; 100]"
-
   cities:
+    - "[100; 100;0]"
+
+  acities:
     - "[100; 100;0]"
     - "[1500; 1600;0]"
     - "[500; 1700;0]"
@@ -32,7 +32,7 @@
     - "[962; 828;0]"
     - "[1624; 1057;0]"
 
-  agoal: "[1500; 1600]"
+  goal: "[1500; 1600;0.8]"
 
   range:
     autodetect: true
@@ -44,7 +44,7 @@
 
   algorithm:
     m2r-ratio: 10
-    bias: 0.05
+    bias: 0.95
     misses: 5
     dubins-radius: 50
     dubins-resolution: 1

@@ -185,7 +185,7 @@ bool RapidExpTree<R>::optimizeConnections(Tree<R> *treeToExpand, R *newPoint, No
     double proposedDist{bestDist + newPointDist};
     if (proposedDist < neighbor.DistanceToRoot() - SFF_TOLERANCE && this->isPathFree(*newPoint, neighbor.Position)) {
       // rewire
-      rewireNodes(newNode, neighbor, proposedDist);
+      rewireNodes(newNode, neighbor, newPointDist);
     }
   }
 

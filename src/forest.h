@@ -442,7 +442,7 @@ void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>
     double proposedDist{bestDist + newPointDist};
     if (proposedDist < neighbor.DistanceToRoot() - SFF_TOLERANCE && this->isPathFree(*newPoint, neighbor.Position)) {
       // rewire
-      rewireNodes(newNode, neighbor, proposedDist);
+      rewireNodes(newNode, neighbor, newPointDist);
     }
   }
 }
