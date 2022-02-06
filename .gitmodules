@@ -7,3 +7,6 @@
 #[submodule "lib/gdip"]
 #	path = lib/gdip
 #	url = https://github.com/comrob/gdip
+[submodule "lib/gdip"]
+	path = lib/gdip
+	url = https://github.com/jarajanos/gdip
