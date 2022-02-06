@@ -4,6 +4,6 @@
 [submodule "lib/flann"]
 	path = lib/flann
 	url = https://github.com/flann-lib/flann.git
-[submodule "lib/gdip"]
-	path = lib/gdip
-	url = https://github.com/comrob/gdip
+#[submodule "lib/gdip"]
+#	path = lib/gdip
+#	url = https://github.com/comrob/gdip
