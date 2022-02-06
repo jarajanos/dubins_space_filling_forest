@@ -42,6 +42,7 @@ struct Problem {
   double PriorityBias{0};
   int MaxMisses{DEFAULT_THRES_MISS};
   int DubinsResolution;
+  int PrmConnections;
   
   SaveOptions SaveOpt{None};
   std::map<SaveOptions, FileStruct> FileNames;
@@ -50,6 +51,8 @@ struct Problem {
 
   std::string TspSolver;
   TSPType TspType;
+
+  PitchRange PitchLimits;
 
   Problem() {
     for (int i{1}; i < Invalid; i *= 2) {

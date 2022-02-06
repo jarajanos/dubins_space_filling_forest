@@ -15,6 +15,7 @@
 #include "common.h"
 #include "heap.h"
 #include "opendubins/dubins.h"
+#include "opendubins/dubins3D.h"
 #include <flann/flann.hpp>
 #include <deque>
 

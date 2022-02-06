@@ -14,6 +14,7 @@
 
 #include "dijkstra.h"
 #include "opendubins/dubins.h"
+#include "opendubins/dubins3D.h"
 #include "solver.h"
 
 template <class R> class ProbRoadMaps : public Solver<R> {
@@ -89,8 +90,13 @@ template <class R> void ProbRoadMaps<R>::Solve() {
   std::vector<std::vector<float>> dists;
   // (euler * (1 + 1 / config_dimension) + 1) * log(num_points) -> k_PRM_Class*
   // = (euler * (1 + 1 / config_dimension) + 1)
-  double nnD{(M_E * (1 + 1 / 3.0) + 1) * log10(allPoints.size())};
-  int nn{static_cast<int>(nnD)};
+  int nn;
+  if (!this->problem.Optimize) {
+    nn = this->problem.PrmConnections;
+  } else {
+    double nnD{(M_E * (1 + 1 / 3.0) + 1) * log10(allPoints.size())};
+    nn = static_cast<int>(nnD);
+  }
   flannIndex.Index->knnSearch(newPoints, indices, dists, nn,
                               flann::SearchParams(FLANN_NUM_SEARCHES));
 
@@ -159,6 +165,9 @@ template <class R> void ProbRoadMaps<R>::getPaths() {
     }
     std::deque<DistanceHolder<R>> plans{dijkstra.findPath(i, goals, allPoints)};
     for (auto &holder : plans) {
+      if (!holder.Exists()) {
+        continue;
+      }
       int id1{holder.Node1->ID};
       int id2{holder.Node2->ID};
       this->neighboringMatrix(id1, id2) = holder;
@@ -226,7 +235,7 @@ template <class R> void ProbRoadMaps<R>::saveTrees(const FileStruct file) {
             fileStream << node.Position / this->problem.Env.ScaleFactor
                        << DELIMITER_OUT
                        << neigh->Position / this->problem.Env.ScaleFactor
-                       << DELIMITER_OUT << node.ID << DELIMITER_OUT
+                       << DELIMITER_OUT << 0 << DELIMITER_OUT
                        << node.GetAge() << "\n";
           }
         }

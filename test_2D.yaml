@@ -39,14 +39,14 @@
 
   distances:
     collision: 5
-    sampling: 100
+    sampling: 200
     tree: 200
 
   algorithm:
     m2r-ratio: 10
     bias: 0.95
     misses: 5
-    dubins-radius: 50
+    dubins-radius: 30
     dubins-resolution: 1
   
   save:

@@ -45,7 +45,9 @@ int main(int argc, char *argv[]) {
     problem.Dimension = D3;
     SolveProblem(config, problem);
   } else if (dim == "3DDubins") {
-
+    Problem<Point3D> problem;
+    problem.Repetition = repetition;
+    problem.Dimension = D3Dubins;
   } else {
     ERROR("Invalid value of \"dimension\" node in \"problem\" root node.");
     exit(1);
@@ -184,12 +186,35 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     } else if (subNode.IsDefined()) {
       problem.DubinsRadius = subNode.as<double>() * scale;
       Point2DDubins::DubinsRadius = subNode.as<double>() * scale;
+      Point3DDubins::DubinsRadius = subNode.as<double>() * scale;
     }
     subNode = node["dubins-resolution"];
     if ((problem.Dimension == D2Dubins || problem.Dimension == D3Dubins) && !subNode.IsDefined()) {
       throw std::invalid_argument("dubins resolution missing");
     } else if (subNode.IsDefined()) {
       problem.DubinsResolution = subNode.as<int>();
+    }
+    subNode = node["pitch-range"];
+    if (problem.Dimension == D3Dubins) {
+      if (!subNode.IsDefined()) {
+        INFO("Pitch range for 3D Dubins problem missing, defaulting to infinity!");
+        problem.PitchLimits.min = -std::numeric_limits<double>::max();
+        problem.PitchLimits.max = std::numeric_limits<double>::max();
+      } else if (subNode.IsDefined()) {
+        YAML::Node subsubNode = subNode["min"];
+        if (!subsubNode.IsDefined()) {
+          throw std::invalid_argument("ill-formed definition of pitch range, \"min\" subnode expected");
+        }
+        problem.PitchLimits.min = subsubNode.as<double>();
+
+        subsubNode = subNode["max"];
+        if (!subsubNode.IsDefined()) {
+          throw std::invalid_argument("ill-formed definition of pitch range, \"max\" subnode expected");
+        }
+        problem.PitchLimits.max = subsubNode.as<double>();
+      }
+      Point3DDubins::PitchMin = problem.PitchLimits.min;
+      Point3DDubins::PitchMax = problem.PitchLimits.max;
     }
     subNode = node["bias"];
     if (subNode.IsDefined()) {
@@ -198,6 +223,13 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
 
     if (problem.Solver == Lazy && problem.PriorityBias != 0) {
       throw std::invalid_argument("priority bias for Lazy solver is not implemented");
+    }
+
+    subNode = node["prm-connections"];
+    if (problem.Solver == PRM && !problem.Optimize && !subNode.IsDefined()) {
+      throw std::invalid_argument("number of connections for classic sPRM must be defined!");
+    } else if (subNode.IsDefined()) {
+      problem.PrmConnections = subNode.as<int>();
     }
 
     // robot node

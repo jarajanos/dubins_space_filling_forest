@@ -16,6 +16,7 @@
 class Point2D;
 class Point2DDubins;
 class Point3D;
+class Point3DDubins;
 
 #include <regex>
 #include <math.h>
@@ -23,6 +24,7 @@ class Point3D;
 #include "vector-types.h"
 
 #include "opendubins/dubins.h"
+#include "opendubins/dubins3D.h"
 
 class Point2D {
   public:
@@ -44,7 +46,7 @@ class Point2D {
     Point2D GetStateInDistance(Point2D &other, double dist) const;
     void FillRotationMatrix(double (&matrix)[3][3]) const;
     void PrintPosition(std::ostream &out);
-  private:
+  protected:
     double coords[2];
 };
 
@@ -75,7 +77,7 @@ class Point2DDubins {
     Point2DDubins GetInvertedPoint();
     void FillRotationMatrix(double (&matrix)[3][3]) const;
     void PrintPosition(std::ostream &out);
-  private:
+  protected:
     double coords[2];
     double phi;
 };
@@ -103,7 +105,40 @@ class Point3D {
     void FillRotationMatrix(double (&matrix)[3][3]) const;
     Point3D RotatePoint(Quaternion rotation);
     void PrintPosition(std::ostream &out);
-  private:
+  protected:
+    double coords[3];
+    Quaternion rotation;
+};
+
+class Point3DDubins {
+  public:
+    inline static double DubinsRadius;
+    inline static double PitchMin;
+    inline static double PitchMax;
+
+    Point3DDubins();
+    Point3DDubins(double x, double y, double z, double yaw, double pitch);
+    Point3DDubins(const std::string &s, double scale=1);
+    Point3DDubins(opendubins::State3D dubinsState);
+
+    Quaternion GetRotation() const;
+    void SetRotation(Quaternion q);
+    void Set(double x, double y, double z, double yaw, double pitch);
+    void SetPosition(double x, double y, double z);
+    const double* GetPosition() const;
+    const double* GetRawCoords() const;
+    const double operator[](int i) const;
+    void operator+=(const Vector &translate);
+    friend bool operator==(const Point3DDubins &p1, const Point3DDubins &p2);
+    friend bool operator!=(const Point3DDubins &p1, const Point3DDubins &p2);
+    friend bool operator<(const Point3DDubins &p1, const Point3DDubins &p2);
+    friend Point3DDubins operator/(const Point3DDubins &p1, const double scale);    // scale position (NOT the rotation)
+    double Distance(const Point3DDubins &other) const;
+    Point3DDubins GetStateInDistance(Point3DDubins &other, double dist) const;      // Interpolation of rotation done according to https://ri.cmu.edu/pub_files/pub4/kuffner_james_2004_1/kuffner_james_2004_1.pdf
+    void FillRotationMatrix(double (&matrix)[3][3]) const;
+    Point3DDubins RotatePoint(Quaternion rotation);
+    void PrintPosition(std::ostream &out);
+  protected:
     double coords[3];
     Quaternion rotation;
 };
@@ -113,7 +148,9 @@ class PointVector3D : public Vector {
     PointVector3D();
     PointVector3D(double x, double y, double z);
     PointVector3D(Point3D p);
+    PointVector3D(Point3DDubins p);
     PointVector3D(Point3D p1, Point3D p2);
+    PointVector3D(Point3DDubins p1, Point3DDubins p2);
 };
 
 class PointVector2D : public Vector {

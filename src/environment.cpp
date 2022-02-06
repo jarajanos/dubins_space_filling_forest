@@ -44,7 +44,19 @@ void Obstacle<Point3D>::addFacet(int objId, int offset, int faceInts[3]) {
   Point3D faceCache[3];
   for (int i{0}; i < 3; ++i) {
     int pos{faceInts[i] - offset - 1};
-    faceCache[i].SetPosition(this->facePoints[pos][0], this->facePoints[pos][1], 0);
+    faceCache[i].SetPosition(this->facePoints[pos][0], this->facePoints[pos][1], this->facePoints[pos][2]);
+  }
+
+  this->faces.emplace_back(faceCache[0], faceCache[1], faceCache[2]);
+  this->rapidModel->AddTri(faceCache[0].GetRawCoords(), faceCache[1].GetRawCoords(), faceCache[2].GetRawCoords(), this->rapidId++);
+}
+
+template<>
+void Obstacle<Point3DDubins>::addFacet(int objId, int offset, int faceInts[3]) {
+  Point3DDubins faceCache[3];
+  for (int i{0}; i < 3; ++i) {
+    int pos{faceInts[i] - offset - 1};
+    faceCache[i].SetPosition(this->facePoints[pos][0], this->facePoints[pos][1], this->facePoints[pos][2]);
   }
 
   this->faces.emplace_back(faceCache[0], faceCache[1], faceCache[2]);
@@ -83,6 +95,17 @@ void Obstacle<Point3D>::addPoint(int objId, double coords[3]) {
   }
 
   this->facePoints.emplace_back(coords[0], coords[1], coords[2], 0, 0, 0);
+  updateLocalRange(coords);
+}
+
+template <>
+void Obstacle<Point3DDubins>::addPoint(int objId, double coords[3]) {
+  // scale
+  for (int i{0}; i < 3; ++i) {
+    coords[i] *= scale;
+  }
+
+  this->facePoints.emplace_back(coords[0], coords[1], coords[2], 0, 0);
   updateLocalRange(coords);
 }
 
@@ -173,6 +196,35 @@ void Obstacle<Point3D>::ParseMapFile(const std::string fileName) {
   modelFile.close();
 }
 
+template <>
+void Obstacle<Point3DDubins>::ParseMapFile(const std::string fileName) {
+  std::ifstream modelFile(fileName);
+  int index{1};
+  int faceCache[3];
+  double pointCache[3] = {0, 0, 0};
+  std::string line, value;
+
+  while (getline(modelFile, line)) {
+    line = Trim(line);
+    if (!strcmp(line.c_str(), "") || !strncmp(line.c_str(), "#", 1)) {
+      continue;
+    }
+
+    for (int i{0}; i < 3; ++i) {
+      for (int j{0}; j < 3; ++j) {
+        ParseString(line, value, line, this->Delimiter);
+        pointCache[j] = std::stod(value) + Position[j];
+      }
+      addPoint(0, pointCache);
+      faceCache[i] = index + i;
+    }
+    index += 3;
+
+    addFacet(0, 0, faceCache);
+  }
+  modelFile.close();
+}
+
 /**
  * @brief Handler for the RAPID functions for the collision checking
  * 
@@ -220,6 +272,17 @@ bool Obstacle<Point3D>::Collide(Obstacle<Point3D> &object1, Point3D pos1, Obstac
   return RAPID_num_contacts != 0;
 }
 
+template <>
+bool Obstacle<Point3DDubins>::Collide(Obstacle<Point3DDubins> &object1, Point3DDubins pos1, Obstacle<Point3DDubins> &object2, Point3DDubins pos2) {  
+  PointVector3D vecPos1{pos1}, vecPos2{pos2};
+  double rotMat1[3][3], rotMat2[3][3];
+  pos1.FillRotationMatrix(rotMat1);
+  pos2.FillRotationMatrix(rotMat2);
+
+  RAPID_Collide(rotMat1, vecPos1.GetRawCoords(), object1.GetRapidModel(), rotMat2, vecPos2.GetRawCoords(), object2.GetRapidModel());
+  return RAPID_num_contacts != 0;
+}
+
 /**
  * @brief Handler of the base Collide function, tailored for the robot model and its position
  * 
@@ -253,5 +316,15 @@ bool Obstacle<Point3D>::Collide(Obstacle<Point3D> &object, Obstacle<Point3D> &ro
   robPos.FillRotationMatrix(rotMat2);
 
   RAPID_Collide(Obstacle<Point3D>::eyeRotation, vecPos1.GetRawCoords(), object.GetRapidModel(), rotMat2, vecPos2.GetRawCoords(), robot.GetRapidModel());
+  return RAPID_num_contacts != 0;
+}
+
+template <>
+bool Obstacle<Point3DDubins>::Collide(Obstacle<Point3DDubins> &object, Obstacle<Point3DDubins> &robot, Point3DDubins robPos) {
+  PointVector3D vecPos1, vecPos2{robPos};
+  double rotMat2[3][3];
+  robPos.FillRotationMatrix(rotMat2);
+
+  RAPID_Collide(Obstacle<Point3DDubins>::eyeRotation, vecPos1.GetRawCoords(), object.GetRapidModel(), rotMat2, vecPos2.GetRawCoords(), robot.GetRapidModel());
   return RAPID_num_contacts != 0;
 }

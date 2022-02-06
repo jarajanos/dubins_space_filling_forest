@@ -91,6 +91,25 @@ bool Solver<Point3D>::isPathFree(const Point3D start, const Point3D finish) {
 }
 
 template<>
+bool Solver<Point3DDubins>::isPathFree(const Point3DDubins start, const Point3DDubins finish) {
+  opendubins::State3D startDub{start[0], start[1], start[2], start.GetRotation().GetYaw(), start.GetRotation().GetPitch()};
+  opendubins::State3D finishDub{finish[0], finish[1], finish[2], finish.GetRotation().GetYaw(), finish.GetRotation().GetPitch()};
+  opendubins::Dubins3D pathDub{startDub, finishDub, this->problem.DubinsRadius, this->problem.PitchLimits.min, this->problem.PitchLimits.max};
+  double distance{pathDub.length};
+  double parts{distance / problem.CollisionDist};
+  bool isFree{true};
+
+  for (int index{1}; index < parts && isFree; ++index) {
+    opendubins::State3D temp{pathDub.getState(index * distance / parts)};
+    Point3DDubins position{temp};
+    
+    isFree &= !problem.Env.Collide(position);
+  }
+
+  return isFree;
+}
+
+template<>
 void Solver<Point2DDubins>::getAllPaths() {
   int numRoots{this->problem.GetNumRoots()};
   int numAngles{this->problem.DubinsResolution};

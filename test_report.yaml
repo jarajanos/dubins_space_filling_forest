@@ -1,9 +1,9 @@
 ---
   problem:
-    solver: 'sff'
+    solver: 'rrt'
     optimize: true
-    iterations: 100000
-    dimension: '2DDubins'
+    iterations: 10000
+    dimension: '2D'
   
   delimiters:
     standard: ' '
@@ -13,35 +13,42 @@
     path: './models/robot_small.obj'
     type: 'obj'
 
+  TSP-solver:
+    type: 'LKH'
+
   obstacles:
-    - path: './maps/maze2.obj'
-      type: 'obj'
-      position: '[0; 0;0]'
+    - path: './maps/report_env.tri'
+      type: 'map'
+      position: '[0; 0]'
 
-  #cities:
-  #  - "[0;0;0]"
-   
   cities:
-    - "[750; -845;0]"
+    - "[-40; -32]"
 
-  #goal: "[-844; 850;0]"
+  acities:
+    - "[-40; -32]"
+    - "[-40; 32]"
+    - "[42;33]"
+    - "[42;-33]"
+    - "[10; 33]"
+    - "[-10;-33]"
 
-  goal: "[600; -900;0]"
+  goal: "[42;33]"
 
   range:
     autodetect: true
 
   distances:
-    collision: 10
-    sampling: 200
-    tree: 200
+    collision: 0.1
+    sampling: 1
+    tree: 1
 
   algorithm:
     m2r-ratio: 10
-    bias: 0.95
+    bias: 0
     misses: 5
-    dubins-radius: 30
+    dubins-radius: 10
     dubins-resolution: 1
+    prm-connections: 20
   
   save:
     goals:
@@ -49,11 +56,12 @@
       type: 'map'
     params:
       path: 'output/params.csv'
-      id: 'sff_maze_dubins'
+      id: 'sff_dubins'
     #TSP-file:
     #  path: 'output/tsp.tsp'
     #TSP-paths:
     #  path: 'output/tsp.tri'
+    #  type: 'map'
     tree:
       path: 'output//tree.tri'
       type: 'map'

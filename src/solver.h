@@ -20,6 +20,7 @@
 #include "tsp-handler.h"
 
 #include "opendubins/dubins.h"
+#include "opendubins/dubins3D.h"
 
 template<class R>
 class Solver {
