@@ -162,20 +162,20 @@ Point2DDubins& Point2DDubins::operator=(const Point2DDubins &p) {
     }
   }
 
-  phi = p.GetAngle();
+  phi = p.GetHeading();
 
   return *this;
 }
 
-void Point2DDubins::SetAngle(double angle) {
+void Point2DDubins::SetHeading(double angle) {
   this->phi = angle;
 }
 
-void Point2DDubins::SetAngle(int angleId, int angleResolution) {
+void Point2DDubins::SetHeading(int angleId, int angleResolution) {
   this->phi = NormalizeAngle(this->phi + (angleId * 2 * M_PI) / angleResolution);
 }
 
-double Point2DDubins::GetAngle() const {
+double Point2DDubins::GetHeading() const {
   return phi;
 }
 
@@ -242,16 +242,16 @@ Point2DDubins operator/(const Point2DDubins &p1, const double scale) {
 }
 
 double Point2DDubins::Distance(const Point2DDubins &other) const {
-  opendubins::State a{coords[0], coords[1], GetAngle()};
-  opendubins::State b{other[0], other[1], other.GetAngle()};
+  opendubins::State a{coords[0], coords[1], GetHeading()};
+  opendubins::State b{other[0], other[1], other.GetHeading()};
   opendubins::Dubins dubPath{a, b, DubinsRadius};
 
   return dubPath.length;
 }
 
 Point2DDubins Point2DDubins::GetStateInDistance(Point2DDubins &other, double dist) const {
-  opendubins::State a{coords[0], coords[1], GetAngle()};
-  opendubins::State b{other[0], other[1], other.GetAngle()};
+  opendubins::State a{coords[0], coords[1], GetHeading()};
+  opendubins::State b{other[0], other[1], other.GetHeading()};
   opendubins::Dubins dubPath{a, b, DubinsRadius};
 
   return Point2DDubins(dubPath.getState(dist));
@@ -259,7 +259,7 @@ Point2DDubins Point2DDubins::GetStateInDistance(Point2DDubins &other, double dis
 
 Point2DDubins Point2DDubins::GetInvertedPoint() {
   Point2DDubins retVal{*this};
-  retVal.SetAngle(NormalizeAngle(this->GetAngle() + M_PI));
+  retVal.SetHeading(NormalizeAngle(this->GetHeading() + M_PI));
 
   return retVal;
 }
@@ -421,6 +421,7 @@ Point3D Point3D::RotatePoint(Quaternion rotation) {
   q = temp * rotation.Inverse();
 
   retVal.SetPosition(q[1], q[2], q[3]);
+  retVal.SetRotation(this->rotation * rotation);
   return retVal;
 }
 
@@ -443,7 +444,7 @@ Point3DDubins::Point3DDubins(const std::string &s, double scale) {
   std::regex r("\\[(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*)\\]");
   std::smatch m;
   std::regex_search(s, m, r);
-  if (m.size() != 7) {
+  if (m.size() != 6) {
     throw std::invalid_argument("Unknown format of point");
   }
 
@@ -462,6 +463,20 @@ Quaternion Point3DDubins::GetRotation() const {
 
 void Point3DDubins::SetRotation(Quaternion q) {
   rotation = q;
+}
+
+void Point3DDubins::SetRotation(double yaw, double pitch) {
+  Quaternion q {yaw, pitch, 0};
+}
+
+void Point3DDubins::SetHeading(double yaw) {
+  Quaternion q{GetRotation()};
+  double pitch{q.GetPitch()};
+  SetRotation(yaw, pitch);
+}
+
+void Point3DDubins::SetHeading(int angleId, int angleResolution) {
+  SetHeading(this->rotation.GetYaw() + (angleId * 2 * M_PI) / angleResolution);
 }
 
 void Point3DDubins::Set(double x, double y, double z, double yaw, double pitch) {
@@ -556,6 +571,15 @@ Point3DDubins Point3DDubins::RotatePoint(Quaternion rotation) {
   q = temp * rotation.Inverse();
 
   retVal.SetPosition(q[1], q[2], q[3]);
+  retVal.SetRotation(this->rotation * rotation);
+  return retVal;
+}
+
+Point3DDubins Point3DDubins::GetInvertedPoint() {
+  Point3DDubins retVal{*this};
+  Quaternion q{rotation.Inverse()};
+
+  retVal.SetRotation(q);
   return retVal;
 }
 
@@ -631,9 +655,13 @@ std::ostream& operator<<(std::ostream &out, const Point2D &p) {
 }
 
 std::ostream& operator<<(std::ostream &out, const Point2DDubins &p) {
-  return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << p.GetAngle();
+  return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << p.GetHeading();
 }
 
 std::ostream& operator<<(std::ostream &out, const Point3D &p) {
+  return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << p[2] << DELIMITER_OUT << p.GetRotation().GetYaw() << DELIMITER_OUT << p.GetRotation().GetPitch() << DELIMITER_OUT << p.GetRotation().GetRoll();
+}
+
+std::ostream& operator<<(std::ostream &out, const Point3DDubins &p) {
   return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << p[2] << DELIMITER_OUT << p.GetRotation().GetYaw() << DELIMITER_OUT << p.GetRotation().GetPitch() << DELIMITER_OUT << p.GetRotation().GetRoll();
 }

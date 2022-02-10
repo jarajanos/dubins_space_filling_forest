@@ -77,8 +77,19 @@ template <> void Solver<Point2DDubins>::saveTsp(const FileStruct file);
 template <> void Solver<Point2DDubins>::savePaths(const FileStruct file);
 template <> void Solver<Point2DDubins>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime);
 
+template <> void Solver<Point3DDubins>::initNeighboringMatrix();
+template <> void Solver<Point3DDubins>::getAllPaths();
+
+template <> void Solver<Point3DDubins>::computeTsp();
+template <> void Solver<Point3DDubins>::saveTspPaths(const FileStruct file);
+
+template <> void Solver<Point3DDubins>::saveTrees(const FileStruct file);
+template <> void Solver<Point3DDubins>::saveTsp(const FileStruct file);
+template <> void Solver<Point3DDubins>::savePaths(const FileStruct file);
+template <> void Solver<Point3DDubins>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime);
+
 template<class R>
-Solver<R>::Solver(Problem<R> &problem) : problem{problem}, rnd{problem.Env.Limits} {
+Solver<R>::Solver(Problem<R> &problem) : problem{problem}, rnd{problem.Env.Limits, problem.PitchLimits} {
   initNeighboringMatrix();
   this->connected = std::vector<bool>((size_t)problem.GetNumRoots(), false);
 }

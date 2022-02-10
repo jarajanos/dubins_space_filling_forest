@@ -64,6 +64,7 @@ protected:
 };
 
 template<> TSPMatrix<Point2DDubins>::TSPMatrix(Problem<Point2DDubins> &problem, DistanceMatrix<DistanceHolder<Point2DDubins>> &neighboringMatrix);
+template<> TSPMatrix<Point3DDubins>::TSPMatrix(Problem<Point3DDubins> &problem, DistanceMatrix<DistanceHolder<Point3DDubins>> &neighboringMatrix);
 
 class Wrapper {
 public: 

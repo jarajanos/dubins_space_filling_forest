@@ -51,6 +51,20 @@ bool RandomGenerator<Point3D>::isInLimits(Point3D& p) {
   return valid;
 }
 
+template<>
+bool RandomGenerator<Point3DDubins>::isInLimits(Point3DDubins& p) {
+  bool valid{true};
+  for (int i{0}; i < 3; ++i) {
+    valid &= p[i] >= limits.mins[i];
+    valid &= p[i] <= limits.maxs[i];
+  }
+
+  valid &= p.GetRotation().GetPitch() >= pitches.min;
+  valid &= p.GetRotation().GetPitch() <= pitches.max;
+
+  return valid;
+}
+
 /**
  * @brief Random sampling of position, according to https://ri.cmu.edu/pub_files/pub4/kuffner_james_2004_1/kuffner_james_2004_1.pdf 
  * 
@@ -71,10 +85,10 @@ bool RandomGenerator<Point2DDubins>::RandomPointInDistance(const Point2DDubins& 
   double phi{uniDistAngle(rndEng)};
   
   point.SetPosition(center[0] + cos(phi) * distance, center[1] + sin(phi) * distance);
-  point.SetAngle(uniDistAngle(rndEng));
+  point.SetHeading(uniDistAngle(rndEng));
 
-  opendubins::State a{center[0], center[1], center.GetAngle()};
-  opendubins::State b{point[0], point[1], point.GetAngle()};
+  opendubins::State a{center[0], center[1], center.GetHeading()};
+  opendubins::State b{point[0], point[1], point.GetHeading()};
   opendubins::Dubins dubPath{a, b, Point2DDubins::DubinsRadius};
 
   // get point in exact distance
@@ -106,6 +120,33 @@ bool RandomGenerator<Point3D>::RandomPointInDistance(const Point3D& center, Poin
   return isInLimits(point);
 }
 
+template<>
+bool RandomGenerator<Point3DDubins>::RandomPointInDistance(const Point3DDubins& center, Point3DDubins& point, const double distance) {
+  Point3DDubins temp;
+  
+  double phi{uniDistAngle(rndEng)};
+  double theta{uniDistAngle(rndEng)};
+  temp.SetPosition(center[0] + cos(theta) * sin(phi) * distance, center[1] + sin(theta) * sin(phi)  * distance, center[2] + cos(phi) * distance);
+
+  // rotation
+  double s{RandomProbability()};
+  double sigOne{sqrt(1-s)};
+  double sigTwo{sqrt(s)};
+  double thetaOne{2*M_PI*RandomProbability()};
+  double thetaTwo{2*M_PI*RandomProbability()};
+
+  Quaternion rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
+  temp.SetRotation(rotation);
+
+  opendubins::State3D a{center[0], center[1], center[2], center.GetRotation().GetYaw(), center.GetRotation().GetPitch()};
+  opendubins::State3D b{temp[0], temp[1], temp[2], temp.GetRotation().GetYaw(), temp.GetRotation().GetPitch()};
+  opendubins::Dubins3D dubPath{a, b, Point3DDubins::DubinsRadius, Point3DDubins::PitchMin, Point3DDubins::PitchMax};
+
+  // get point in exact distance
+  point = Point3DDubins(dubPath.getState(distance));
+  return isInLimits(point);
+}
+
 /**
  * @brief Random space uniformly sampled in the configuration space of particular problem, according to 
  * https://ri.cmu.edu/pub_files/pub4/kuffner_james_2004_1/kuffner_james_2004_1.pdf 
@@ -120,7 +161,7 @@ void RandomGenerator<Point2D>::RandomPointInSpace(Point2D& point) {
 template<>
 void RandomGenerator<Point2DDubins>::RandomPointInSpace(Point2DDubins& point) {
   point.SetPosition(uniSpaceX(rndEng), uniSpaceY(rndEng));
-  point.SetAngle(uniDistAngle(rndEng));
+  point.SetHeading(uniDistAngle(rndEng));
 }
 
 template<>
@@ -136,4 +177,23 @@ void RandomGenerator<Point3D>::RandomPointInSpace(Point3D& point) {
 
   Quaternion rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
   point.SetRotation(rotation);
+}
+
+template<>
+void RandomGenerator<Point3DDubins>::RandomPointInSpace(Point3DDubins& point) {
+  bool inLimits{false};
+  point.SetPosition(uniSpaceX(rndEng), uniSpaceY(rndEng), uniSpaceZ(rndEng));
+
+  // rotation
+  while (!inLimits) {
+    double s{RandomProbability()};
+    double sigOne{sqrt(1-s)};
+    double sigTwo{sqrt(s)};
+    double thetaOne{2*M_PI*RandomProbability()};
+    double thetaTwo{2*M_PI*RandomProbability()};
+
+    Quaternion rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
+    point.SetRotation(rotation);
+    inLimits = isInLimits(point);
+  }
 }

@@ -101,8 +101,8 @@ void LazyTSP<Point2DDubins>::savePaths(const FileStruct file, const std::deque<s
 
         std::deque<Point2DDubins> &plan{holder.Plan};
         for (int k{0}; k < plan.size() - 1; ++k) {
-          opendubins::State finishDub{plan[k][0], plan[k][1], plan[k].GetAngle()};
-          opendubins::State startDub{plan[k+1][0], plan[k+1][1], plan[k+1].GetAngle()};
+          opendubins::State finishDub{plan[k][0], plan[k][1], plan[k].GetHeading()};
+          opendubins::State startDub{plan[k+1][0], plan[k+1][1], plan[k+1].GetHeading()};
           opendubins::Dubins pathFromClosest{startDub, finishDub, this->problem.DubinsRadius};
           
           Point2DDubins lastPoint{startDub};

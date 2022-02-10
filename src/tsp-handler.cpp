@@ -48,6 +48,42 @@ TSPMatrix<Point2DDubins>::TSPMatrix(Problem<Point2DDubins> &problem,
         }
       }
 
+template <>
+TSPMatrix<Point3DDubins>::TSPMatrix(Problem<Point3DDubins> &problem,
+    DistanceMatrix<DistanceHolder<Point3DDubins>> &neighboringMatrix)
+    : TSPMatrix(neighboringMatrix.GetSize() * neighboringMatrix.GetResolution(), -1) {
+        this->dubinsResolution = neighboringMatrix.GetResolution();
+        this->problem = &problem;
+
+        int dimension{neighboringMatrix.GetSize()};
+        int resolution{neighboringMatrix.GetResolution()};
+        
+        for (int i{0}; i < dimension; ++i) {
+          for (int j{0}; j < dimension; ++j) {
+            for (int k{0}; k < resolution; ++k) {
+              for (int l{0}; l < resolution; ++l) {
+                if (neighboringMatrix.Exists(i, j, k, l)) {
+                  double dist{neighboringMatrix(i, j, k, l).Distance};
+                  data[i * resolution + k][j * resolution + l] = dist;
+
+                  maxLength = MAX(maxLength, dist);
+                }
+              }
+            }
+          }
+        }
+
+        bigM = maxLength * size;
+        // replace nonexisting paths with M
+        for (int i{0}; i < size; ++i) {
+          for (int j{0}; j < size; ++j) {
+            if (data[i][j] == -1) {
+              data[i][j] = bigM;
+            }
+          }
+        }
+      }
+
 Wrapper::Wrapper(std::string solver_dir, std::string run_dir) {
   std::filesystem::path current_path = std::filesystem::current_path();
 

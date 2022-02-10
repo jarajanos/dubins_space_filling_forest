@@ -202,7 +202,7 @@ void RapidExpTree<R>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double ne
   }
   neighbor.Closest->Children.erase(iter);
   neighbor.Closest = newNode;
-  neighbor.DistanceToClosest = newDistance;
+  //TODO: neighbor.DistanceToClosest = newDistance;
   newNode->Children.push_back(&neighbor);
 }
 

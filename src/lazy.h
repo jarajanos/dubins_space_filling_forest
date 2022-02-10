@@ -276,7 +276,7 @@ void LazyTSP<R>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDist
   }
   neighbor.Closest->Children.erase(iter);
   neighbor.Closest = newNode;
-  neighbor.DistanceToClosest = newDistance;
+  // TODO: neighbor.DistanceToClosest = newDistance;
   newNode->Children.push_back(&neighbor);
 }
 

@@ -17,9 +17,9 @@
 #include "opendubins/dubins3D.h"
 
 template<class R>
-class SpaceForest : public Solver<R> {
+class SpaceForestBase : public Solver<R> {
   public:
-    SpaceForest(Problem<R> &problem);
+    SpaceForestBase(Problem<R> &problem);
     void Solve() override;
   
   protected:
@@ -29,42 +29,71 @@ class SpaceForest : public Solver<R> {
 
     DistanceMatrix<std::deque<DistanceHolder<R>>> borders;
 
-    void initNodeTypeSpecific(Node<R> &node);
-
-    bool expandNode(Node<R> *expanded, bool &solved, const unsigned int iteration);
+    virtual bool expandNode(Node<R> *expanded, bool &solved, const unsigned int iteration) = 0;
     bool getAndCheckNewPoint(Node<R> *expanded, R* newPoint);
     bool checkExpandedTree(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix);
     bool checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix, bool &solved);
-    bool pathToGoalExists(R &newPoint);
+    virtual bool pathToGoalExists(R &newPoint) = 0;
 
     void optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>* &newNode, flann::Matrix<float> &matrix, int iteration);
-    bool filterNode(Node<R> &neighbor);
-    void emplaceNewNode(Node<R> *expanded, R* newPoint, Node<R>* &newNode, int iteration);
-    void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance);
+    virtual bool filterNode(Node<R> &neighbor) = 0;
+    virtual void emplaceNewNode(Node<R> *expanded, R* newPoint, Node<R>* &newNode, int iteration) = 0;
+    virtual void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) = 0;
 
     int checkConnected();
-    bool checkBorders(int id1, int id2);
+    virtual bool checkBorders(int id1, int id2) = 0;
 
-    void getPaths() override;
+    virtual void getPaths() override {};
     void saveFrontiers(const FileStruct file);
     void checkIterationSaves(const int iter) override;
 };
 
-template<> void SpaceForest<Point2DDubins>::initNodeTypeSpecific(Node<Point2DDubins> &node);
-template<> bool SpaceForest<Point2DDubins>::expandNode(Node<Point2DDubins> *expanded, bool &solved, const unsigned int iteration);
-template<> bool SpaceForest<Point2DDubins>::pathToGoalExists(Point2DDubins &newPoint);
-template<> bool SpaceForest<Point2DDubins>::filterNode(Node<Point2DDubins> &neighbor);
-template<> void SpaceForest<Point2DDubins>::emplaceNewNode(Node<Point2DDubins> *expanded, Point2DDubins* newPoint, Node<Point2DDubins>* &newNode, int iteration);
-template<> void SpaceForest<Point2DDubins>::rewireNodes(Node<Point2DDubins> *newNode, Node<Point2DDubins> &neighbor, double newDistance);
-template<> bool SpaceForest<Point2DDubins>::checkBorders(int id1, int id2);
-template<> void SpaceForest<Point2DDubins>::getPaths();
+template<class R, bool = isDubins<R>::value>
+class SpaceForest : public SpaceForestBase<R> {
+
+};
 
 template<class R>
-SpaceForest<R>::SpaceForest(Problem<R> &problem) : Solver<R>(problem), borders{this->problem.GetNumRoots()} {
+class SpaceForest<R, false> : public SpaceForestBase<R> {
+  public:
+    SpaceForest(Problem<R> &problem);
+  
+  protected:
+    bool expandNode(Node<R> *expanded, bool &solved, const unsigned int iteration) override;
+    bool pathToGoalExists(R &newPoint) override;
+
+    bool filterNode(Node<R> &neighbor) override;
+    void emplaceNewNode(Node<R> *expanded, R* newPoint, Node<R>* &newNode, int iteration) override;
+    void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) override;
+
+    bool checkBorders(int id1, int id2) override;
+
+    void getPaths() override;
+};
+
+template<class R>
+class SpaceForest<R, true> : public SpaceForestBase<R> {
+  public:
+    SpaceForest(Problem<R> &problem);
+
+  protected:
+    bool expandNode(Node<R> *expanded, bool &solved, const unsigned int iteration) override;
+    bool pathToGoalExists(R &newPoint) override;
+
+    bool filterNode(Node<R> &neighbor) override;
+    void emplaceNewNode(Node<R> *expanded, R* newPoint, Node<R>* &newNode, int iteration) override;
+    void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) override;
+
+    bool checkBorders(int id1, int id2) override;
+
+    void getPaths() override;
+};
+
+template<class R>
+SpaceForestBase<R>::SpaceForestBase(Problem<R> &problem) : Solver<R>(problem), borders{this->problem.GetNumRoots()} {
   for (int j{0}; j < this->problem.Roots.size(); ++j) {
     Tree<R> &tree{this->trees.emplace_back()};
     Node<R> &node{tree.Leaves.emplace_back(this->problem.Roots[j], &tree, nullptr, 0, 0)};
-    initNodeTypeSpecific(node);
     this->allNodes.push_back(&node);
     tree.Root = &node;
     flann::Matrix<float> rootMat{new float[1 * PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
@@ -92,7 +121,6 @@ SpaceForest<R>::SpaceForest(Problem<R> &problem) : Solver<R>(problem), borders{t
   if (this->problem.HasGoal) {
     Tree<R> &tree{this->trees.emplace_back()};
     Node<R> &node{tree.Leaves.emplace_back(this->problem.Goal, &tree, nullptr, 0, 0)};
-    initNodeTypeSpecific(node);
     this->allNodes.push_back(&node);
     flann::Matrix<float> rootMat{new float[1 * PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
     for (int i{0}; i < PROBLEM_DIMENSION; ++i) {
@@ -111,7 +139,22 @@ SpaceForest<R>::SpaceForest(Problem<R> &problem) : Solver<R>(problem), borders{t
 }
 
 template<class R>
-void SpaceForest<R>::Solve() {
+SpaceForest<R,true>::SpaceForest(Problem<R> &problem) : SpaceForestBase<R>(problem) {
+  for (int i{0}; i < this->trees.size(); ++i) {
+    Node<R> *node{this->trees[i].Root};
+    node->ExpandedAngles = std::deque<int>(this->problem.DubinsResolution);
+    for (int i{0}; i < this->problem.DubinsResolution; ++i) {
+      node->ExpandedAngles.push_back(i);
+    }
+  }
+}
+
+template<class R>
+SpaceForest<R,false>::SpaceForest(Problem<R> &problem) : SpaceForestBase<R>(problem) {
+}
+
+template<class R>
+void SpaceForestBase<R>::Solve() {
   Node<R> *nodeToExpand;
   StopWatch timeMeasure;
 
@@ -254,70 +297,7 @@ void SpaceForest<R>::Solve() {
 }
 
 template<class R>
-bool SpaceForest<R>::expandNode(Node<R> *expanded, bool &solved, const unsigned int iteration) {
-  R newPoint;
-  Node<R> *newNode; 
-
-  Tree<R> *expandedTree{expanded->SourceTree};
-
-  // sample new point and check basic collisions with obstacles
-  if (getAndCheckNewPoint(expanded, &newPoint)) {
-    return true;
-  }
-  
-  flann::Matrix<float> pointToAdd{new float[PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION}; // just one point to add
-  for (int i{0}; i < PROBLEM_DIMENSION; ++i) {
-    pointToAdd[0][i] = newPoint[i];
-  }
-
-  // ensure that the node does not "grow" into the tree
-  if (checkExpandedTree(expanded, &newPoint, pointToAdd)) {
-    delete[] pointToAdd.ptr();
-    return true;
-  }
-
-  // finally check clear path to expanded node
-  if (!this->isPathFree(expanded->Position, newPoint)) {
-    delete[] pointToAdd.ptr();
-    return true;
-  }
-
-  // check other trees, link them together or check availability of the goal node
-  if (checkOtherTrees(expanded, &newPoint, pointToAdd, solved)) {
-    delete[] pointToAdd.ptr();
-    return true;
-  }
-
-  double parentDistance{expanded->Distance(newPoint)};
-  if (this->problem.Optimize) {
-    // sff star
-    optimizeConnections(expanded, &newPoint, newNode, pointToAdd, iteration);
-  } else {
-    newNode = &(expandedTree->Leaves.emplace_back(newPoint, expandedTree, expanded, parentDistance, iteration));
-    expanded->Children.push_back(newNode);
-  }
-  this->allNodes.push_back(newNode);
-  
-  // finally add the new node to flann and frontiers
-  if (this->problem.PriorityBias != 0) {
-    for (Heap<Node<R>> &prior : expandedTree->Frontiers) {
-      prior.Push(newNode); 
-    }
-  } else {
-    frontier.push_back(newNode);
-  }
-  expandedTree->Flann.Index->addPoints(pointToAdd);
-  expandedTree->Flann.PtrsToDel.push_back(pointToAdd.ptr());
-
-  if (solved) {
-    this->borders(this->problem.GetNumRoots() - 1, expandedTree->Root->ID).emplace_back(newNode, goalNode);
-  }
-
-  return false;
-}
-
-template<class R>
-bool SpaceForest<R>::getAndCheckNewPoint(Node<R> *expanded, R* newPoint) {
+bool SpaceForestBase<R>::getAndCheckNewPoint(Node<R> *expanded, R* newPoint) {
   // sample new point
   if (!this->rnd.RandomPointInDistance(expanded->Position, *newPoint, this->problem.SamplingDist)) {
     return true;
@@ -332,7 +312,7 @@ bool SpaceForest<R>::getAndCheckNewPoint(Node<R> *expanded, R* newPoint) {
 }
 
 template<class R>
-bool SpaceForest<R>::checkExpandedTree(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix) {
+bool SpaceForestBase<R>::checkExpandedTree(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix) {
   double parentDistance{expanded->Distance(*newPoint)};
   Tree<R> *expandedTree{expanded->SourceTree};
   int expandedRootID{expandedTree->Root->ID};
@@ -361,7 +341,7 @@ bool SpaceForest<R>::checkExpandedTree(Node<R> *expanded, R* newPoint, flann::Ma
 }
 
 template<class R>
-bool SpaceForest<R>::checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix, bool &solved) {
+bool SpaceForestBase<R>::checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matrix<float> &matrix, bool &solved) {
   int expandedRootID{expanded->SourceTree->Root->ID};
   std::vector<std::vector<int>> indices;
   std::vector<std::vector<float>> dists;
@@ -408,12 +388,7 @@ bool SpaceForest<R>::checkOtherTrees(Node<R> *expanded, R* newPoint, flann::Matr
 }
 
 template<class R>
-bool SpaceForest<R>::pathToGoalExists(R &newPoint) {
-  return this->isPathFree(newPoint, this->problem.Goal);
-}
-
-template<class R>
-void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>* &newNode, flann::Matrix<float> &matrix, int iteration) {
+void SpaceForestBase<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>* &newNode, flann::Matrix<float> &matrix, int iteration) {
   std::vector<std::vector<int>> indices;
   std::vector<std::vector<float>> dists;
   double bestDist{newPoint->Distance(expanded->Position) + expanded->DistanceToRoot()};
@@ -424,7 +399,7 @@ void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>
   std::vector<int> &indRow{indices[0]};
   for (int &ind : indRow) {
     Node<R> &neighbor{expanded->SourceTree->Leaves[ind]};
-    if (filterNode(neighbor)) {   // additional check of possible parent -- mainly becaused of Dubins (forbid connection with root)
+    if (this->filterNode(neighbor)) {   // additional check of possible parent -- mainly becaused of Dubins (forbid connection with root)
       continue;
     }
     double neighborDist{neighbor.Distance(*newPoint) + neighbor.DistanceToRoot()};
@@ -434,7 +409,7 @@ void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>
     }
   }
 
-  emplaceNewNode(expanded, newPoint, newNode, iteration);
+  this->emplaceNewNode(expanded, newPoint, newNode, iteration);
   expanded->Children.push_back(newNode);
 
   for (int &ind : indRow) {
@@ -448,32 +423,8 @@ void SpaceForest<R>::optimizeConnections(Node<R> *expanded, R* newPoint, Node<R>
   }
 }
 
-template<class R> 
-bool SpaceForest<R>::filterNode(Node<R> &neighbor) {
-  return false;
-}
-
 template<class R>
-void SpaceForest<R>::emplaceNewNode(Node<R> *expanded, R* newPoint, Node<R>* &newNode, const int iteration) {
-  newNode = &(expanded->SourceTree->Leaves.emplace_back(*newPoint, expanded->SourceTree, expanded, newPoint->Distance(expanded->Position), iteration));
-}
-
-template<class R>
-void SpaceForest<R>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) {
-  std::deque<Node<R> *> &children{neighbor.Closest->Children};
-  auto iter{std::find(children.begin(), children.end(), &neighbor)};
-  if (iter == children.end()) {
-    ERROR("Fatal error when rewiring SFF: Node not in children");
-    exit(1);
-  }
-  neighbor.Closest->Children.erase(iter);
-  neighbor.Closest = newNode;
-  neighbor.DistanceToClosest = newDistance;
-  newNode->Children.push_back(&neighbor);
-}
-
-template<class R>
-int SpaceForest<R>::checkConnected() {
+int SpaceForestBase<R>::checkConnected() {
   int maxConn{0};
   this->connectedTrees.clear();
   int remaining{this->problem.GetNumRoots()};
@@ -517,86 +468,7 @@ int SpaceForest<R>::checkConnected() {
 }
 
 template<class R>
-bool SpaceForest<R>::checkBorders(int id1, int id2) {
-  auto link{this->borders(id1, id2)}; 
-  if (link.empty()) {
-    return false;
-  } else if (link[0].IsValid) {
-    return true;
-  } else {
-    while (!link.empty()) {
-      DistanceHolder<R> holder{link[0]};
-      if (this->isPathFree(holder.Node1->Position, holder.Node2->Position)) {
-        link[0].IsValid = true;
-        return true;
-      } 
-      link.pop_front();
-    }
-
-    return false;
-  }
-}
-
-template<class R>
-void SpaceForest<R>::getPaths() {
-  // due to optimizations, the distance might have changed -> update it
-  int numRoots{this->problem.GetNumRoots()};
-  for (int i{0}; i < numRoots; ++i) {
-    for (int j{i + 1}; j < numRoots; ++j) {
-      if (this->borders(i, j).empty()) {
-        continue;
-      }
-
-      std::deque<DistanceHolder<R>> &borderPoints{this->borders(i, j)};
-      for (DistanceHolder<R> &dist : borderPoints) {
-        dist.UpdateDistance();
-      }
-      std::sort(borderPoints.begin(), borderPoints.end());
-    }
-  }
-
-  // go through borders, select one with the shortest distance, then update neighboring matrix and create paths
-  for (int i{0}; i < numRoots; ++i) {
-    for (int j{i + 1}; j < numRoots; ++j) {
-      if (this->borders(i, j).empty()) {
-        continue;
-      }
-
-      std::deque<DistanceHolder<R>> &borderPoints{this->borders(i, j)};
-      for (DistanceHolder<R> &dist : borderPoints) {
-        if (dist.IsValid || this->isPathFree(dist.Node1->Position, dist.Node2->Position)) {
-          this->neighboringMatrix(i, j) = dist;
-          break;
-        }
-      }
-
-      if (!this->neighboringMatrix.Exists(i,j)) {
-        continue;
-      }
-
-      DistanceHolder<R> &holder{this->neighboringMatrix(i, j)};
-      std::deque<R> &plan{holder.Plan};
-      // one tree
-      Node<R> *nodeToPush{holder.Node1};
-      plan.push_front(nodeToPush->Position);
-      while (!nodeToPush->IsRoot()) {
-        nodeToPush = nodeToPush->Closest;
-        plan.push_front(nodeToPush->Position);
-      }
-
-      // second tree
-      nodeToPush = holder.Node2;
-      plan.push_back(nodeToPush->Position);
-      while(!nodeToPush->IsRoot()) {
-        nodeToPush = nodeToPush->Closest;
-        plan.push_back(nodeToPush->Position);
-      }
-    }
-  }
-}
-
-template<class R>
-void SpaceForest<R>::saveFrontiers(const FileStruct file) {
+void SpaceForestBase<R>::saveFrontiers(const FileStruct file) {
   INFO("Saving frontiers");
   std::ofstream fileStream{file.fileName.c_str()};
   if (!fileStream.good()) {
@@ -653,7 +525,7 @@ void SpaceForest<R>::saveFrontiers(const FileStruct file) {
 }
 
 template<class R>
-void SpaceForest<R>::checkIterationSaves(const int iter) {
+void SpaceForestBase<R>::checkIterationSaves(const int iter) {
   Solver<R>::checkIterationSaves(iter);
 
   if (this->problem.SaveFreq[SaveFrontiers] != 0 && iter % this->problem.SaveFreq[SaveFrontiers] == 0) {
@@ -663,7 +535,436 @@ void SpaceForest<R>::checkIterationSaves(const int iter) {
 }
 
 template<class R>
-void SpaceForest<R>::initNodeTypeSpecific(Node<R> &node) {
+bool SpaceForest<R, false>::pathToGoalExists(R &newPoint) {
+  return this->isPathFree(newPoint, this->problem.Goal);
+}
+
+template<class R>
+bool SpaceForest<R, false>::expandNode(Node<R> *expanded, bool &solved, const unsigned int iteration) {
+  R newPoint;
+  Node<R> *newNode; 
+
+  Tree<R> *expandedTree{expanded->SourceTree};
+
+  // sample new point and check basic collisions with obstacles
+  if (this->getAndCheckNewPoint(expanded, &newPoint)) {
+    return true;
+  }
+  
+  flann::Matrix<float> pointToAdd{new float[PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION}; // just one point to add
+  for (int i{0}; i < PROBLEM_DIMENSION; ++i) {
+    pointToAdd[0][i] = newPoint[i];
+  }
+
+  // ensure that the node does not "grow" into the tree
+  if (this->checkExpandedTree(expanded, &newPoint, pointToAdd)) {
+    delete[] pointToAdd.ptr();
+    return true;
+  }
+
+  // finally check clear path to expanded node
+  if (!this->isPathFree(expanded->Position, newPoint)) {
+    delete[] pointToAdd.ptr();
+    return true;
+  }
+
+  // check other trees, link them together or check availability of the goal node
+  if (this->checkOtherTrees(expanded, &newPoint, pointToAdd, solved)) {
+    delete[] pointToAdd.ptr();
+    return true;
+  }
+
+  double parentDistance{expanded->Distance(newPoint)};
+  if (this->problem.Optimize) {
+    // sff star
+    this->optimizeConnections(expanded, &newPoint, newNode, pointToAdd, iteration);
+  } else {
+    newNode = &(expandedTree->Leaves.emplace_back(newPoint, expandedTree, expanded, parentDistance, iteration));
+    expanded->Children.push_back(newNode);
+  }
+  this->allNodes.push_back(newNode);
+  
+  // finally add the new node to flann and frontiers
+  if (this->problem.PriorityBias != 0) {
+    for (Heap<Node<R>> &prior : expandedTree->Frontiers) {
+      prior.Push(newNode); 
+    }
+  } else {
+    this->frontier.push_back(newNode);
+  }
+  expandedTree->Flann.Index->addPoints(pointToAdd);
+  expandedTree->Flann.PtrsToDel.push_back(pointToAdd.ptr());
+
+  if (solved) {
+    this->borders(this->problem.GetNumRoots() - 1, expandedTree->Root->ID).emplace_back(newNode, this->goalNode);
+  }
+
+  return false;
+}
+
+template<class R> 
+bool SpaceForest<R, false>::filterNode(Node<R> &neighbor) {
+  return false;
+}
+
+template<class R>
+void SpaceForest<R, false>::emplaceNewNode(Node<R> *expanded, R* newPoint, Node<R>* &newNode, const int iteration) {
+  newNode = &(expanded->SourceTree->Leaves.emplace_back(*newPoint, expanded->SourceTree, expanded, newPoint->Distance(expanded->Position), iteration));
+}
+
+template<class R>
+void SpaceForest<R, false>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) {
+  std::deque<Node<R> *> &children{neighbor.Closest->Children};
+  auto iter{std::find(children.begin(), children.end(), &neighbor)};
+  if (iter == children.end()) {
+    ERROR("Fatal error when rewiring SFF: Node not in children");
+    exit(1);
+  }
+  neighbor.Closest->Children.erase(iter);
+  neighbor.Closest = newNode;
+  neighbor.DistanceToClosest = newDistance;
+  newNode->Children.push_back(&neighbor);
+}
+
+template<class R>
+bool SpaceForest<R, false>::checkBorders(int id1, int id2) {
+  auto link{this->borders(id1, id2)}; 
+  if (link.empty()) {
+    return false;
+  } else if (link[0].IsValid) {
+    return true;
+  } else {
+    while (!link.empty()) {
+      DistanceHolder<R> holder{link[0]};
+      if (this->isPathFree(holder.Node1->Position, holder.Node2->Position)) {
+        link[0].IsValid = true;
+        return true;
+      } 
+      link.pop_front();
+    }
+
+    return false;
+  }
+}
+
+template<class R>
+void SpaceForest<R, false>::getPaths() {
+  // due to optimizations, the distance might have changed -> update it
+  int numRoots{this->problem.GetNumRoots()};
+  for (int i{0}; i < numRoots; ++i) {
+    for (int j{i + 1}; j < numRoots; ++j) {
+      if (this->borders(i, j).empty()) {
+        continue;
+      }
+
+      std::deque<DistanceHolder<R>> &borderPoints{this->borders(i, j)};
+      for (DistanceHolder<R> &dist : borderPoints) {
+        dist.UpdateDistance();
+      }
+      std::sort(borderPoints.begin(), borderPoints.end());
+    }
+  }
+
+  // go through borders, select one with the shortest distance, then update neighboring matrix and create paths
+  for (int i{0}; i < numRoots; ++i) {
+    for (int j{i + 1}; j < numRoots; ++j) {
+      if (this->borders(i, j).empty()) {
+        continue;
+      }
+
+      std::deque<DistanceHolder<R>> &borderPoints{this->borders(i, j)};
+      for (DistanceHolder<R> &dist : borderPoints) {
+        if (dist.IsValid || this->isPathFree(dist.Node1->Position, dist.Node2->Position)) {
+          this->neighboringMatrix(i, j) = dist;
+          break;
+        }
+      }
+
+      if (!this->neighboringMatrix.Exists(i,j)) {
+        continue;
+      }
+
+      DistanceHolder<R> &holder{this->neighboringMatrix(i, j)};
+      std::deque<R> &plan{holder.Plan};
+      // one tree
+      Node<R> *nodeToPush{holder.Node1};
+      plan.push_front(nodeToPush->Position);
+      while (!nodeToPush->IsRoot()) {
+        nodeToPush = nodeToPush->Closest;
+        plan.push_front(nodeToPush->Position);
+      }
+
+      // second tree
+      nodeToPush = holder.Node2;
+      plan.push_back(nodeToPush->Position);
+      while(!nodeToPush->IsRoot()) {
+        nodeToPush = nodeToPush->Closest;
+        plan.push_back(nodeToPush->Position);
+      }
+    }
+  }
+}
+
+/************************************************** Dubins specialization *******************************************************/
+template<class R>
+bool SpaceForest<R, true>::pathToGoalExists(R &newPoint) {
+  bool solved{false};
+  int j;
+  for (j = 0; j < this->problem.DubinsResolution && !solved; ++j) {
+    R temp{this->problem.Goal};
+    temp.SetHeading(j, this->problem.DubinsResolution);
+    solved |= this->isPathFree(newPoint, temp);
+  }
+
+  return solved;
+}
+
+template<class R>
+bool SpaceForest<R, true>::expandNode(Node<R> *expanded, bool &solved, const unsigned int iteration) {
+  R newPoint;
+  Node<R> *newNode; 
+  std::deque<int> expandedAngles;
+  std::deque<double> distances;
+
+  Tree<R> *expandedTree{expanded->SourceTree};
+
+  // sample new point and check basic collisions with obstacles
+  if (this->getAndCheckNewPoint(expanded, &newPoint)) {
+    return true;
+  }
+  
+  flann::Matrix<float> pointToAdd{new float[PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION}; // just one point to add
+  for (int i{0}; i < PROBLEM_DIMENSION; ++i) {
+    pointToAdd[0][i] = newPoint[i];
+  }
+
+  // ensure that the node does not "grow" into the tree
+  if (this->checkExpandedTree(expanded, &newPoint, pointToAdd)) {
+    delete[] pointToAdd.ptr();
+    return true;
+  }
+
+  // finally check clear path to expanded node
+  if (!expanded->IsRoot()) {
+    if (!this->isPathFree(expanded->Position, newPoint)) {
+      delete[] pointToAdd.ptr();
+      return true;
+    }
+  } else {
+    // check all angles - root only
+    bool oneSuitable{false};
+    for (int i{0}; i < this->problem.DubinsResolution; ++i) {
+      R temp{expanded->Position};
+      temp.SetHeading(i, this->problem.DubinsResolution);
+      if (this->isPathFree(temp, newPoint)) {
+        oneSuitable = true;
+        expandedAngles.push_back(i);
+        distances.push_back(temp.Distance(newPoint));
+      } else {
+        distances.push_back(std::numeric_limits<double>::max());
+      }
+    }
+
+    if (!oneSuitable) {
+      delete[] pointToAdd.ptr();
+      return true;
+    }
+  }
+
+  // check other trees, link them together or check availability of the goal node
+  if (this->checkOtherTrees(expanded, &newPoint, pointToAdd, solved)) {
+    delete[] pointToAdd.ptr();
+    return true;
+  }
+
+  double parentDistance{expanded->Position.Distance(newPoint)};
+  if (this->problem.Optimize && !expanded->IsRoot()) {
+    // sff star -- do not optimize root children (optimization not needed, would mess up the expandedAngles list)
+    this->optimizeConnections(expanded, &newPoint, newNode, pointToAdd, iteration);
+  } else {
+    if (!expanded->IsRoot()) {
+      newNode = &(expandedTree->Leaves.emplace_back(newPoint, expandedTree, expanded, parentDistance, iteration));
+    } else {
+      newNode = &(expandedTree->Leaves.emplace_back(newPoint, expandedTree, expanded, distances, expandedAngles, iteration));
+    }
+    expanded->Children.push_back(newNode);
+  }
+  this->allNodes.push_back(newNode);
+  
+  // finally add the new node to flann and frontiers
+  if (this->problem.PriorityBias != 0) {
+    for (Heap<Node<R>> &prior : expandedTree->Frontiers) {
+      prior.Push(newNode); 
+    }
+  } else {
+    this->frontier.push_back(newNode);
+  }
+  expandedTree->Flann.Index->addPoints(pointToAdd);
+  expandedTree->Flann.PtrsToDel.push_back(pointToAdd.ptr());
+
+  if (solved) {
+    // // this means the problem has goal and a path has been found
+    // int goalRootId{this->problem.GetNumRoots() - 1};
+    // int expandedRootId{expandedTree->Root->ID};
+
+    // // temporal solution - select root angle with shortest path
+    // double bestDist{std::numeric_limits<double>::max()};
+    // int selectedRootAngleId;
+    // for (auto &angleId : expanded->GetExpandedAngles()) {
+    //   double dist{expanded->DistanceToRoot(angleId)};
+    //   if (dist < bestDist) {
+    //     bestDist = dist;
+    //     selectedRootAngleId = angleId;
+    //   }
+    // }
+    
+    // // again - select the shortest possible path
+    // bestDist = std::numeric_limits<double>::max();
+    // int selectedGoalAngle, selectedGoalAngleId;
+    // for (int i{0}; i < this->problem.DubinsResolution; ++i) {
+    //   Point2DDubins tempGoal{this->problem.Goal};
+    //   tempGoal.SetHeading(i, this->problem.DubinsResolution);
+
+    //   if (isPathFree(newNode->Position, tempGoal)) {
+    //     double dist{newNode->Position.Distance(tempGoal)};
+    //     if (dist < bestDist) {
+    //       bestDist = dist;
+    //       selectedGoalAngle = tempGoal.GetHeading();
+    //       selectedGoalAngleId = i;
+    //     }
+    //   }
+    // }
+    
+    // DistanceHolder<Point2DDubins> holder{newNode, goalNode};
+    // this->borders.AddLink(holder, expandedRootId, goalRootId, selectedRootAngleId, selectedGoalAngleId, true);  // true = second angle is "inlet" and shall not be inverted
+    this->borders(expandedTree->Root->ID, this->problem.GetNumRoots() - 1).emplace_back(newNode, this->goalNode);
+  }
+
+  return false;
+}
+
+//optimize connections - same as for 2D and 3D, overriden only rewire and node emplacement
+template<class R> 
+bool SpaceForest<R, true>::filterNode(Node<R> &neighbor) {
+  return neighbor.IsRoot();
+}
+
+template<class R>
+void SpaceForest<R, true>::emplaceNewNode(Node<R> *expanded, R* newPoint, Node<R>* &newNode, const int iteration) {
+  newNode = &(expanded->SourceTree->Leaves.emplace_back(*newPoint, expanded->SourceTree, expanded, expanded->Distance(*newPoint), iteration));
+}
+
+template<class R>
+void SpaceForest<R, true>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) {
+  std::deque<Node<R> *> &children{neighbor.Closest->Children};
+  auto iter{std::find(children.begin(), children.end(), &neighbor)};
+  if (iter == children.end()) {
+    ERROR("Fatal error when rewiring SFF: Node not in children");
+    exit(1);
+  }
+  neighbor.Closest->Children.erase(iter);
+  neighbor.Closest = newNode;
+  neighbor.DistanceToClosest[0] = newDistance;
+  newNode->Children.push_back(&neighbor);
+}
+
+// check borders for checkConnectivity function = check, whether the problem was solved
+// solved = there exists ANY path connecting all roots, BUT IT MIGHT NOT BE CONTINUOUS
+template<class R>
+bool SpaceForest<R, true>::checkBorders(int id1, int id2) {
+  auto link{this->borders(id1, id2)}; 
+  if (link.empty()) {
+    return false;
+  } else if (link[0].IsValid) {
+    return true;
+  } else {
+    while (!link.empty()) {
+      DistanceHolder<R> holder{link.front()};
+
+      if (!holder.Node1->IsRoot() && !holder.Node2->IsRoot()) {
+        // shortcut solution
+        if (this->isPathFree(holder.Node1->Position, holder.Node2->Position.GetInvertedPoint())) {
+          link[0].IsValid = true;
+          return true;
+        } 
+      } else {
+        for (auto angle1 : holder.Node1->GetExpandedAngles()) {
+          for (auto angle2 : holder.Node2->GetExpandedAngles()) {
+            R point1{holder.Node1->DubinsPosition(angle1, this->problem.DubinsResolution, false)};
+            R point2{holder.Node2->DubinsPosition(angle2, this->problem.DubinsResolution, true)};
+            if (this->isPathFree(point1, point2)) {
+              link[0].IsValid = true;
+              return true;
+            } 
+          }
+        }
+      }
+
+      link.pop_front();
+    }
+  }
+  return false;
+}
+
+template<class R>
+void SpaceForest<R, true>::getPaths() {
+  // due to optimizations, the distance might have changed -> update it
+  int numRoots{this->problem.GetNumRoots()};
+  int numAngles{this->problem.DubinsResolution};
+  for (int i{0}; i < numRoots; ++i) {
+    for (int j{0}; j < numRoots; ++j) {
+      std::deque<DistanceHolder<R>> &borderPoints{this->borders(i, j)};
+      for (DistanceHolder<R> holder : borderPoints) { // intentional copy
+        bool checkAngles{true};
+        if (!holder.Node1->IsRoot() && !holder.Node2->IsRoot()) {
+          if (holder.IsValid || this->isPathFree(holder.Node1->Position, holder.Node2->Position.GetInvertedPoint())) {
+            checkAngles = false;
+          } else {
+            continue;
+          }
+        } 
+
+        for (int angle1 : holder.Node1->GetExpandedAngles()) {
+          for (int angle2 : holder.Node2->GetExpandedAngles()) {
+            R point1{holder.Node1->DubinsPosition(angle1, numAngles, false)};
+            R point2{holder.Node2->DubinsPosition(angle2, numAngles, true)};
+            if (!checkAngles || this->isPathFree(point1, point2)) {
+              // update distance for angle pair angle1 & angle2, but the "angle2" part is flown in opposite direction -> 
+              // save it for oposite expanded angle (which should be the same trajectory) (ensured by AddLink, with secondIsInlet==false)
+              holder.UpdateDistance(angle1, angle2);
+              this->neighboringMatrix.AddLink(holder, i, j, angle1, angle2, false);
+            }
+          }
+        }
+      }
+
+     for (int k{0}; k < numAngles; ++k) {
+        for (int l{0}; l < numAngles; ++l) {
+          if (!this->neighboringMatrix.Exists(i, j, k, l)) {
+            continue;
+          }
+
+          DistanceHolder<R> &holder{this->neighboringMatrix(i, j, k, l)};
+          std::deque<R> &plan{holder.Plan};
+          // one tree
+          Node<R> *nodeToPush{holder.Node1};
+          plan.push_front(nodeToPush->DubinsPosition(k, numAngles, false));
+          while (!nodeToPush->IsRoot()) {
+            nodeToPush = nodeToPush->Closest;
+            plan.push_front(nodeToPush->DubinsPosition(k, numAngles, false));
+          }
+
+          // second tree
+          nodeToPush = holder.Node2;
+          plan.push_back(nodeToPush->DubinsPosition(l, numAngles, true));
+          while(!nodeToPush->IsRoot()) {
+            nodeToPush = nodeToPush->Closest;
+            plan.push_back(nodeToPush->DubinsPosition(l, numAngles, true));
+          }
+        }
+      }
+    }
+  }
 }
 
 #endif

@@ -60,9 +60,9 @@ class Point2DDubins {
     Point2DDubins(opendubins::State dubinsState);
 
     Point2DDubins& operator=(const Point2DDubins &p);
-    void SetAngle(double angle);
-    double GetAngle() const;
-    void SetAngle(int angleId, int angleResolution);
+    void SetHeading(double angle);
+    double GetHeading() const;
+    void SetHeading(int angleId, int angleResolution);
     void SetPosition(double x, double y);
     const double* GetPosition() const;
     const double* GetRawCoords() const;
@@ -123,6 +123,9 @@ class Point3DDubins {
 
     Quaternion GetRotation() const;
     void SetRotation(Quaternion q);
+    void SetRotation(double yaw, double pitch);
+    void SetHeading(double yaw);
+    void SetHeading(int angleId, int angleResolution);
     void Set(double x, double y, double z, double yaw, double pitch);
     void SetPosition(double x, double y, double z);
     const double* GetPosition() const;
@@ -137,6 +140,7 @@ class Point3DDubins {
     Point3DDubins GetStateInDistance(Point3DDubins &other, double dist) const;      // Interpolation of rotation done according to https://ri.cmu.edu/pub_files/pub4/kuffner_james_2004_1/kuffner_james_2004_1.pdf
     void FillRotationMatrix(double (&matrix)[3][3]) const;
     Point3DDubins RotatePoint(Quaternion rotation);
+    Point3DDubins GetInvertedPoint();
     void PrintPosition(std::ostream &out);
   protected:
     double coords[3];
@@ -168,5 +172,6 @@ class PointVector2D : public Vector {
 std::ostream& operator<<(std::ostream &out, const Point2D &p);
 std::ostream& operator<<(std::ostream &out, const Point2DDubins &p);
 std::ostream& operator<<(std::ostream &out, const Point3D &p);
+std::ostream& operator<<(std::ostream &out, const Point3DDubins &p);
 
 #endif

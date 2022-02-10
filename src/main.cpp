@@ -45,9 +45,10 @@ int main(int argc, char *argv[]) {
     problem.Dimension = D3;
     SolveProblem(config, problem);
   } else if (dim == "3DDubins") {
-    Problem<Point3D> problem;
+    Problem<Point3DDubins> problem;
     problem.Repetition = repetition;
     problem.Dimension = D3Dubins;
+    SolveProblem(config, problem);
   } else {
     ERROR("Invalid value of \"dimension\" node in \"problem\" root node.");
     exit(1);
@@ -63,11 +64,11 @@ void SolveProblem(YAML::Node &config, Problem<R> &problem) {
   if (problem.Solver == SFF) {
     solver = std::make_unique<SpaceForest<R>>(problem);
   } else if (problem.Solver == RRT) {
-    solver = std::make_unique<RapidExpTree<R>>(problem);
+    //solver = std::make_unique<RapidExpTree<R>>(problem);
   } else if (problem.Solver == Lazy) {
-    solver = std::make_unique<LazyTSP<R>>(problem);
+    //solver = std::make_unique<LazyTSP<R>>(problem);
   } else if (problem.Solver == PRM) {
-    solver = std::make_unique<ProbRoadMaps<R>>(problem);
+    //solver = std::make_unique<ProbRoadMaps<R>>(problem);
   } else {
     ERROR("Unimplemented problem solver");
   }
@@ -197,9 +198,9 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     subNode = node["pitch-range"];
     if (problem.Dimension == D3Dubins) {
       if (!subNode.IsDefined()) {
-        INFO("Pitch range for 3D Dubins problem missing, defaulting to infinity!");
-        problem.PitchLimits.min = -std::numeric_limits<double>::max();
-        problem.PitchLimits.max = std::numeric_limits<double>::max();
+        INFO("Pitch range for 3D Dubins problem missing, defaulting to +/- (3.14 / 2) !");
+        problem.PitchLimits.min = -M_PI_2;
+        problem.PitchLimits.max = M_PI_2;
       } else if (subNode.IsDefined()) {
         YAML::Node subsubNode = subNode["min"];
         if (!subsubNode.IsDefined()) {
@@ -279,6 +280,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     node = config["obstacles"];
     if (!node.IsDefined()) {
       problem.Env.HasMap = false;
+      problem.Env.ScaleFactor = scale;
     } else {
       problem.Env.ScaleFactor = scale;
 

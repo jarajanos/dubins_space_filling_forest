@@ -20,7 +20,6 @@
 #include <deque>
 
 template<class R> class NodeBase;
-template<class R> class Node;
 template<class R> class FlannHolder;
 template<class R> class Tree;
 
@@ -68,9 +67,11 @@ class NodeBase {
     bool isRoot;
 };
 
+template<> bool NodeBase<Point2DDubins>::operator<(const NodeBase<Point2DDubins> &l);
+template<> bool NodeBase<Point3DDubins>::operator<(const NodeBase<Point3DDubins> &l);
 
 template<class R>
-class Node : public NodeBase<R> {
+class Node<R, false> : public NodeBase<R> {
   using NodeBase<R>::NodeBase;
   public:
     double DistanceToClosest;
@@ -116,26 +117,26 @@ class PrmNode : public NodeBase<R> {
     double distanceToRoot{std::numeric_limits<double>::max()};
 };
 
-template<>
-class Node<Point2DDubins> : public NodeBase<Point2DDubins> {
-  using NodeBase<Point2DDubins>::NodeBase;
+template<class R>
+class Node<R, true> : public NodeBase<R> {
+  using NodeBase<R>::NodeBase;
   public:
     std::deque<double> DistanceToClosest;
     std::deque<int> ExpandedAngles;
 
-    Node(Point2DDubins position, Tree<Point2DDubins> *root, Node<Point2DDubins> *closest, double distanceToClosest, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration) {
+    Node(R position, Tree<R> *root, Node<R> *closest, double distanceToClosest, unsigned int iteration) : NodeBase<R>(position, root, closest, iteration) {
       this->DistanceToClosest = std::deque<double>(1, distanceToClosest);
     }
 
     // special constructor for root's ancestors
-    Node(Point2DDubins position, Tree<Point2DDubins> *root, Node<Point2DDubins> *closest, std::deque<double> &distanceToClosest, std::deque<int> &expandedAngles, unsigned int iteration) : NodeBase<Point2DDubins>(position, root, closest, iteration) {
+    Node(R position, Tree<R> *root, Node<R> *closest, std::deque<double> &distanceToClosest, std::deque<int> &expandedAngles, unsigned int iteration) : NodeBase<R>(position, root, closest, iteration) {
       this->DistanceToClosest = std::move(distanceToClosest);
       isRootChild = true;
       this->ExpandedAngles = std::move(expandedAngles);
     }
 
     double DistanceToRoot() override {
-      Node<Point2DDubins> *previous{this};
+      Node<R> *previous{this};
       double distance{0};
       while (previous != nullptr) {
         if (!previous->isRootChild) {
@@ -156,7 +157,7 @@ class Node<Point2DDubins> : public NodeBase<Point2DDubins> {
     }
 
     double DistanceToRoot(const int angleID) {
-      Node<Point2DDubins> *previous{this};
+      Node<R> *previous{this};
       double distance{0};
       while (previous != nullptr) {
         if (!previous->isRootChild) {
@@ -178,10 +179,10 @@ class Node<Point2DDubins> : public NodeBase<Point2DDubins> {
       }
     }
 
-    Point2DDubins DubinsPosition(int angleId, int angleResolution, bool reverse) {
-      Point2DDubins pos{this->Position};
+    R DubinsPosition(int angleId, int angleResolution, bool reverse) {
+      R pos{this->Position};
       if (this->IsRoot()) {
-        pos.SetAngle(angleId, angleResolution);
+        pos.SetHeading(angleId, angleResolution);
       } else if (reverse) {
         pos = pos.GetInvertedPoint();
       }
@@ -217,6 +218,18 @@ class FlannHolder<Node<Point2DDubins>> {
 
 template<>
 class FlannHolder<Node<Point3D>> {
+  public:
+    //flann::Index<D6Distance<float>> *Index;
+    flann::Index<flann::L2_3D<float>> *Index{nullptr};
+    std::deque<float *> PtrsToDel;
+
+    ~FlannHolder();
+
+    void CreateIndex(flann::Matrix<float> &matrix);
+};
+
+template<>
+class FlannHolder<Node<Point3DDubins>> {
   public:
     //flann::Index<D6Distance<float>> *Index;
     flann::Index<flann::L2_3D<float>> *Index{nullptr};

@@ -79,8 +79,8 @@ void ProbRoadMaps<Point2DDubins>::saveTrees(const FileStruct file) {
           if (neigh == &node) {
             continue;
           } 
-          opendubins::State startDub{node.Position[0], node.Position[1], node.Position.GetAngle()};
-          opendubins::State finishDub{neigh->Position[0], neigh->Position[1], neigh->Position.GetAngle()};
+          opendubins::State startDub{node.Position[0], node.Position[1], node.Position.GetHeading()};
+          opendubins::State finishDub{neigh->Position[0], neigh->Position[1], neigh->Position.GetHeading()};
           opendubins::Dubins pathFromClosest{startDub, finishDub, this->problem.DubinsRadius};
           
           Point2DDubins lastPoint{startDub};

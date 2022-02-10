@@ -34,9 +34,25 @@
 #define INFO(mess)   std::cout << "[\033[1;34m INF\033[0m ]  " << mess << "\n"
 #define WARN(mess)   std::cerr << "[\033[1;33m WAR\033[0m ]  " << mess << "\n"
 
+// for templating in forest.h
+template<typename>
+struct isDubins {
+  static constexpr bool value {false};
+};
+
+template<>
+struct isDubins<Point2DDubins> {
+  static constexpr bool value {true};
+};
+
+template<>
+struct isDubins<Point3DDubins> {
+  static constexpr bool value {true};
+};
+
 struct FileStruct;
-template<class R> struct DistanceHolder;
-template<class R> class Node;
+template<class R, bool = isDubins<R>::value> struct DistanceHolder;
+template<class R, bool = isDubins<R>::value> class Node;
 template<class R> class PrmNode;
 
 int ParseString(std::string &inp, std::string &outp1, std::string &outp2, std::string &delimiter);
@@ -146,7 +162,7 @@ struct Range {
 };
 
 template<class R>
-struct DistanceHolder {
+struct DistanceHolder<R, false> {
   Node<R> *Node1;
   Node<R> *Node2;
   double Distance;
@@ -207,38 +223,38 @@ struct DistanceHolder {
   }
 };
 
-template<>
-struct DistanceHolder<Point2DDubins> {
-  Node<Point2DDubins> *Node1;
-  Node<Point2DDubins> *Node2;
+template<class R>
+struct DistanceHolder<R, true> {
+  Node<R> *Node1;
+  Node<R> *Node2;
   double Distance;
   bool IsValid{false};
-  std::deque<Point2DDubins> Plan;
+  std::deque<R> Plan;
 
   DistanceHolder() : Node1{nullptr}, Node2{nullptr}, Distance{std::numeric_limits<double>::max()} {
   }
 
-  DistanceHolder(Node<Point2DDubins> *first, Node<Point2DDubins> *second, bool computeDistance=false) : Node1{first}, Node2{second} {
+  DistanceHolder(Node<R> *first, Node<R> *second, bool computeDistance=false) : Node1{first}, Node2{second} {
     if (computeDistance) {
       this->UpdateDistance();
     }
   }
 
-  DistanceHolder(Node<Point2DDubins> *first, Node<Point2DDubins> *second, double dist) : Distance{dist} {
+  DistanceHolder(Node<R> *first, Node<R> *second, double dist) : Distance{dist} {
     Node1 = first;
     Node2 = second;
   }
 
-  DistanceHolder(Node<Point2DDubins> *first, Node<Point2DDubins> *second, double dist, std::deque<Point2DDubins> &plan) : Distance{dist}, Plan{plan} {
+  DistanceHolder(Node<R> *first, Node<R> *second, double dist, std::deque<R> &plan) : Distance{dist}, Plan{plan} {
     Node1 = first;
     Node2 = second;
   }
 
-  friend bool operator<(const DistanceHolder<Point2DDubins> &l, const DistanceHolder<Point2DDubins> &r) {
+  friend bool operator<(const DistanceHolder<R> &l, const DistanceHolder<R> &r) {
     return l.Distance < r.Distance;
   }  
 
-  friend bool operator==(const DistanceHolder<Point2DDubins> &l, const DistanceHolder<Point2DDubins> &r) {
+  friend bool operator==(const DistanceHolder<R> &l, const DistanceHolder<R> &r) {
     return (l.Node1 == r.Node1 && l.Node2 == r.Node2) || (l.Node1 == r.Node2 && l.Node2 == r.Node1);
   }
 
@@ -246,7 +262,35 @@ struct DistanceHolder<Point2DDubins> {
     return Distance != std::numeric_limits<double>::max();
   }
 
-  void UpdateDistance(int angleId1=-1, int angleId2=-1);
+  void UpdateDistance(int angleId1=-1, int angleId2=-1) {
+    Distance = Node1->Distance(*Node2);
+    if (Distance >= std::numeric_limits<double>::max()) {
+      ERROR("Infinity distance between points");
+      return;
+    }
+
+    if (angleId1 != -1) {
+      Distance += Node1->DistanceToRoot(angleId1);
+    } else {
+      Distance += Node1->DistanceToRoot();
+    }
+
+    if (Distance >= std::numeric_limits<double>::max()) {
+      ERROR("Infinity distance to root 1");
+      return;
+    }
+
+    if (angleId2 != -1) {
+      Distance += Node2->DistanceToRoot(angleId2);
+    } else {
+      Distance += Node2->DistanceToRoot();
+    }
+
+    if (Distance >= std::numeric_limits<double>::max()) {
+      ERROR("Infinity distance to root 2");
+      return;
+    }
+  }
 };
 
 template<class T>
@@ -297,8 +341,8 @@ class DistanceMatrix {
     int size;
 };
 
-template<>
-class DistanceMatrix<std::deque<DistanceHolder<Point2DDubins>>> {
+template<class R>
+class DistanceMatrix<std::deque<DistanceHolder<R, true>>> {
   public:
     DistanceMatrix() {
     }
@@ -312,7 +356,7 @@ class DistanceMatrix<std::deque<DistanceHolder<Point2DDubins>>> {
       this->size = size;
     }
 
-    std::deque<DistanceHolder<Point2DDubins>>& operator()(int i, int j) {
+    std::deque<DistanceHolder<R, true>>& operator()(int i, int j) {
       return holder[i][j];
     }
 
@@ -325,13 +369,13 @@ class DistanceMatrix<std::deque<DistanceHolder<Point2DDubins>>> {
     }
 
   private:
-    std::vector<std::vector<std::deque<DistanceHolder<Point2DDubins>>>> holder;
+    std::vector<std::vector<std::deque<DistanceHolder<R, true>>>> holder;
     int size;
 };
 
 // Distance matrix for Dubins problem = 4D matrix considering inlet/outlet angles
-template<>
-class DistanceMatrix<DistanceHolder<Point2DDubins>> {
+template<class R>
+class DistanceMatrix<DistanceHolder<R, true>> {
   public:
     DistanceMatrix() {
     }
@@ -352,7 +396,7 @@ class DistanceMatrix<DistanceHolder<Point2DDubins>> {
       this->angleResolution = angleResolution;
     }
 
-    DistanceHolder<Point2DDubins>& operator()(int id1, int id2, int angleId1, int angleId2) {
+    DistanceHolder<R, true>& operator()(int id1, int id2, int angleId1, int angleId2) {
       return holder[refMatrix[id1][id2][angleId1][angleId2]];
     }
 
@@ -360,7 +404,7 @@ class DistanceMatrix<DistanceHolder<Point2DDubins>> {
       return refMatrix[id1][id2][angleId1][angleId2] != -1;
     }
 
-    void AddLink(DistanceHolder<Point2DDubins> &link, int id1, int id2, int angleId1, int angleId2, bool secondIsInlet=false) {
+    void AddLink(DistanceHolder<R, true> &link, int id1, int id2, int angleId1, int angleId2, bool secondIsInlet=false) {
       holder.push_back(std::move(link));
       int holderId{static_cast<int>(holder.size() - 1)};
 
@@ -372,7 +416,7 @@ class DistanceMatrix<DistanceHolder<Point2DDubins>> {
       
     }
 
-    std::deque<DistanceHolder<Point2DDubins>> &GetHolder() {
+    std::deque<DistanceHolder<R, true>> &GetHolder() {
       return holder;
     }
 
@@ -400,7 +444,7 @@ class DistanceMatrix<DistanceHolder<Point2DDubins>> {
     }
 
   private:
-    std::deque<DistanceHolder<Point2DDubins>> holder;
+    std::deque<DistanceHolder<R, true>> holder;
     std::deque<std::deque<std::deque<std::deque<int>>>> refMatrix;
     int size;
     int angleResolution;
