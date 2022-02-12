@@ -99,7 +99,7 @@ template<>
 bool Solver<Point3DDubins>::isPathFree(const Point3DDubins start, const Point3DDubins finish) {
   opendubins::State3D startDub{start[0], start[1], start[2], start.GetRotation().GetYaw(), start.GetRotation().GetPitch()};
   opendubins::State3D finishDub{finish[0], finish[1], finish[2], finish.GetRotation().GetYaw(), finish.GetRotation().GetPitch()};
-  opendubins::Dubins3D pathDub{startDub, finishDub, this->problem.DubinsRadius, this->problem.PitchLimits.min, this->problem.PitchLimits.max};
+  opendubins::Dubins3D pathDub{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
   double distance{pathDub.length};
   double parts{distance / problem.CollisionDist};
   bool isFree{true};
@@ -494,7 +494,7 @@ void Solver<Point3DDubins>::saveTrees(const FileStruct file) {
         if (!node.Closest->IsRoot()) {
           opendubins::State3D finishDub{node.Position[0], node.Position[1], node.Position[2], node.Position.GetRotation().GetYaw(), node.Position.GetRotation().GetPitch()};
           opendubins::State3D startDub{node.Closest->Position[0], node.Closest->Position[1], node.Closest->Position[2], node.Closest->Position.GetRotation().GetYaw(), node.Closest->Position.GetRotation().GetPitch()};
-          opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, this->problem.PitchLimits.min, this->problem.PitchLimits.max};
+          opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
           
           Point3DDubins lastPoint{startDub};
           Point3DDubins actPoint;
@@ -521,7 +521,7 @@ void Solver<Point3DDubins>::saveTrees(const FileStruct file) {
           for (auto &angle : node.GetExpandedAngles()) {
             opendubins::State3D finishDub{node.Position[0], node.Position[1], node.Position[2], node.Position.GetRotation().GetYaw(), node.Position.GetRotation().GetPitch()};
             opendubins::State3D startDub{node.Closest->Position[0], node.Closest->Position[1], node.Closest->Position[2], node.Closest->Position.GetRotation().GetYaw() + (2 * angle * M_PI) / problem.DubinsResolution, node.Closest->Position.GetRotation().GetPitch()};
-            opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, this->problem.PitchLimits.min, this->problem.PitchLimits.max};
+            opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
             
             Point3DDubins lastPoint{startDub};
             Point3DDubins actPoint;
@@ -562,7 +562,7 @@ void Solver<Point3DDubins>::saveTrees(const FileStruct file) {
             if (!node.Closest->IsRoot()) {
               opendubins::State3D finishDub{node.Position[0], node.Position[1], node.Position[2], node.Position.GetRotation().GetYaw(), node.Position.GetRotation().GetPitch()};
               opendubins::State3D startDub{node.Closest->Position[0], node.Closest->Position[1], node.Closest->Position[2], node.Closest->Position.GetRotation().GetYaw(), node.Closest->Position.GetRotation().GetPitch()};
-              opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, this->problem.PitchLimits.min, this->problem.PitchLimits.max};
+              opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
               
               Point3DDubins lastPoint{startDub};
               Point3DDubins actPoint;
@@ -579,7 +579,7 @@ void Solver<Point3DDubins>::saveTrees(const FileStruct file) {
               for (auto &angle : node.GetExpandedAngles()) {
                 opendubins::State3D finishDub{node.Position[0], node.Position[1], node.Position[2], node.Position.GetRotation().GetYaw(), node.Position.GetRotation().GetPitch()};
                 opendubins::State3D startDub{node.Closest->Position[0], node.Closest->Position[1], node.Closest->Position[2], node.Closest->Position.GetRotation().GetYaw()  + (2 * angle * M_PI) / problem.DubinsResolution, node.Closest->Position.GetRotation().GetPitch()};
-                opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, this->problem.PitchLimits.min, this->problem.PitchLimits.max};
+                opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
               
                 Point3DDubins lastPoint{startDub};
                 Point3DDubins actPoint;
@@ -727,7 +727,7 @@ void Solver<Point3DDubins>::savePaths(const FileStruct file) {
                 Point3DDubins &next{plan[m+1]};
                 opendubins::State3D startDub{point[0], point[1], point[2], point.GetRotation().GetYaw(), point.GetRotation().GetPitch()};
                 opendubins::State3D finishDub{next[0], next[1], next[2], next.GetRotation().GetYaw(), next.GetRotation().GetPitch()};
-                opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, this->problem.PitchLimits.min, this->problem.PitchLimits.max};
+                opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
                 
                 Point3DDubins lastPoint{startDub};
                 Point3DDubins actPoint;
@@ -778,7 +778,7 @@ void Solver<Point3DDubins>::savePaths(const FileStruct file) {
                 Point3DDubins &next{plan[m+1]};
                 opendubins::State3D startDub{point[0], point[1], point[2], point.GetRotation().GetYaw(), point.GetRotation().GetPitch()};
                 opendubins::State3D finishDub{next[0], next[1], next[2], next.GetRotation().GetYaw(), next.GetRotation().GetPitch()};
-                opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, this->problem.PitchLimits.min, this->problem.PitchLimits.max};
+                opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
                 
                 Point3DDubins lastPoint{startDub};
                 Point3DDubins actPoint;
@@ -901,9 +901,9 @@ void Solver<Point3DDubins>::saveTspPaths(const FileStruct file) {
         for (int m{0}; m < plan.size() - 1; ++m) {
           Point3DDubins &point{plan[m]};
           Point3DDubins &next{plan[m+1]};
-          opendubins::State3D finishDub{point[0], point[1], point[2], point.GetRotation().GetYaw(), point.GetRotation().GetPitch()};
-          opendubins::State3D startDub{next[0], next[1], next[2], next.GetRotation().GetYaw(), next.GetRotation().GetPitch()};
-          opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, this->problem.PitchLimits.min, this->problem.PitchLimits.max};
+          opendubins::State3D startDub{point[0], point[1], point[2], point.GetRotation().GetYaw(), point.GetRotation().GetPitch()};
+          opendubins::State3D finishDub{next[0], next[1], next[2], next.GetRotation().GetYaw(), next.GetRotation().GetPitch()};
+          opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
           
           Point3DDubins lastPoint{startDub};
           Point3DDubins actPoint;
@@ -950,9 +950,9 @@ void Solver<Point3DDubins>::saveTspPaths(const FileStruct file) {
         for (int m{0}; m < plan.size() - 1; ++m) {
           Point3DDubins &point{plan[m]};
           Point3DDubins &next{plan[m+1]};
-          opendubins::State3D finishDub{point[0], point[1], point[2], point.GetRotation().GetYaw(), point.GetRotation().GetPitch()};
-          opendubins::State3D startDub{next[0], next[1], next[2], next.GetRotation().GetYaw(), next.GetRotation().GetPitch()};
-          opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, this->problem.PitchLimits.min, this->problem.PitchLimits.max};
+          opendubins::State3D startDub{point[0], point[1], point[2], point.GetRotation().GetYaw(), point.GetRotation().GetPitch()};
+          opendubins::State3D finishDub{next[0], next[1], next[2], next.GetRotation().GetYaw(), next.GetRotation().GetPitch()};
+          opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
           
           Point3DDubins lastPoint{startDub};
           Point3DDubins actPoint;

@@ -195,27 +195,15 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     } else if (subNode.IsDefined()) {
       problem.DubinsResolution = subNode.as<int>();
     }
-    subNode = node["pitch-range"];
+    subNode = node["max-pitch"];
     if (problem.Dimension == D3Dubins) {
       if (!subNode.IsDefined()) {
         INFO("Pitch range for 3D Dubins problem missing, defaulting to +/- (3.14 / 2) !");
-        problem.PitchLimits.min = -M_PI_2;
-        problem.PitchLimits.max = M_PI_2;
+        problem.MaxPitch = M_PI_2;
       } else if (subNode.IsDefined()) {
-        YAML::Node subsubNode = subNode["min"];
-        if (!subsubNode.IsDefined()) {
-          throw std::invalid_argument("ill-formed definition of pitch range, \"min\" subnode expected");
-        }
-        problem.PitchLimits.min = subsubNode.as<double>();
-
-        subsubNode = subNode["max"];
-        if (!subsubNode.IsDefined()) {
-          throw std::invalid_argument("ill-formed definition of pitch range, \"max\" subnode expected");
-        }
-        problem.PitchLimits.max = subsubNode.as<double>();
+        problem.MaxPitch = subNode.as<double>();
       }
-      Point3DDubins::PitchMin = problem.PitchLimits.min;
-      Point3DDubins::PitchMax = problem.PitchLimits.max;
+      Point3DDubins::MaxPitch = problem.MaxPitch;
     }
     subNode = node["bias"];
     if (subNode.IsDefined()) {
@@ -319,6 +307,10 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
       if (problem.Solver == RRT && problem.Optimize && numCities > 1) {
         throw std::invalid_argument("Multi-T-RRT* is undefined");
       } 
+
+      if (numCities > 1 && problem.DubinsResolution % 2 == 1) {
+        throw std::invalid_argument("The dubins resolution for multi-goal planning has to be an even number greater than 1, to ensure continuity of the path");
+      }
     }
 
     // parse goal

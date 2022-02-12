@@ -113,8 +113,7 @@ class Point3D {
 class Point3DDubins {
   public:
     inline static double DubinsRadius;
-    inline static double PitchMin;
-    inline static double PitchMax;
+    inline static double MaxPitch;
 
     Point3DDubins();
     Point3DDubins(double x, double y, double z, double yaw, double pitch);

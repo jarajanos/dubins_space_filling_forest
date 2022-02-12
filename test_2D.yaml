@@ -47,7 +47,7 @@
     bias: 0.95
     misses: 5
     dubins-radius: 30
-    dubins-resolution: 1
+    dubins-resolution: 2
   
   save:
     goals:

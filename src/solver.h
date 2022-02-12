@@ -89,7 +89,7 @@ template <> void Solver<Point3DDubins>::savePaths(const FileStruct file);
 template <> void Solver<Point3DDubins>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime);
 
 template<class R>
-Solver<R>::Solver(Problem<R> &problem) : problem{problem}, rnd{problem.Env.Limits, problem.PitchLimits} {
+Solver<R>::Solver(Problem<R> &problem) : problem{problem}, rnd{problem.Env.Limits, problem.MaxPitch} {
   initNeighboringMatrix();
   this->connected = std::vector<bool>((size_t)problem.GetNumRoots(), false);
 }

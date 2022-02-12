@@ -10,7 +10,7 @@
     name: '_'
 
   TSP-solver:
-    type: 'LKH'
+    type: 'Concorde'
 
   robot:
     path: './models/3D/robot_cylinder_small.obj'
@@ -28,7 +28,7 @@
     - '[3.4004901456614443; 0.3800196290706541; 10; 0; 0]'
     - '[0.30319967716688234; 0.057430173261578954; 7; 0; 0]'
   
-  agoal: '[0.30319967716688234; 0.057430173261578954; 7; 0; 0]'
+  #goal: '[0.30319967716688234; 0.057430173261578954; 7; 0; 0]'
 
   range:
     autodetect: false
@@ -47,9 +47,7 @@
     misses: 5
     dubins-radius: 0.5
     dubins-resolution: 4
-    pitch-range:
-      min: -0.5
-      max: 0.5
+    max-pitch: 0.5
   
   save:
     goals:

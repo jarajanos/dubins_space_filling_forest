@@ -135,11 +135,6 @@ struct FileStruct {
   FileType type;
 };
 
-struct PitchRange {
-  double min;
-  double max;
-};
-
 struct Range {
   double mins[3];
   double maxs[3];

@@ -544,7 +544,7 @@ Point3DDubins operator/(const Point3DDubins &p1, const double scale) {
 double Point3DDubins::Distance(const Point3DDubins &other) const {
   opendubins::State3D startDub{coords[0], coords[1], coords[2], rotation.GetYaw(), rotation.GetPitch()};
   opendubins::State3D finishDub{other[0], other[1], other[2], other.GetRotation().GetYaw(), other.GetRotation().GetPitch()};
-  opendubins::Dubins3D pathDub{startDub, finishDub, DubinsRadius, PitchMin, PitchMax};
+  opendubins::Dubins3D pathDub{startDub, finishDub, DubinsRadius, -MaxPitch, MaxPitch};
   
   return pathDub.getLength();
 }
@@ -552,7 +552,7 @@ double Point3DDubins::Distance(const Point3DDubins &other) const {
 Point3DDubins Point3DDubins::GetStateInDistance(Point3DDubins &other, double dist) const {
   opendubins::State3D startDub{coords[0], coords[1], coords[2], rotation.GetYaw(), rotation.GetPitch()};
   opendubins::State3D finishDub{other[0], other[1], other[2], other.GetRotation().GetYaw(), other.GetRotation().GetPitch()};
-  opendubins::Dubins3D pathDub{startDub, finishDub, DubinsRadius, PitchMin, PitchMax};
+  opendubins::Dubins3D pathDub{startDub, finishDub, DubinsRadius, -MaxPitch, MaxPitch};
   
   opendubins::State3D temp{pathDub.getState(dist)};
 

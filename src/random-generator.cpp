@@ -59,8 +59,8 @@ bool RandomGenerator<Point3DDubins>::isInLimits(Point3DDubins& p) {
     valid &= p[i] <= limits.maxs[i];
   }
 
-  valid &= p.GetRotation().GetPitch() >= pitches.min;
-  valid &= p.GetRotation().GetPitch() <= pitches.max;
+  valid &= p.GetRotation().GetPitch() >= -maxPitch;
+  valid &= p.GetRotation().GetPitch() <= maxPitch;
 
   return valid;
 }
@@ -140,7 +140,7 @@ bool RandomGenerator<Point3DDubins>::RandomPointInDistance(const Point3DDubins& 
 
   opendubins::State3D a{center[0], center[1], center[2], center.GetRotation().GetYaw(), center.GetRotation().GetPitch()};
   opendubins::State3D b{temp[0], temp[1], temp[2], temp.GetRotation().GetYaw(), temp.GetRotation().GetPitch()};
-  opendubins::Dubins3D dubPath{a, b, Point3DDubins::DubinsRadius, Point3DDubins::PitchMin, Point3DDubins::PitchMax};
+  opendubins::Dubins3D dubPath{a, b, Point3DDubins::DubinsRadius, -Point3DDubins::MaxPitch, Point3DDubins::MaxPitch};
 
   // get point in exact distance
   point = Point3DDubins(dubPath.getState(distance));

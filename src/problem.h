@@ -37,6 +37,7 @@ struct Problem {
   double SamplingDist;
   double CollisionDist;
   double DubinsRadius;
+  double MaxPitch;
   
   int MaxIterations;
   double PriorityBias{0};
@@ -51,8 +52,6 @@ struct Problem {
 
   std::string TspSolver;
   TSPType TspType;
-
-  PitchRange PitchLimits;
 
   Problem() {
     for (int i{1}; i < Invalid; i *= 2) {

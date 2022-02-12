@@ -25,7 +25,7 @@ typedef std::mt19937_64 randomEngine;   // set used random engine
 template <class R>
 class RandomGenerator {
   public:
-    RandomGenerator(const Range samplingRange, const PitchRange pitchesRange);
+    RandomGenerator(const Range samplingRange, const double maxPitch);
 
     bool RandomPointInDistance(const R& center, R& point, const double distance);
     void RandomPointInSpace(R& point);
@@ -34,7 +34,7 @@ class RandomGenerator {
 
   private:
     Range limits;
-    PitchRange pitches;
+    double maxPitch;
     double Distance;
     randomEngine rndEng;
 
@@ -48,7 +48,7 @@ class RandomGenerator {
 };
 
 template<class R>
-RandomGenerator<R>::RandomGenerator(const Range samplingRange, const PitchRange pitchesRange) : limits{samplingRange}, pitches{pitchesRange} {
+RandomGenerator<R>::RandomGenerator(const Range samplingRange, const double maxPitch) : limits{samplingRange}, maxPitch{maxPitch} {
   // seed with actual time
   std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds> tSeed{std::chrono::high_resolution_clock::now()};
   std::uint_fast64_t uSeed{static_cast<uint_fast64_t>(tSeed.time_since_epoch().count())};

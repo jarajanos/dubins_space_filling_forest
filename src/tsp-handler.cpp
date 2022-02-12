@@ -168,7 +168,7 @@ std::string Wrapper::WriteTSPLIBFile(std::string &fname_basis,
 
 bool Wrapper::RmSolutionFileCmd(std::string fname_basis) {
   std::stringstream rm_sol_cmd;
-  rm_sol_cmd << "rm " << tsplib_dir << fname_basis << ".txt";
+  rm_sol_cmd << "rm " << tsplib_dir << fname_basis << ".txt " << tsplib_dir << fname_basis << ".par " << tsplib_dir << fname_basis << ".tsp";
   int retval = std::system(rm_sol_cmd.str().c_str());
   return retval == 0;
 }

@@ -156,11 +156,11 @@ TSPMatrix<R> TSPMatrix<R>::TransformGATSPtoATSP() {
   double biggerM{bigM * size};
 
   // init new matrix
-  TSPMatrix<R> atsp(size, bigM);
+  TSPMatrix<R> atsp(size, biggerM);
   atsp.problem = this->problem;
   atsp.dubinsResolution = dubinsResolution;
   atsp.isATSP = true;
-  atsp.maxLength = bigM + maxLength;
+  atsp.maxLength = biggerM + maxLength;
   atsp.bigM = atsp.maxLength * size;
 
   int dimension{size / dubinsResolution};
