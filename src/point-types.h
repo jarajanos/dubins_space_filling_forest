@@ -74,6 +74,7 @@ class Point2DDubins {
     friend Point2DDubins operator/(const Point2DDubins &p1, const double scale);    // scale position
     double Distance(const Point2DDubins &other) const;
     Point2DDubins GetStateInDistance(Point2DDubins &other, double dist) const;
+    std::deque<Point2DDubins> SampleDubinsPathTo(const Point2DDubins &other, double dist);
     Point2DDubins GetInvertedPoint();
     void FillRotationMatrix(double (&matrix)[3][3]) const;
     void PrintPosition(std::ostream &out);
@@ -120,10 +121,11 @@ class Point3DDubins {
     Point3DDubins(const std::string &s, double scale=1);
     Point3DDubins(opendubins::State3D dubinsState);
 
-    Quaternion GetRotation() const;
-    void SetRotation(Quaternion q);
     void SetRotation(double yaw, double pitch);
     void SetHeading(double yaw);
+    double GetHeading() const;
+    void SetPitch(double pitch);
+    double GetPitch() const;
     void SetHeading(int angleId, int angleResolution);
     void Set(double x, double y, double z, double yaw, double pitch);
     void SetPosition(double x, double y, double z);
@@ -136,14 +138,16 @@ class Point3DDubins {
     friend bool operator<(const Point3DDubins &p1, const Point3DDubins &p2);
     friend Point3DDubins operator/(const Point3DDubins &p1, const double scale);    // scale position (NOT the rotation)
     double Distance(const Point3DDubins &other) const;
-    Point3DDubins GetStateInDistance(Point3DDubins &other, double dist) const;      // Interpolation of rotation done according to https://ri.cmu.edu/pub_files/pub4/kuffner_james_2004_1/kuffner_james_2004_1.pdf
+    Point3DDubins GetStateInDistance(Point3DDubins &other, double dist) const;
+    std::deque<Point3DDubins> SampleDubinsPathTo(const Point3DDubins &other, double dist);
     void FillRotationMatrix(double (&matrix)[3][3]) const;
-    Point3DDubins RotatePoint(Quaternion rotation);
+    Point3DDubins RotatePoint(double deltaYaw, double deltaPitch);
     Point3DDubins GetInvertedPoint();
     void PrintPosition(std::ostream &out);
   protected:
     double coords[3];
-    Quaternion rotation;
+    double yaw;
+    double pitch;
 };
 
 class PointVector3D : public Vector {

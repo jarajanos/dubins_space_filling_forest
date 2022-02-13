@@ -97,8 +97,8 @@ bool Solver<Point3D>::isPathFree(const Point3D start, const Point3D finish) {
 
 template<>
 bool Solver<Point3DDubins>::isPathFree(const Point3DDubins start, const Point3DDubins finish) {
-  opendubins::State3D startDub{start[0], start[1], start[2], start.GetRotation().GetYaw(), start.GetRotation().GetPitch()};
-  opendubins::State3D finishDub{finish[0], finish[1], finish[2], finish.GetRotation().GetYaw(), finish.GetRotation().GetPitch()};
+  opendubins::State3D startDub{start[0], start[1], start[2], start.GetHeading(), start.GetPitch()};
+  opendubins::State3D finishDub{finish[0], finish[1], finish[2], finish.GetHeading(), finish.GetPitch()};
   opendubins::Dubins3D pathDub{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
   double distance{pathDub.length};
   double parts{distance / problem.CollisionDist};
@@ -215,6 +215,27 @@ void Solver<Point2DDubins>::getAllPaths() {
   }
 }
 
+// approximation for getAllPaths
+template <>
+double Solver<Point2DDubins>::computeDistance(std::deque<Point2DDubins> &plan) {
+  Point2D actual; 
+  Point2D previous;
+  bool first{true};
+  double distance{0};
+  for (Point2DDubins pos : plan) {
+    actual = Point2D(pos[0], pos[1]);
+    if (!first) {
+      distance += previous.Distance(actual);
+    } else {
+      first = false;
+    }
+    
+    previous = actual;
+  }
+
+  return distance;
+}
+
 template<>
 void Solver<Point3DDubins>::getAllPaths() {
   int numRoots{this->problem.GetNumRoots()};
@@ -314,6 +335,27 @@ void Solver<Point3DDubins>::getAllPaths() {
       }
     }
   }
+}
+
+// approximation for getAllPaths
+template <>
+double Solver<Point3DDubins>::computeDistance(std::deque<Point3DDubins> &plan) {
+  Point3D actual; 
+  Point3D previous;
+  bool first{true};
+  double distance{0};
+  for (Point3DDubins pos : plan) {
+    actual = Point3D(pos[0], pos[1], pos[2], pos.GetHeading(), pos.GetPitch(), 0);
+    if (!first) {
+      distance += previous.Distance(actual);
+    } else {
+      first = false;
+    }
+    
+    previous = actual;
+  }
+
+  return distance;
 }
 
 template <> 
@@ -492,8 +534,8 @@ void Solver<Point3DDubins>::saveTrees(const FileStruct file) {
         }
         
         if (!node.Closest->IsRoot()) {
-          opendubins::State3D finishDub{node.Position[0], node.Position[1], node.Position[2], node.Position.GetRotation().GetYaw(), node.Position.GetRotation().GetPitch()};
-          opendubins::State3D startDub{node.Closest->Position[0], node.Closest->Position[1], node.Closest->Position[2], node.Closest->Position.GetRotation().GetYaw(), node.Closest->Position.GetRotation().GetPitch()};
+          opendubins::State3D finishDub{node.Position[0], node.Position[1], node.Position[2], node.Position.GetHeading(), node.Position.GetPitch()};
+          opendubins::State3D startDub{node.Closest->Position[0], node.Closest->Position[1], node.Closest->Position[2], node.Closest->Position.GetHeading(), node.Closest->Position.GetPitch()};
           opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
           
           Point3DDubins lastPoint{startDub};
@@ -519,8 +561,8 @@ void Solver<Point3DDubins>::saveTrees(const FileStruct file) {
           vertexRanges.push_back(std::tuple<unsigned, unsigned>(startingInd, vertexInd - 1));
         } else {
           for (auto &angle : node.GetExpandedAngles()) {
-            opendubins::State3D finishDub{node.Position[0], node.Position[1], node.Position[2], node.Position.GetRotation().GetYaw(), node.Position.GetRotation().GetPitch()};
-            opendubins::State3D startDub{node.Closest->Position[0], node.Closest->Position[1], node.Closest->Position[2], node.Closest->Position.GetRotation().GetYaw() + (2 * angle * M_PI) / problem.DubinsResolution, node.Closest->Position.GetRotation().GetPitch()};
+            opendubins::State3D finishDub{node.Position[0], node.Position[1], node.Position[2], node.Position.GetHeading(), node.Position.GetPitch()};
+            opendubins::State3D startDub{node.Closest->Position[0], node.Closest->Position[1], node.Closest->Position[2], node.Closest->Position.GetHeading() + (2 * angle * M_PI) / problem.DubinsResolution, node.Closest->Position.GetPitch()};
             opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
             
             Point3DDubins lastPoint{startDub};
@@ -560,8 +602,8 @@ void Solver<Point3DDubins>::saveTrees(const FileStruct file) {
         for (Node<Point3DDubins> &node : this->trees[i].Leaves) {
           if (!node.IsRoot()) {
             if (!node.Closest->IsRoot()) {
-              opendubins::State3D finishDub{node.Position[0], node.Position[1], node.Position[2], node.Position.GetRotation().GetYaw(), node.Position.GetRotation().GetPitch()};
-              opendubins::State3D startDub{node.Closest->Position[0], node.Closest->Position[1], node.Closest->Position[2], node.Closest->Position.GetRotation().GetYaw(), node.Closest->Position.GetRotation().GetPitch()};
+              opendubins::State3D finishDub{node.Position[0], node.Position[1], node.Position[2], node.Position.GetHeading(), node.Position.GetPitch()};
+              opendubins::State3D startDub{node.Closest->Position[0], node.Closest->Position[1], node.Closest->Position[2], node.Closest->Position.GetHeading(), node.Closest->Position.GetPitch()};
               opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
               
               Point3DDubins lastPoint{startDub};
@@ -577,8 +619,8 @@ void Solver<Point3DDubins>::saveTrees(const FileStruct file) {
               fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << DELIMITER_OUT << node.SourceTree->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
             } else {
               for (auto &angle : node.GetExpandedAngles()) {
-                opendubins::State3D finishDub{node.Position[0], node.Position[1], node.Position[2], node.Position.GetRotation().GetYaw(), node.Position.GetRotation().GetPitch()};
-                opendubins::State3D startDub{node.Closest->Position[0], node.Closest->Position[1], node.Closest->Position[2], node.Closest->Position.GetRotation().GetYaw()  + (2 * angle * M_PI) / problem.DubinsResolution, node.Closest->Position.GetRotation().GetPitch()};
+                opendubins::State3D finishDub{node.Position[0], node.Position[1], node.Position[2], node.Position.GetHeading(), node.Position.GetPitch()};
+                opendubins::State3D startDub{node.Closest->Position[0], node.Closest->Position[1], node.Closest->Position[2], node.Closest->Position.GetHeading()  + (2 * angle * M_PI) / problem.DubinsResolution, node.Closest->Position.GetPitch()};
                 opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
               
                 Point3DDubins lastPoint{startDub};
@@ -660,20 +702,8 @@ void Solver<Point2DDubins>::savePaths(const FileStruct file) {
               DistanceHolder<Point2DDubins> &holder{this->neighboringMatrix(i, j, k, l)};
               std::deque<Point2DDubins> &plan{holder.Plan};
               for (int m{0}; m < plan.size() - 1; ++m) {
-                opendubins::State startDub{plan[m][0], plan[m][1], plan[m].GetHeading()};
-                opendubins::State finishDub{plan[m+1][0], plan[m+1][1], plan[m+1].GetHeading()};
-                opendubins::Dubins pathFromClosest{startDub, finishDub, this->problem.DubinsRadius};
-                
-                Point2DDubins lastPoint{startDub};
-                Point2DDubins actPoint;
-                double length{pathFromClosest.length};
-                double parts{length / this->problem.CollisionDist};
-                for (int index{1}; index < parts; ++index) {
-                  actPoint = Point2DDubins(pathFromClosest.getState(index * this->problem.CollisionDist));
-                  fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << "\n";
-                  lastPoint = actPoint;
-                }
-                actPoint = Point2DDubins(finishDub);
+                Point2DDubins actPoint{plan[m]};
+                Point2DDubins lastPoint{plan[m + 1]};
                 fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << "\n";
               }
               fileStream << "\n";    
@@ -722,35 +752,17 @@ void Solver<Point3DDubins>::savePaths(const FileStruct file) {
               }
               DistanceHolder<Point3DDubins> &holder{this->neighboringMatrix(i, j, k, l)};
               std::deque<Point3DDubins> &plan{holder.Plan};
-              for (int m{0}; m < plan.size() - 1; ++m) {
-                Point3DDubins &point{plan[m]};
-                Point3DDubins &next{plan[m+1]};
-                opendubins::State3D startDub{point[0], point[1], point[2], point.GetRotation().GetYaw(), point.GetRotation().GetPitch()};
-                opendubins::State3D finishDub{next[0], next[1], next[2], next.GetRotation().GetYaw(), next.GetRotation().GetPitch()};
-                opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
-                
-                Point3DDubins lastPoint{startDub};
-                Point3DDubins actPoint;
-                unsigned startingInd{vertexInd};
-                double length{pathFromClosest.length};
-                double parts{length / this->problem.CollisionDist};
-                for (int index{1}; index < parts; ++index) {
-                  actPoint = Point3DDubins(pathFromClosest.getState(index * this->problem.CollisionDist));
-                  fileStream << "v" << DELIMITER_OUT;
-                  Point3DDubins temp{actPoint / problem.Env.ScaleFactor}; 
-                  temp.PrintPosition(fileStream);
-                  fileStream << "\n";
-                  ++vertexInd;
-                }
-                actPoint = Point3DDubins(finishDub);
+              unsigned startingInd{vertexInd};
+              for (int m{0}; m < plan.size(); ++m) {
+                Point3DDubins actPoint{plan[m]};
+
                 fileStream << "v" << DELIMITER_OUT;
                 Point3DDubins temp{actPoint / problem.Env.ScaleFactor}; 
                 temp.PrintPosition(fileStream);
                 fileStream << "\n";
-                ++vertexInd;
-
-                vertexRanges.push_back(std::tuple<unsigned, unsigned>(startingInd, vertexInd - 1));
               }
+              vertexInd += plan.size();
+              vertexRanges.push_back(std::tuple<unsigned, unsigned>(startingInd, vertexInd - 1));
             }
           }
         }
@@ -774,22 +786,9 @@ void Solver<Point3DDubins>::savePaths(const FileStruct file) {
               DistanceHolder<Point3DDubins> &holder{this->neighboringMatrix(i, j, k, l)};
               std::deque<Point3DDubins> &plan{holder.Plan};
               for (int m{0}; m < plan.size() - 1; ++m) {
-                Point3DDubins &point{plan[m]};
-                Point3DDubins &next{plan[m+1]};
-                opendubins::State3D startDub{point[0], point[1], point[2], point.GetRotation().GetYaw(), point.GetRotation().GetPitch()};
-                opendubins::State3D finishDub{next[0], next[1], next[2], next.GetRotation().GetYaw(), next.GetRotation().GetPitch()};
-                opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
-                
-                Point3DDubins lastPoint{startDub};
-                Point3DDubins actPoint;
-                double length{pathFromClosest.length};
-                double parts{length / this->problem.CollisionDist};
-                for (int index{1}; index < parts; ++index) {
-                  actPoint = Point3DDubins(pathFromClosest.getState(index * this->problem.CollisionDist));
-                  fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << "\n";
-                  lastPoint = actPoint;
-                }
-                actPoint = Point3DDubins(finishDub);
+                Point3DDubins actPoint{plan[m]};
+                Point3DDubins lastPoint{plan[m + 1]};
+
                 fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << "\n";   
               } 
             }
@@ -839,21 +838,11 @@ void Solver<Point2DDubins>::saveTspPaths(const FileStruct file) {
         DistanceHolder<Point2DDubins> &holder{this->neighboringMatrix(actNode, nextNode, actAngle, nextAngle)};
         std::deque<Point2DDubins> &plan{holder.Plan};
         for (int m{0}; m < plan.size() - 1; ++m) {
-          opendubins::State startDub{plan[m][0], plan[m][1], plan[m].GetHeading()};
-          opendubins::State finishDub{plan[m+1][0], plan[m+1][1], plan[m+1].GetHeading()};
-          opendubins::Dubins pathFromClosest{startDub, finishDub, this->problem.DubinsRadius};
-          
-          Point2DDubins lastPoint{startDub};
-          Point2DDubins actPoint;
-          double length{pathFromClosest.length};
-          double parts{length / this->problem.CollisionDist};
-          for (int index{1}; index < parts; ++index) {
-            actPoint = Point2DDubins(pathFromClosest.getState(index * this->problem.CollisionDist));
-            fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << "\n";
-            lastPoint = actPoint;
-          }
-          actPoint = Point2DDubins(finishDub);
+          Point2DDubins actPoint{plan[m]};
+          Point2DDubins lastPoint{plan[m + 1]};
+
           fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << "\n";
+          lastPoint = actPoint;
         }  
       }
     } else {
@@ -898,35 +887,17 @@ void Solver<Point3DDubins>::saveTspPaths(const FileStruct file) {
 
         DistanceHolder<Point3DDubins> &holder{this->neighboringMatrix(actNode, nextNode, actAngle, nextAngle)};
         std::deque<Point3DDubins> &plan{holder.Plan};
-        for (int m{0}; m < plan.size() - 1; ++m) {
-          Point3DDubins &point{plan[m]};
-          Point3DDubins &next{plan[m+1]};
-          opendubins::State3D startDub{point[0], point[1], point[2], point.GetRotation().GetYaw(), point.GetRotation().GetPitch()};
-          opendubins::State3D finishDub{next[0], next[1], next[2], next.GetRotation().GetYaw(), next.GetRotation().GetPitch()};
-          opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
-          
-          Point3DDubins lastPoint{startDub};
-          Point3DDubins actPoint;
-          unsigned startingInd{vertexInd};
-          double length{pathFromClosest.length};
-          double parts{length / this->problem.CollisionDist};
-          for (int index{1}; index < parts; ++index) {
-            actPoint = Point3DDubins(pathFromClosest.getState(index * this->problem.CollisionDist));
-            fileStream << "v" << DELIMITER_OUT;
-            Point3DDubins temp{actPoint / problem.Env.ScaleFactor}; 
-            temp.PrintPosition(fileStream);
-            fileStream << "\n";
-            ++vertexInd;
-          }
-          actPoint = Point3DDubins(finishDub);
+        unsigned startingInd{vertexInd};
+        for (int m{0}; m < plan.size(); ++m) {
+          Point3DDubins actPoint{plan[m]};
+
           fileStream << "v" << DELIMITER_OUT;
           Point3DDubins temp{actPoint / problem.Env.ScaleFactor}; 
           temp.PrintPosition(fileStream);
           fileStream << "\n";
-          ++vertexInd;
-
-          vertexRanges.push_back(std::tuple<unsigned, unsigned>(startingInd, vertexInd - 1));
-        }    
+        }
+        vertexInd += plan.size();
+        vertexRanges.push_back(std::tuple<unsigned, unsigned>(startingInd, vertexInd - 1));    
       }
       
       for (auto &pair : vertexRanges) {
@@ -948,24 +919,11 @@ void Solver<Point3DDubins>::saveTspPaths(const FileStruct file) {
         DistanceHolder<Point3DDubins> &holder{this->neighboringMatrix(actNode, nextNode, actAngle, nextAngle)};
         std::deque<Point3DDubins> &plan{holder.Plan};
         for (int m{0}; m < plan.size() - 1; ++m) {
-          Point3DDubins &point{plan[m]};
-          Point3DDubins &next{plan[m+1]};
-          opendubins::State3D startDub{point[0], point[1], point[2], point.GetRotation().GetYaw(), point.GetRotation().GetPitch()};
-          opendubins::State3D finishDub{next[0], next[1], next[2], next.GetRotation().GetYaw(), next.GetRotation().GetPitch()};
-          opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.MaxPitch, this->problem.MaxPitch};
-          
-          Point3DDubins lastPoint{startDub};
-          Point3DDubins actPoint;
-          double length{pathFromClosest.length};
-          double parts{length / this->problem.CollisionDist};
-          for (int index{1}; index < parts; ++index) {
-            actPoint = Point3DDubins(pathFromClosest.getState(index * this->problem.CollisionDist));
-            fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << "\n";
-            lastPoint = actPoint;
-          }
-          actPoint = Point3DDubins(finishDub);
+          Point3DDubins actPoint{plan[m]};
+          Point3DDubins lastPoint{plan[m + 1]};
+
           fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << "\n";   
-        }    
+        }     
       }
     } else {
       throw std::string("Unimplemented file type");

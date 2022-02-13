@@ -257,6 +257,24 @@ Point2DDubins Point2DDubins::GetStateInDistance(Point2DDubins &other, double dis
   return Point2DDubins(dubPath.getState(dist));
 }
 
+std::deque<Point2DDubins> Point2DDubins::SampleDubinsPathTo(const Point2DDubins &other, double dist) {
+  std::deque<Point2DDubins> retVal;
+  opendubins::State startDub{coords[0], coords[1], this->GetHeading()};
+  opendubins::State finishDub{other[0], other[1], other.GetHeading()};
+  opendubins::Dubins pathDub{startDub, finishDub, DubinsRadius};
+  
+  double pathDist{pathDub.length};
+  double parts{pathDist / dist};
+
+  retVal.emplace_back(*this);
+  for (int index{1}; index < parts; ++index) {
+    opendubins::State temp{pathDub.getState(index * pathDist / parts)};
+    retVal.emplace_back(temp);
+  }
+
+  return retVal;
+}
+
 Point2DDubins Point2DDubins::GetInvertedPoint() {
   Point2DDubins retVal{*this};
   retVal.SetHeading(NormalizeAngle(this->GetHeading() + M_PI));
@@ -430,14 +448,14 @@ void Point3D::PrintPosition(std::ostream &out) {
 }
 
 Point3DDubins::Point3DDubins(opendubins::State3D dubinsState) 
-  : coords{dubinsState.getPoint().getX(), dubinsState.getPoint().getY(), dubinsState.getPoint().getZ()} {
-    this->rotation = Quaternion(dubinsState.getHeading(), dubinsState.getPitch(), 0);
+  : coords{dubinsState.getPoint().getX(), dubinsState.getPoint().getY(), dubinsState.getPoint().getZ()},
+    yaw{dubinsState.getHeading()}, pitch{dubinsState.getPitch()} {
 }
 
 Point3DDubins::Point3DDubins() : coords{0, 0, 0} {
 }
 
-Point3DDubins::Point3DDubins(double x, double y, double z, double yaw, double pitch) : coords{x, y, z}, rotation{yaw, pitch, 0} {
+Point3DDubins::Point3DDubins(double x, double y, double z, double yaw, double pitch) : coords{x, y, z}, yaw{yaw}, pitch{pitch} {
 }
 
 Point3DDubins::Point3DDubins(const std::string &s, double scale) {
@@ -454,36 +472,36 @@ Point3DDubins::Point3DDubins(const std::string &s, double scale) {
   }
 
   // rotation
-  rotation = Quaternion(std::stod(m[4]), std::stod(m[5]), 0);
-}
-
-Quaternion Point3DDubins::GetRotation() const {
-  return rotation;
-}
-
-void Point3DDubins::SetRotation(Quaternion q) {
-  rotation = q;
-}
-
-void Point3DDubins::SetRotation(double yaw, double pitch) {
-  Quaternion q {yaw, pitch, 0};
+  this->yaw = std::stod(m[4]);
+  this->pitch = std::stod(m[5]);
 }
 
 void Point3DDubins::SetHeading(double yaw) {
-  Quaternion q{GetRotation()};
-  double pitch{q.GetPitch()};
-  SetRotation(yaw, pitch);
+  this->yaw = yaw;
 }
 
 void Point3DDubins::SetHeading(int angleId, int angleResolution) {
-  SetHeading(this->rotation.GetYaw() + (angleId * 2 * M_PI) / angleResolution);
+  SetHeading(yaw + (angleId * 2 * M_PI) / angleResolution);
+}
+
+double Point3DDubins::GetHeading() const {
+  return yaw;
+}
+
+void Point3DDubins::SetPitch(double pitch) {
+  this->pitch = pitch;
+}
+
+double Point3DDubins::GetPitch() const {
+  return pitch;
 }
 
 void Point3DDubins::Set(double x, double y, double z, double yaw, double pitch) {
   coords[0] = x;
   coords[1] = y;
   coords[2] = z;
-  rotation = Quaternion(yaw, pitch, 0);
+  this->yaw = yaw;
+  this->pitch = pitch;
 }
 
 void Point3DDubins::SetPosition(double x, double y, double z) {
@@ -503,8 +521,10 @@ const double* Point3DDubins::GetRawCoords() const {
 const double Point3DDubins::operator[](int i) const {
   if (i < 3) {
     return coords[i];
-  } else if (i < 6) {
-    return rotation[i - 3];
+  } else if (i == 3) {
+    return yaw;
+  } else if (i == 4) {
+    return pitch;
   } else {
     return 1;
   }
@@ -517,7 +537,7 @@ void Point3DDubins::operator+=(const Vector &translate) {
 }
 
 bool operator==(const Point3DDubins &p1, const Point3DDubins &p2) {
-  return p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2] && p1.rotation == p2.rotation;
+  return p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2] && p1.yaw == p2.yaw && p1.pitch == p2.pitch;
 }
 
 bool operator!=(const Point3DDubins &p1, const Point3DDubins &p2) {
@@ -528,7 +548,8 @@ bool operator<(const Point3DDubins &p1, const Point3DDubins &p2) {
   return p1[0] < p2[0] ||
         (p1[0] == p2[0] && p1[1] < p2[1]) ||
         (p1[0] == p2[0] && p1[1] == p2[1] && p1[2] < p2[2]) ||
-        (p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2] && p1.rotation < p2.rotation);
+        (p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2] && p1.yaw < p2.yaw) ||
+        (p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2] && p1.yaw == p2.yaw && p1.pitch < p2.pitch);
 }
 
 // scale position (NOT the rotation)
@@ -542,16 +563,16 @@ Point3DDubins operator/(const Point3DDubins &p1, const double scale) {
 }
 
 double Point3DDubins::Distance(const Point3DDubins &other) const {
-  opendubins::State3D startDub{coords[0], coords[1], coords[2], rotation.GetYaw(), rotation.GetPitch()};
-  opendubins::State3D finishDub{other[0], other[1], other[2], other.GetRotation().GetYaw(), other.GetRotation().GetPitch()};
+  opendubins::State3D startDub{coords[0], coords[1], coords[2], GetHeading(), GetPitch()};
+  opendubins::State3D finishDub{other[0], other[1], other[2], other.GetHeading(), other.GetPitch()};
   opendubins::Dubins3D pathDub{startDub, finishDub, DubinsRadius, -MaxPitch, MaxPitch};
   
   return pathDub.getLength();
 }
 
 Point3DDubins Point3DDubins::GetStateInDistance(Point3DDubins &other, double dist) const {
-  opendubins::State3D startDub{coords[0], coords[1], coords[2], rotation.GetYaw(), rotation.GetPitch()};
-  opendubins::State3D finishDub{other[0], other[1], other[2], other.GetRotation().GetYaw(), other.GetRotation().GetPitch()};
+  opendubins::State3D startDub{coords[0], coords[1], coords[2], GetHeading(), GetPitch()};
+  opendubins::State3D finishDub{other[0], other[1], other[2], other.GetHeading(), other.GetPitch()};
   opendubins::Dubins3D pathDub{startDub, finishDub, DubinsRadius, -MaxPitch, MaxPitch};
   
   opendubins::State3D temp{pathDub.getState(dist)};
@@ -559,28 +580,48 @@ Point3DDubins Point3DDubins::GetStateInDistance(Point3DDubins &other, double dis
   return Point3DDubins(temp);
 }
 
-void Point3DDubins::FillRotationMatrix(double (&matrix)[3][3]) const {
-  this->GetRotation().ToRotationMatrix(matrix);
+std::deque<Point3DDubins> Point3DDubins::SampleDubinsPathTo(const Point3DDubins &other, double dist) {
+  std::deque<Point3DDubins> retVal;
+  opendubins::State3D startDub{coords[0], coords[1], coords[2], GetHeading(), GetPitch()};
+  opendubins::State3D finishDub{other[0], other[1], other[2], other.GetHeading(), other.GetPitch()};
+  opendubins::Dubins3D pathDub{startDub, finishDub, DubinsRadius, -MaxPitch, MaxPitch};
+
+  double pathDist{pathDub.length};
+  double parts{pathDist / dist};
+
+  retVal.emplace_back(*this);
+  for (int index{1}; index < parts; ++index) {
+    opendubins::State3D temp{pathDub.getState(index * pathDist / parts)};
+    retVal.emplace_back(temp);
+  }
+
+  return retVal;
 }
 
-Point3DDubins Point3DDubins::RotatePoint(Quaternion rotation) {
-  Point3DDubins retVal;
-  Quaternion q{0, (*this)[0], (*this)[1], (*this)[2]};
-  
-  Quaternion temp = rotation * q;
-  q = temp * rotation.Inverse();
+void Point3DDubins::FillRotationMatrix(double (&matrix)[3][3]) const {
+  matrix[0][0] = cos(yaw) * cos(pitch);
+  matrix[0][1] = -sin(yaw);
+  matrix[0][2] = cos(yaw) * sin(pitch);
+  matrix[1][0] = sin(yaw) * cos(pitch);
+  matrix[1][1] = cos(yaw);
+  matrix[1][2] = sin(yaw) * sin(pitch);
+  matrix[2][0] = -sin(pitch);
+  matrix[2][1] = 0;
+  matrix[2][2] = cos(pitch);
+}
 
-  retVal.SetPosition(q[1], q[2], q[3]);
-  retVal.SetRotation(this->rotation * rotation);
-  return retVal;
+Point3DDubins Point3DDubins::RotatePoint(double deltaYaw, double deltaPitch) {
+  Point3DDubins pos{*this};
+  pos.SetHeading(NormalizeAngle(this->yaw + deltaYaw));
+  pos.SetPitch(NormalizeAngle(this->pitch + deltaPitch));
+
+  return pos;
 }
 
 Point3DDubins Point3DDubins::GetInvertedPoint() {
-  Point3DDubins retVal{*this};
-  Quaternion q{rotation.Inverse()};
-
-  retVal.SetRotation(q);
-  return retVal;
+  Point3DDubins pos{RotatePoint(M_PI, 0)};
+  pos.SetPitch(-this->pitch);
+  return pos;
 }
 
 void Point3DDubins::PrintPosition(std::ostream &out) {
@@ -663,5 +704,5 @@ std::ostream& operator<<(std::ostream &out, const Point3D &p) {
 }
 
 std::ostream& operator<<(std::ostream &out, const Point3DDubins &p) {
-  return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << p[2] << DELIMITER_OUT << p.GetRotation().GetYaw() << DELIMITER_OUT << p.GetRotation().GetPitch() << DELIMITER_OUT << p.GetRotation().GetRoll();
+  return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << p[2] << DELIMITER_OUT << p.GetHeading() << DELIMITER_OUT << p.GetPitch() << DELIMITER_OUT << "0";
 }

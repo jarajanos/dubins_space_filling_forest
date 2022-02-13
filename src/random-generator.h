@@ -39,6 +39,7 @@ class RandomGenerator {
     randomEngine rndEng;
 
     std::uniform_real_distribution<double> uniDistAngle;
+    std::uniform_real_distribution<double> uniDistPitch;
     std::uniform_real_distribution<double> uniSpaceX;
     std::uniform_real_distribution<double> uniSpaceY;
     std::uniform_real_distribution<double> uniSpaceZ;
@@ -55,9 +56,10 @@ RandomGenerator<R>::RandomGenerator(const Range samplingRange, const double maxP
 
   rndEng = randomEngine(uSeed);
   //INFO(uSeed);
-  //rndEng = randomEngine(1634847683494374880); // deterministic behaviour
+  //rndEng = randomEngine(1644768989840546946); // deterministic behaviour
 
   uniDistAngle = std::uniform_real_distribution<double>(-M_PI, M_PI);
+  uniDistPitch = std::uniform_real_distribution<double>(-maxPitch, maxPitch);
   uniSpaceX = std::uniform_real_distribution<double>(limits.mins[0], limits.maxs[0]);
   uniSpaceY = std::uniform_real_distribution<double>(limits.mins[1], limits.maxs[1]);
   uniSpaceZ = std::uniform_real_distribution<double>(limits.mins[2], limits.maxs[2]);

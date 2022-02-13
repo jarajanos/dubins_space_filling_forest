@@ -947,19 +947,42 @@ void SpaceForest<R, true>::getPaths() {
           DistanceHolder<R> &holder{this->neighboringMatrix(i, j, k, l)};
           std::deque<R> &plan{holder.Plan};
           // one tree
-          Node<R> *nodeToPush{holder.Node1};
-          plan.push_front(nodeToPush->DubinsPosition(k, numAngles, false));
-          while (!nodeToPush->IsRoot()) {
-            nodeToPush = nodeToPush->Closest;
-            plan.push_front(nodeToPush->DubinsPosition(k, numAngles, false));
+          Node<R> *actual{holder.Node1};
+          Node<R> *next;
+          R startingPoint;
+          R finalPoint;
+          std::deque<R> localPath;
+
+          while (!actual->IsRoot()) {
+            next = actual;
+            actual = actual->Closest;
+            
+            startingPoint = actual->DubinsPosition(k, numAngles, false);
+            finalPoint = next->DubinsPosition(k, numAngles, false);
+            localPath = startingPoint.SampleDubinsPathTo(finalPoint, this->problem.CollisionDist); 
+            plan.insert(plan.begin(), localPath.begin(), localPath.end());
           }
 
-          // second tree
-          nodeToPush = holder.Node2;
-          plan.push_back(nodeToPush->DubinsPosition(l, numAngles, true));
-          while(!nodeToPush->IsRoot()) {
-            nodeToPush = nodeToPush->Closest;
-            plan.push_back(nodeToPush->DubinsPosition(l, numAngles, true));
+          // intermediate path
+          startingPoint = holder.Node1->DubinsPosition(k, numAngles, false);
+          finalPoint = holder.Node2->DubinsPosition(l, numAngles, true);
+          localPath = startingPoint.SampleDubinsPathTo(finalPoint, this->problem.CollisionDist);
+          plan.insert(plan.end(), localPath.begin(), localPath.end());
+          plan.emplace_back(finalPoint);
+
+          // second tree -- to ensure the same trajectory, the path is reconstructed "backwards" 
+          // (same as in original tree) and then reversed -- this is also the reason why the angle 
+          // from the second root has to be (again) reverted
+          actual = holder.Node2; 
+          int lUpd{this->neighboringMatrix.OppositeAngleID(l)};
+          while(!actual->IsRoot()) {
+            next = actual;
+            actual = actual->Closest;
+            
+            startingPoint = actual->DubinsPosition(lUpd, numAngles, false);
+            finalPoint = next->DubinsPosition(lUpd, numAngles, false);
+            localPath = startingPoint.SampleDubinsPathTo(finalPoint, this->problem.CollisionDist); 
+            plan.insert(plan.end(), localPath.rbegin(), localPath.rend());  // reverse the path
           }
         }
       }

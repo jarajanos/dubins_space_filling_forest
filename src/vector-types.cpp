@@ -193,7 +193,7 @@ Quaternion Quaternion::Inverse() const {
 
   retVal.coords.get()[0] = this->coords.get()[0];
   for (int i{1}; i < 4; ++i) {
-    retVal.coords.get()[i] = -this->coords.get()[i];
+    retVal.coords.get()[i] = -(this->coords.get()[i]);
   }
 
   return retVal;

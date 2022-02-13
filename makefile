@@ -23,7 +23,7 @@ DBGFLAGS := $(CXXFLAGS) -g -O0
 
 RELEXE := $(RELDIR)/$(TARGET)
 RELOBJS := $(addprefix $(OBJDIR)/, $(addprefix $(RELDIR)/, $(OBJECTS)))
-RELFLAGS := $(CXXFLAGS) -O3
+RELFLAGS := $(CXXFLAGS) -O3 -fno-math-errno
 
 .PHONY: all clean debug release prep rapid flann yaml install gdip concorde lkh solver
 

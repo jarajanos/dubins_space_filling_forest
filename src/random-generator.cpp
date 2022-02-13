@@ -59,8 +59,8 @@ bool RandomGenerator<Point3DDubins>::isInLimits(Point3DDubins& p) {
     valid &= p[i] <= limits.maxs[i];
   }
 
-  valid &= p.GetRotation().GetPitch() >= -maxPitch;
-  valid &= p.GetRotation().GetPitch() <= maxPitch;
+  valid &= p.GetPitch() >= -maxPitch;
+  valid &= p.GetPitch() <= maxPitch;
 
   return valid;
 }
@@ -129,17 +129,11 @@ bool RandomGenerator<Point3DDubins>::RandomPointInDistance(const Point3DDubins& 
   temp.SetPosition(center[0] + cos(theta) * sin(phi) * distance, center[1] + sin(theta) * sin(phi)  * distance, center[2] + cos(phi) * distance);
 
   // rotation
-  double s{RandomProbability()};
-  double sigOne{sqrt(1-s)};
-  double sigTwo{sqrt(s)};
-  double thetaOne{2*M_PI*RandomProbability()};
-  double thetaTwo{2*M_PI*RandomProbability()};
+  temp.SetHeading(uniDistAngle(rndEng));
+  temp.SetPitch(uniDistAngle(rndEng));
 
-  Quaternion rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
-  temp.SetRotation(rotation);
-
-  opendubins::State3D a{center[0], center[1], center[2], center.GetRotation().GetYaw(), center.GetRotation().GetPitch()};
-  opendubins::State3D b{temp[0], temp[1], temp[2], temp.GetRotation().GetYaw(), temp.GetRotation().GetPitch()};
+  opendubins::State3D a{center[0], center[1], center[2], center.GetHeading(), center.GetPitch()};
+  opendubins::State3D b{temp[0], temp[1], temp[2], temp.GetHeading(), temp.GetPitch()};
   opendubins::Dubins3D dubPath{a, b, Point3DDubins::DubinsRadius, -Point3DDubins::MaxPitch, Point3DDubins::MaxPitch};
 
   // get point in exact distance
@@ -181,19 +175,9 @@ void RandomGenerator<Point3D>::RandomPointInSpace(Point3D& point) {
 
 template<>
 void RandomGenerator<Point3DDubins>::RandomPointInSpace(Point3DDubins& point) {
-  bool inLimits{false};
   point.SetPosition(uniSpaceX(rndEng), uniSpaceY(rndEng), uniSpaceZ(rndEng));
 
   // rotation
-  while (!inLimits) {
-    double s{RandomProbability()};
-    double sigOne{sqrt(1-s)};
-    double sigTwo{sqrt(s)};
-    double thetaOne{2*M_PI*RandomProbability()};
-    double thetaTwo{2*M_PI*RandomProbability()};
-
-    Quaternion rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
-    point.SetRotation(rotation);
-    inLimits = isInLimits(point);
-  }
+  point.SetHeading(uniDistAngle(rndEng));
+  point.SetPitch(uniDistPitch(rndEng));
 }
