@@ -1,6 +1,6 @@
 ---
   problem:
-    solver: 'sff'
+    solver: 'rrt'
     optimize: true
     iterations: 10000
     dimension: '2DDubins'
@@ -38,15 +38,15 @@
     autodetect: true
 
   distances:
-    collision: 1
+    collision: 5
     sampling: 50
     tree: 100
 
   algorithm:
     m2r-ratio: 10
-    bias: 0.95
+    bias: 0.05
     misses: 5
-    dubins-radius: 50
+    dubins-radius: 30
     dubins-resolution: 4
   
   save:
