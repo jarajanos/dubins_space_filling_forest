@@ -19,38 +19,65 @@
 #include "tsp-handler.h"
 
 template<class R>
-class LazyTSP : public Solver<R> {
+class LazyTSPBase : public Solver<R> {
   public:
-    LazyTSP(Problem<R> &problem); 
-    ~LazyTSP();
+    LazyTSPBase(Problem<R> &problem) : Solver<R>(problem) {} 
+    ~LazyTSPBase();
 
     void Solve() override;
-  private:
+  protected:
     int numTrees;
     std::deque<Node<R>> rootNodes;
     std::deque<Tree<R> *> treesToDel;
     
     void runRRT(DistanceHolder<R> *edge, int &iterations);
     void processResults(TSPOrder &solution, std::deque<std::tuple<int,int>> &edgePairs);
-    double updateEdge(std::tuple<int, int> selectedEdge, int iter);
-    void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance);
+    virtual double updateEdge(std::tuple<int, int> selectedEdge, int iter) = 0;
+    virtual void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) = 0;
 
     void getPaths() override;
-    void savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
-    void saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime, const std::deque<std::tuple<int,int>> &selectedEdges);
+    virtual void savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths) = 0;
+    virtual void saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime, const std::deque<std::tuple<int,int>> &selectedEdges) = 0;
 };
 
-template<> LazyTSP<Point2DDubins>::LazyTSP(Problem<Point2DDubins> &problem);
-template<> double LazyTSP<Point2DDubins>::updateEdge(std::tuple<int, int> selectedEdge, int iter);
-template<> void LazyTSP<Point2DDubins>::rewireNodes(Node<Point2DDubins> *newNode, Node<Point2DDubins> &neighbor, double newDistance);
-template<> void LazyTSP<Point2DDubins>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
-template<> void LazyTSP<Point2DDubins>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime, const std::deque<std::tuple<int,int>> &selectedEdges);
+template<class R, bool = isDubins<R>::value>
+class LazyTSP : public LazyTSPBase<R> {  
+};
 
 template<class R>
-LazyTSP<R>::LazyTSP(Problem<R> &problem) : Solver<R>(problem) {
+class LazyTSP<R, false> : public LazyTSPBase<R> {
+  public:
+    LazyTSP(Problem<R> &problem);
+
+  protected:
+    double updateEdge(std::tuple<int, int> selectedEdge, int iter) override;
+    void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) override;
+
+    void savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths) override;
+    void saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime, const std::deque<std::tuple<int,int>> &selectedEdges) override;
+};
+
+template<class R>
+class LazyTSP<R, true> : public LazyTSPBase<R> {
+  public:
+    LazyTSP(Problem<R> &problem);
+
+  protected:
+    double updateEdge(std::tuple<int, int> selectedEdge, int iter) override;
+    void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) override;
+
+    void savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths) override;
+    void saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime, const std::deque<std::tuple<int,int>> &selectedEdges) override;
+};
+
+template<> void LazyTSP<Point2DDubins>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
+template<> void LazyTSP<Point3DDubins>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
+
+template<class R>
+LazyTSP<R, false>::LazyTSP(Problem<R> &problem) : LazyTSPBase<R>(problem) {
   // create adjacency matrix
   for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
-    Node<R> &node{rootNodes.emplace_back(this->problem.Roots[i], nullptr, nullptr, 0, 0)};
+    Node<R> &node{this->rootNodes.emplace_back(this->problem.Roots[i], nullptr, nullptr, 0, 0)};
     this->allNodes.push_back(&node);
   }
   for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
@@ -58,13 +85,31 @@ LazyTSP<R>::LazyTSP(Problem<R> &problem) : Solver<R>(problem) {
       if (this->neighboringMatrix(i, j).Exists()) {
         continue;
       }
-      this->neighboringMatrix(i, j) = DistanceHolder<R>(&(rootNodes[i]), &(rootNodes[j]), rootNodes[i].Distance(rootNodes[j]));
+      this->neighboringMatrix(i, j) = DistanceHolder<R>(&(this->rootNodes[i]), &(this->rootNodes[j]), this->rootNodes[i].Distance(this->rootNodes[j]));
+    }
+  }
+}
+
+template<class R>
+LazyTSP<R, true>::LazyTSP(Problem<R> &problem) : LazyTSPBase<R>(problem) {
+  // create adjacency matrix
+  for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
+    Node<R> &node{this->rootNodes.emplace_back(this->problem.Roots[i], nullptr, nullptr, 0, 0)};
+    this->allNodes.push_back(&node);
+  }
+  for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
+    for (int j{0}; j < this->problem.GetNumRoots(); ++j) {
+      if (this->neighboringMatrix(i, j, 0, 0).Exists()) {
+        continue;
+      }
+      DistanceHolder<R> dist{&(this->rootNodes[i]), &(this->rootNodes[j]), this->rootNodes[i].Distance(this->rootNodes[j])};
+      this->neighboringMatrix.AddLink(dist, i, j, 0, 0);
     }
   }
 }
 
 template <class R>
-LazyTSP<R>::~LazyTSP() {
+LazyTSPBase<R>::~LazyTSPBase() {
   for (auto ptr : treesToDel) {
     if (ptr != nullptr) {
       delete ptr;
@@ -73,7 +118,7 @@ LazyTSP<R>::~LazyTSP() {
 }
 
 template <class R>
-void LazyTSP<R>::Solve() {
+void LazyTSPBase<R>::Solve() {
   double prevDist{-1}, newDist{0};
   StopWatch watches;
   std::deque<std::tuple<int, int>> selectedEdges;
@@ -137,23 +182,34 @@ void LazyTSP<R>::Solve() {
 }
 
 template<class R>
-double LazyTSP<R>::updateEdge(std::tuple<int, int> selectedEdge, int iter) {
+double LazyTSP<R, false>::updateEdge(std::tuple<int, int> selectedEdge, int iter) {
   int first, second;
   std::tie(first, second) = selectedEdge;
   DistanceHolder<R> &edge{this->neighboringMatrix(first, second)};
   if (edge.Plan.empty()) {
-    runRRT(&edge, iter);
+    this->runRRT(&edge, iter);
+  } 
+  return edge.Distance;
+}
+
+template<class R>
+double LazyTSP<R, true>::updateEdge(std::tuple<int, int> selectedEdge, int iter) {
+  int first, second;
+  std::tie(first, second) = selectedEdge;
+  DistanceHolder<R> &edge{this->neighboringMatrix(first, second, 0, 0)};
+  if (edge.Plan.empty()) {
+    this->runRRT(&edge, iter);
   } 
   return edge.Distance;
 }
 
 template <class R>
-void LazyTSP<R>::getPaths() {
+void LazyTSPBase<R>::getPaths() {
 
 }
 
 template <class R>
-void LazyTSP<R>::runRRT(DistanceHolder<R> *edge, int &iterations) {
+void LazyTSPBase<R>::runRRT(DistanceHolder<R> *edge, int &iterations) {
   Node<R> *goal{edge->Node2};
   Tree<R> *rrtTree{new Tree<R>};
   treesToDel.push_back(rrtTree);
@@ -267,7 +323,7 @@ void LazyTSP<R>::runRRT(DistanceHolder<R> *edge, int &iterations) {
 }
 
 template<class R>
-void LazyTSP<R>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) {
+void LazyTSP<R, false>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) {
   std::deque<Node<R> *> &children{neighbor.Closest->Children};
   auto iter{std::find(children.begin(), children.end(), &neighbor)};
   if (iter == children.end()) {
@@ -276,12 +332,26 @@ void LazyTSP<R>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDist
   }
   neighbor.Closest->Children.erase(iter);
   neighbor.Closest = newNode;
-  // TODO: neighbor.DistanceToClosest = newDistance;
+  neighbor.DistanceToClosest = newDistance;
+  newNode->Children.push_back(&neighbor);
+}
+
+template<class R> 
+void LazyTSP<R, true>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) {
+  std::deque<Node<R> *> &children{neighbor.Closest->Children};
+  auto iter{std::find(children.begin(), children.end(), &neighbor)};
+  if (iter == children.end()) {
+    ERROR("Fatal error when rewiring LazyTSP: Node not in children");
+    exit(1);
+  }
+  neighbor.Closest->Children.erase(iter);
+  neighbor.Closest = newNode;
+  neighbor.DistanceToClosest[0] = newDistance;
   newNode->Children.push_back(&neighbor);
 }
 
 template <class R>
-void LazyTSP<R>::processResults(TSPOrder &solution, std::deque<std::tuple<int,int>> &edgePairs) {
+void LazyTSPBase<R>::processResults(TSPOrder &solution, std::deque<std::tuple<int,int>> &edgePairs) {
   edgePairs.clear();
 
   int prevPoint{solution.back()}; // last point of the solution
@@ -293,7 +363,7 @@ void LazyTSP<R>::processResults(TSPOrder &solution, std::deque<std::tuple<int,in
 }
 
 template <class R>
-void LazyTSP<R>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths) {
+void LazyTSP<R, false>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths) {
   INFO("Saving paths");
   std::ofstream fileStream{file.fileName.c_str()};
   if (!fileStream.good()) {
@@ -351,7 +421,7 @@ void LazyTSP<R>::savePaths(const FileStruct file, const std::deque<std::tuple<in
 }
 
 template<class R>
-void LazyTSP<R>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime, const std::deque<std::tuple<int,int>> &selectedEdges) {
+void LazyTSP<R, false>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime, const std::deque<std::tuple<int,int>> &selectedEdges) {
   INFO("Saving parameters");
   std::ofstream fileStream{file.fileName.c_str(), std::ios_base::openmode::_S_app};
   if (!fileStream.good()) {
@@ -384,6 +454,53 @@ void LazyTSP<R>::saveParams(const FileStruct file, const int iterations, const b
       int first, second;
       std::tie(first, second) = pair;
       fileStream << this->neighboringMatrix(first,second).Distance / this->problem.Env.ScaleFactor;
+      if (iter != this->problem.GetNumRoots()) {
+        fileStream << CSV_DELIMITER_2;
+      }
+    }
+    fileStream << "]" << CSV_DELIMITER;
+    fileStream << elapsedTime.count() << "\n";
+  } else {
+    std::stringstream message;
+    message << "Cannot open file at: " << file.fileName;
+    ERROR(message.str());
+  }
+}
+
+template<class R>
+void LazyTSP<R, true>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime, const std::deque<std::tuple<int,int>> &selectedEdges) {
+  INFO("Saving parameters");
+  std::ofstream fileStream{file.fileName.c_str(), std::ios_base::openmode::_S_app};
+  if (!fileStream.good()) {
+    std::stringstream message;
+    message << "Cannot create file at: " << file.fileName;
+    ERROR(message.str());
+    return;
+  }
+
+  if (fileStream.is_open()) {
+    fileStream << this->problem.ID << CSV_DELIMITER;
+    fileStream << this->problem.Repetition << CSV_DELIMITER;
+    fileStream << iterations << CSV_DELIMITER;
+    fileStream << (solved ? "solved" : "unsolved") << CSV_DELIMITER;
+    fileStream << "[";
+    int iter{0};
+    for (auto &pair : selectedEdges) {
+      ++iter;
+      int first, second;
+      std::tie(first, second) = pair;
+      fileStream << first;
+      if (iter != this->problem.GetNumRoots()) {
+        fileStream << CSV_DELIMITER_2;
+      }
+    }
+    fileStream << "]" << CSV_DELIMITER << "[";
+    iter = 0;
+    for (auto &pair : selectedEdges) {
+      ++iter;
+      int first, second;
+      std::tie(first, second) = pair;
+      fileStream << this->neighboringMatrix(first,second, 0, 0).Distance / this->problem.Env.ScaleFactor;
       if (iter != this->problem.GetNumRoots()) {
         fileStream << CSV_DELIMITER_2;
       }

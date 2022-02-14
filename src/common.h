@@ -138,6 +138,7 @@ struct FileStruct {
 struct Range {
   double mins[3];
   double maxs[3];
+  double maxPitch;
 
   Range(double minX, double maxX, double minY, double maxY, double minZ, double maxZ) 
     : mins{minX, minY, minZ}, maxs{maxX, maxY, maxZ} {
@@ -154,6 +155,9 @@ struct Range {
     mins[order] = std::stod(m[1]) * scale;
     maxs[order] = std::stod(m[2]) * scale;
   }
+
+  template <class R>
+  bool IsInLimits(R &point);
 };
 
 template<class R>

@@ -15,12 +15,12 @@
 #include "solver.h"
 
 template<class R>
-class RapidExpTree : public Solver<R> {
+class RapidExpTreeBase : public Solver<R> {
   public:
-    RapidExpTree(Problem<R> &problem); 
+    RapidExpTreeBase(Problem<R> &problem); 
 
     void Solve() override;
-  private:
+  protected:
     int actNumTrees;
     Tree<R> *centralRoot{nullptr};
 
@@ -32,17 +32,35 @@ class RapidExpTree : public Solver<R> {
     bool getAndCheckNewPoint(Tree<R> *treeToExpand, R *newPoint, Node<R>* &parent);
     bool optimizeConnections(Tree<R> *treeToExpand, R *newPoint, Node<R>* &parent, Node<R>* &newNode, const unsigned iteration);
     bool checkOtherRewire(Tree<R> *treeToExpand, R *newPoint, Node<R>* &newNode);
-    void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance);
     
-    void getPaths() override;
+    virtual void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) = 0;
+    
+    virtual void getPaths() override {};
     void getConnectedTrees();
 };
 
-template<> void RapidExpTree<Point2DDubins>::rewireNodes(Node<Point2DDubins> *newNode, Node<Point2DDubins> &neighbor, double newDistance);
-template<> void RapidExpTree<Point2DDubins>::getPaths();
+template<class R, bool = isDubins<R>::value>
+class RapidExpTree : public RapidExpTreeBase<R> {
+};
 
 template<class R>
-RapidExpTree<R>::RapidExpTree(Problem<R> &problem) : Solver<R>(problem) {
+class RapidExpTree<R, false> : public RapidExpTreeBase<R> {
+  using RapidExpTreeBase<R>::RapidExpTreeBase;
+  protected:
+    void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) override;
+    void getPaths() override;
+};
+
+template<class R>
+class RapidExpTree<R, true> : public RapidExpTreeBase<R> {
+  using RapidExpTreeBase<R>::RapidExpTreeBase;
+  protected:
+    void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) override;
+    void getPaths() override;
+};
+
+template<class R>
+RapidExpTreeBase<R>::RapidExpTreeBase(Problem<R> &problem) : Solver<R>(problem) {
   for (int j{0}; j < this->problem.Roots.size(); ++j) {
     Tree<R> &tree{this->trees.emplace_back()};
     Node<R> &node{tree.Leaves.emplace_back(this->problem.Roots[j], &tree, nullptr, 0, 0)};
@@ -78,7 +96,7 @@ RapidExpTree<R>::RapidExpTree(Problem<R> &problem) : Solver<R>(problem) {
 }
 
 template<class R>
-void RapidExpTree<R>::Solve() {
+void RapidExpTreeBase<R>::Solve() {
   StopWatch watch;
   if (SaveGoals <= this->problem.SaveOpt) {
     this->saveCities(this->problem.FileNames[SaveGoals]);
@@ -122,7 +140,7 @@ void RapidExpTree<R>::Solve() {
 }
 
 template<class R>
-bool RapidExpTree<R>::getAndCheckNewPoint(Tree<R> *treeToExpand, R *newPoint, Node<R>* &parent) {
+bool RapidExpTreeBase<R>::getAndCheckNewPoint(Tree<R> *treeToExpand, R *newPoint, Node<R>* &parent) {
   R rndPoint;
   if (this->problem.PriorityBias > 0 && this->rnd.RandomProbability() <= this->problem.PriorityBias) {
     rndPoint = goalNode->Position; 
@@ -152,7 +170,7 @@ bool RapidExpTree<R>::getAndCheckNewPoint(Tree<R> *treeToExpand, R *newPoint, No
 }
 
 template<class R>
-bool RapidExpTree<R>::optimizeConnections(Tree<R> *treeToExpand, R *newPoint, Node<R>* &parent, Node<R>* &newNode, const unsigned iteration) {
+bool RapidExpTreeBase<R>::optimizeConnections(Tree<R> *treeToExpand, R *newPoint, Node<R>* &parent, Node<R>* &newNode, const unsigned iteration) {
   double bestDist{newPoint->Distance(parent->Position) + parent->DistanceToRoot()};
   double krrt{2 * M_E * log10(this->allNodes.size())};
   std::vector<std::vector<int>> indices;
@@ -193,21 +211,7 @@ bool RapidExpTree<R>::optimizeConnections(Tree<R> *treeToExpand, R *newPoint, No
 }
 
 template<class R>
-void RapidExpTree<R>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) {
-  std::deque<Node<R> *> &children{neighbor.Closest->Children};
-  auto iter{std::find(children.begin(), children.end(), &neighbor)};
-  if (iter == children.end()) {
-    ERROR("Fatal error when rewiring RRT: Node not in children");
-    exit(1);
-  }
-  neighbor.Closest->Children.erase(iter);
-  neighbor.Closest = newNode;
-  //TODO: neighbor.DistanceToClosest = newDistance;
-  newNode->Children.push_back(&neighbor);
-}
-
-template<class R>
-bool RapidExpTree<R>::checkOtherRewire(Tree<R> *treeToExpand, R *newPoint, Node<R>* &newNode) {
+bool RapidExpTreeBase<R>::checkOtherRewire(Tree<R> *treeToExpand, R *newPoint, Node<R>* &newNode) {
   flann::Matrix<float> refPoint{new float[PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
   for (int i{0}; i < PROBLEM_DIMENSION; ++i) {
     refPoint[0][i] = (*newPoint)[i];
@@ -299,7 +303,7 @@ bool RapidExpTree<R>::checkOtherRewire(Tree<R> *treeToExpand, R *newPoint, Node<
 }
 
 template<class R>
-void RapidExpTree<R>::expandNode(Tree<R> *treeToExpand, bool &solved, const unsigned int iteration) {
+void RapidExpTreeBase<R>::expandNode(Tree<R> *treeToExpand, bool &solved, const unsigned int iteration) {
   R newPoint;
   Node<R> *parent, *newNode;
 
@@ -331,9 +335,37 @@ void RapidExpTree<R>::expandNode(Tree<R> *treeToExpand, bool &solved, const unsi
   solved = (this->treeFrontier.size() == 1);
 }
 
+template <class R>
+void RapidExpTreeBase<R>::getConnectedTrees() {
+  int maxConn{0};
+  int numRoots{this->problem.HasGoal ? actNumTrees + 1 : actNumTrees};
+  for (int i{0}; i < numRoots + 1; ++i) {   // +1 because it is rather the maximum index
+    int count{this->expandedTrees.GetCountOf(this->treeFrontier[i])};
+    if (count > maxConn) {
+      maxConn = count;
+      this->centralRoot = this->treeFrontier[i];
+      this->connectedTrees = this->expandedTrees.GetAllWithParent(this->treeFrontier[i]);
+    }
+  }
+}
+
 template<class R>
-void RapidExpTree<R>::getPaths() {
-  for (DistanceHolder<R> &link : centralRoot->Links) {
+void RapidExpTree<R, false>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) {
+  std::deque<Node<R> *> &children{neighbor.Closest->Children};
+  auto iter{std::find(children.begin(), children.end(), &neighbor)};
+  if (iter == children.end()) {
+    ERROR("Fatal error when rewiring RRT: Node not in children");
+    exit(1);
+  }
+  neighbor.Closest->Children.erase(iter);
+  neighbor.Closest = newNode;
+  neighbor.DistanceToClosest = newDistance;
+  newNode->Children.push_back(&neighbor);
+}
+
+template<class R>
+void RapidExpTree<R, false>::getPaths() {
+  for (DistanceHolder<R> &link : this->centralRoot->Links) {
     if (link.Distance > 1e100) {
       ERROR("Fatal error: max distance reached");
       exit(1);
@@ -362,17 +394,68 @@ void RapidExpTree<R>::getPaths() {
   }
 }
 
-template <class R>
-void RapidExpTree<R>::getConnectedTrees() {
-  int maxConn{0};
-  int numRoots{this->problem.HasGoal ? actNumTrees + 1 : actNumTrees};
-  for (int i{0}; i < numRoots + 1; ++i) {   // +1 because it is rather the maximum index
-    int count{this->expandedTrees.GetCountOf(this->treeFrontier[i])};
-    if (count > maxConn) {
-      maxConn = count;
-      this->centralRoot = this->treeFrontier[i];
-      this->connectedTrees = this->expandedTrees.GetAllWithParent(this->treeFrontier[i]);
+template<class R>
+void RapidExpTree<R, true>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) {
+  std::deque<Node<R> *> &children{neighbor.Closest->Children};
+  auto iter{std::find(children.begin(), children.end(), &neighbor)};
+  if (iter == children.end()) {
+    ERROR("Fatal error when rewiring RRT: Node not in children");
+    exit(1);
+  }
+  neighbor.Closest->Children.erase(iter);
+  neighbor.Closest = newNode;
+  neighbor.DistanceToClosest[0] = newDistance;
+  newNode->Children.push_back(&neighbor);
+}
+
+template<class R>
+void RapidExpTree<R, true>::getPaths() {
+  for (DistanceHolder<R> &link : this->centralRoot->Links) {
+    if (link.Distance > 1e100) {
+      ERROR("Fatal error: max distance reached");
+      exit(1);
+    } 
+    std::deque<R> &plan{link.Plan};
+
+    // one tree
+    Node<R> *actual{link.Node1};
+    Node<R> *next;
+    R startingPoint;
+    R finalPoint;
+    std::deque<R> localPath;
+
+    while (!actual->IsRoot()) {
+      next = actual;
+      actual = actual->Closest;
+      
+      startingPoint = actual->Position;
+      finalPoint = next->Position;
+      localPath = startingPoint.SampleDubinsPathTo(finalPoint, this->problem.CollisionDist); 
+      plan.insert(plan.begin(), localPath.begin(), localPath.end());
     }
+
+    // intermediate path
+    startingPoint = link.Node1->Position;
+    finalPoint = link.Node2->Position;
+    localPath = startingPoint.SampleDubinsPathTo(finalPoint, this->problem.CollisionDist);
+    plan.insert(plan.end(), localPath.begin(), localPath.end());
+    plan.emplace_back(finalPoint);
+
+    // second tree
+    actual = link.Node2; 
+    while(!actual->IsRoot()) {
+      next = actual;
+      actual = actual->Closest;
+      
+      startingPoint = actual->Position;
+      finalPoint = next->Position;
+      localPath = startingPoint.SampleDubinsPathTo(finalPoint, this->problem.CollisionDist); 
+      plan.insert(plan.end(), localPath.rbegin(), localPath.rend());  // reverse the path
+    }
+
+    link.UpdateDistance();
+
+    this->neighboringMatrix.AddLink(link, link.Node1->SourceTree->Root->ID, link.Node2->SourceTree->Root->ID, 0, 0);
   }
 }
 

@@ -64,11 +64,11 @@ void SolveProblem(YAML::Node &config, Problem<R> &problem) {
   if (problem.Solver == SFF) {
     solver = std::make_unique<SpaceForest<R>>(problem);
   } else if (problem.Solver == RRT) {
-    //solver = std::make_unique<RapidExpTree<R>>(problem);
+    solver = std::make_unique<RapidExpTree<R>>(problem);
   } else if (problem.Solver == Lazy) {
-    //solver = std::make_unique<LazyTSP<R>>(problem);
+    solver = std::make_unique<LazyTSP<R>>(problem);
   } else if (problem.Solver == PRM) {
-    //solver = std::make_unique<ProbRoadMaps<R>>(problem);
+    solver = std::make_unique<ProbRoadMaps<R>>(problem);
   } else {
     ERROR("Unimplemented problem solver");
   }
@@ -199,11 +199,11 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     if (problem.Dimension == D3Dubins) {
       if (!subNode.IsDefined()) {
         INFO("Pitch range for 3D Dubins problem missing, defaulting to +/- (3.14 / 2) !");
-        problem.MaxPitch = M_PI_2;
+        problem.Env.Limits.maxPitch = M_PI_2;
       } else if (subNode.IsDefined()) {
-        problem.MaxPitch = subNode.as<double>();
+        problem.Env.Limits.maxPitch = subNode.as<double>();
       }
-      Point3DDubins::MaxPitch = problem.MaxPitch;
+      Point3DDubins::MaxPitch = problem.Env.Limits.maxPitch;
     }
     subNode = node["bias"];
     if (subNode.IsDefined()) {
@@ -234,7 +234,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     // parse range
     node = config["range"];
     if (!node.IsDefined()) {
-      throw std::invalid_argument("invalide \"range\" root node");
+      throw std::invalid_argument("invalid \"range\" root node");
     }
     subNode = node["autodetect"];
     problem.AutoRange = (subNode.IsDefined() && subNode.as<bool>());

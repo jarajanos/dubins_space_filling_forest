@@ -12,60 +12,6 @@
 #include "random-generator.h"
 
 /**
- * @brief Private function to check, whether the point lies in the workspace/environment
- * 
- * @param p Point to check
- * @return true Point DOES lie in the workspace
- * @return false Point DOES NOT lie in the workspace
- */
-template<>
-bool RandomGenerator<Point2D>::isInLimits(Point2D& p) {
-  bool valid{true};
-  for (int i{0}; i < 2; ++i) {
-    valid &= p[i] >= limits.mins[i];
-    valid &= p[i] <= limits.maxs[i];
-  }
-
-  return valid;
-}
-
-template<>
-bool RandomGenerator<Point2DDubins>::isInLimits(Point2DDubins& p) {
-  bool valid{true};
-  for (int i{0}; i < 2; ++i) {
-    valid &= p[i] >= limits.mins[i];
-    valid &= p[i] <= limits.maxs[i];
-  }
-
-  return valid;
-}
-
-template<>
-bool RandomGenerator<Point3D>::isInLimits(Point3D& p) {
-  bool valid{true};
-  for (int i{0}; i < 3; ++i) {
-    valid &= p[i] >= limits.mins[i];
-    valid &= p[i] <= limits.maxs[i];
-  }
-
-  return valid;
-}
-
-template<>
-bool RandomGenerator<Point3DDubins>::isInLimits(Point3DDubins& p) {
-  bool valid{true};
-  for (int i{0}; i < 3; ++i) {
-    valid &= p[i] >= limits.mins[i];
-    valid &= p[i] <= limits.maxs[i];
-  }
-
-  valid &= p.GetPitch() >= -maxPitch;
-  valid &= p.GetPitch() <= maxPitch;
-
-  return valid;
-}
-
-/**
  * @brief Random sampling of position, according to https://ri.cmu.edu/pub_files/pub4/kuffner_james_2004_1/kuffner_james_2004_1.pdf 
  * 
  * @return true When the point is valid, i. e. is in limits (does not check nn) 
@@ -76,7 +22,7 @@ bool RandomGenerator<Point2D>::RandomPointInDistance(const Point2D& center, Poin
   double phi{uniDistAngle(rndEng)};
   
   point.SetPosition(center[0] + cos(phi) * distance, center[1] + sin(phi) * distance);
-  return isInLimits(point);
+  return limits.IsInLimits(point);
 }
 
 template<>
@@ -93,7 +39,7 @@ bool RandomGenerator<Point2DDubins>::RandomPointInDistance(const Point2DDubins& 
 
   // get point in exact distance
   point = Point2DDubins(dubPath.getState(distance));
-  return isInLimits(point);
+  return limits.IsInLimits(point);
 }
 
 template<>
@@ -117,7 +63,7 @@ bool RandomGenerator<Point3D>::RandomPointInDistance(const Point3D& center, Poin
   // the distance is not exactly the expected one (might be much greater), therefore a point in the same direction with the correct distance is needed
   point = center.GetStateInDistance(temp, distance);
 
-  return isInLimits(point);
+  return limits.IsInLimits(point);
 }
 
 template<>
@@ -138,7 +84,7 @@ bool RandomGenerator<Point3DDubins>::RandomPointInDistance(const Point3DDubins& 
 
   // get point in exact distance
   point = Point3DDubins(dubPath.getState(distance));
-  return isInLimits(point);
+  return limits.IsInLimits(point);
 }
 
 /**

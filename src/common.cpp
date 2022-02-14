@@ -11,6 +11,53 @@
 
 #include "common.h"
 
+template<>
+bool Range::IsInLimits(Point2D &point) {
+  bool valid{true};
+  for (int i{0}; i < 2; ++i) {
+    valid &= point[i] >= this->mins[i];
+    valid &= point[i] <= this->maxs[i];
+  }
+
+  return valid;
+}
+
+template<>
+bool Range::IsInLimits(Point2DDubins &point) {
+  bool valid{true};
+  for (int i{0}; i < 2; ++i) {
+    valid &= point[i] >= this->mins[i];
+    valid &= point[i] <= this->maxs[i];
+  }
+
+  return valid;
+}
+
+template<>
+bool Range::IsInLimits(Point3D &point) {
+  bool valid{true};
+  for (int i{0}; i < 3; ++i) {
+    valid &= point[i] >= this->mins[i];
+    valid &= point[i] <= this->maxs[i];
+  }
+
+  return valid;
+}
+
+template<>
+bool Range::IsInLimits(Point3DDubins &point) {
+  bool valid{true};
+  for (int i{0}; i < 3; ++i) {
+    valid &= point[i] >= this->mins[i];
+    valid &= point[i] <= this->maxs[i];
+  }
+
+  valid &= point.GetPitch() >= -this->maxPitch;
+  valid &= point.GetPitch() <= this->maxPitch;
+
+  return valid;
+}
+
 void StopWatch::Start() {
   this->startTime = std::chrono::high_resolution_clock::now();
 }

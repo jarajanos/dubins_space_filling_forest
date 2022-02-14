@@ -37,7 +37,6 @@ struct Problem {
   double SamplingDist;
   double CollisionDist;
   double DubinsRadius;
-  double MaxPitch;
   
   int MaxIterations;
   double PriorityBias{0};

@@ -23,11 +23,11 @@
 #include "opendubins/dubins3D.h"
 
 template<class R>
-class Solver {
+class SolverBase {
   public:
-    Solver(Problem<R> &problem);
+    SolverBase(Problem<R> &problem);
 
-    virtual ~Solver() {
+    virtual ~SolverBase() {
     }
 
     virtual void Solve() = 0;
@@ -46,65 +46,82 @@ class Solver {
 
     bool isPathFree(const R start, const R finish);
 
-    void initNeighboringMatrix();
-
     virtual void getPaths() = 0;
     virtual void getConnected();
-    virtual void getAllPaths();
+    virtual void getAllPaths() = 0;
     void checkPlan();
     void checkDistances(std::deque<Node<R> *> &plan, double distanceToCheck);
-    double computeDistance(std::deque<R> &plan);
+    virtual double computeDistance(std::deque<R> &plan) = 0;
 
-    void computeTsp();
+    virtual void computeTsp() = 0;
 
     virtual void checkIterationSaves(const int iter);
-    virtual void saveTrees(const FileStruct file);
     virtual void saveCities(const FileStruct file);
-    virtual void savePaths(const FileStruct file);
-    virtual void saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime);
-    virtual void saveTsp(const FileStruct file);
-    virtual void saveTspPaths(const FileStruct file);
+    virtual void saveTrees(const FileStruct file) = 0;
+    virtual void savePaths(const FileStruct file) = 0;
+    virtual void saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime) = 0;
+    virtual void saveTsp(const FileStruct file) = 0;
+    virtual void saveTspPaths(const FileStruct file) = 0;
 };
 
-template <> void Solver<Point2DDubins>::initNeighboringMatrix();
-template <> void Solver<Point2DDubins>::getAllPaths();
-
-template <> void Solver<Point2DDubins>::computeTsp();
-template <> void Solver<Point2DDubins>::saveTspPaths(const FileStruct file);
-
-template <> double Solver<Point2DDubins>::computeDistance(std::deque<Point2DDubins> &plan);
-
-template <> void Solver<Point2DDubins>::saveTrees(const FileStruct file);
-template <> void Solver<Point2DDubins>::saveTsp(const FileStruct file);
-template <> void Solver<Point2DDubins>::savePaths(const FileStruct file);
-template <> void Solver<Point2DDubins>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime);
-
-template <> void Solver<Point3DDubins>::initNeighboringMatrix();
-template <> void Solver<Point3DDubins>::getAllPaths();
-
-template <> void Solver<Point3DDubins>::computeTsp();
-template <> void Solver<Point3DDubins>::saveTspPaths(const FileStruct file);
-
-template <> double Solver<Point3DDubins>::computeDistance(std::deque<Point3DDubins> &plan);
-
-template <> void Solver<Point3DDubins>::saveTrees(const FileStruct file);
-template <> void Solver<Point3DDubins>::saveTsp(const FileStruct file);
-template <> void Solver<Point3DDubins>::savePaths(const FileStruct file);
-template <> void Solver<Point3DDubins>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime);
+template<class R, bool = isDubins<R>::value>
+class Solver : public SolverBase<R> {
+};
 
 template<class R>
-Solver<R>::Solver(Problem<R> &problem) : problem{problem}, rnd{problem.Env.Limits, problem.MaxPitch} {
-  initNeighboringMatrix();
+class Solver<R, false> : public SolverBase<R> {
+  public:
+    Solver(Problem<R> &problem);
+  
+  protected:
+    void getAllPaths();
+
+    double computeDistance(std::deque<R> &plan);
+    void computeTsp();
+
+    void saveTrees(const FileStruct file);
+    void savePaths(const FileStruct file);
+    void saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime);
+    void saveTsp(const FileStruct file);
+    void saveTspPaths(const FileStruct file);
+};
+
+template<class R>
+class Solver<R, true> : public SolverBase<R> {
+  public:
+    Solver(Problem<R> &problem);
+      
+  protected:
+    void getAllPaths();
+
+    double computeDistance(std::deque<R> &plan);
+    void computeTsp();
+
+    void saveTrees(const FileStruct file);
+    void savePaths(const FileStruct file);
+    void saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime);
+    void saveTsp(const FileStruct file);
+    void saveTspPaths(const FileStruct file);
+};
+
+template<class R>
+SolverBase<R>::SolverBase(Problem<R> &problem) : problem{problem}, rnd{problem.Env.Limits} {
   this->connected = std::vector<bool>((size_t)problem.GetNumRoots(), false);
 }
 
 template<class R>
-void Solver<R>::initNeighboringMatrix() {
+Solver<R, false>::Solver(Problem<R> &problem) : SolverBase<R>(problem) {
   this->neighboringMatrix = DistanceMatrix<DistanceHolder<R>>(problem.GetNumRoots());
 }
 
+template<class R>
+Solver<R, true>::Solver(Problem<R> &problem) : SolverBase<R>(problem) {
+  this->neighboringMatrix = DistanceMatrix<DistanceHolder<R>>(problem.GetNumRoots(), problem.DubinsResolution);
+}
+
+
 template <class R>
-double Solver<R>::computeDistance(std::deque<R> &plan) {
+double Solver<R, false>::computeDistance(std::deque<R> &plan) {
   R previous;
   bool first{true};
   double distance{0};
@@ -122,25 +139,25 @@ double Solver<R>::computeDistance(std::deque<R> &plan) {
 }
 
 template<class R>
-void Solver<R>::getConnected() {
+void SolverBase<R>::getConnected() {
   for (int i{0}; i < connectedTrees.size(); ++i) {
     this->connected[this->connectedTrees[i]->Root->ID] = true;
   }
 }
 
 template<class R>
-void Solver<R>::getAllPaths() {
+void Solver<R, false>::getAllPaths() {
   int numRoots{this->problem.GetNumRoots()};
   for (int k{0}; k < this->connectedTrees.size(); ++k) {
-    int id3{connectedTrees[k]->Root->ID};
+    int id3{this->connectedTrees[k]->Root->ID};
     for (int i{0}; i < this->connectedTrees.size(); ++i) {
-      int id1{connectedTrees[i]->Root->ID};
+      int id1{this->connectedTrees[i]->Root->ID};
       if (i == k || !this->neighboringMatrix.Exists(id1, id3)) {
         continue;
       }
       DistanceHolder<R> &holder1{this->neighboringMatrix(id1, id3)};
       for (int j{0}; j < this->connectedTrees.size(); ++j) {
-        int id2{connectedTrees[j]->Root->ID};
+        int id2{this->connectedTrees[j]->Root->ID};
         if (i == j || !this->neighboringMatrix.Exists(id2, id3)) {
           continue;
         }
@@ -160,7 +177,7 @@ void Solver<R>::getAllPaths() {
         if (holder1.Node1->SourceTree->Root->ID == id1) {
           node1 = holder1.Node1;
         } else {
-          if (problem.Dimension == D2Dubins) {
+          if (this->problem.Dimension == D2Dubins) {
             ERROR("Error in neighboring matrix: DistanceHolder's plan can't be reversed in Dubins scenario - problem is not symmetric!");
           }
           node1 = holder1.Node2;
@@ -172,7 +189,7 @@ void Solver<R>::getAllPaths() {
         if (holder2.Node1->SourceTree->Root->ID == id2) {
           node2 = holder2.Node1;
         } else {
-          if (problem.Dimension == D2Dubins) {
+          if (this->problem.Dimension == D2Dubins) {
             ERROR("Error in neighboring matrix: DistanceHolder's plan can't be reversed in Dubins scenario - problem is not symmetric!");
           }
           node2 = holder2.Node2;
@@ -208,21 +225,122 @@ void Solver<R>::getAllPaths() {
 }
 
 template<class R>
-void Solver<R>::computeTsp() {
+void Solver<R, true>::getAllPaths() {
+  int numRoots{this->problem.GetNumRoots()};
+  int numAngles{this->problem.DubinsResolution};
+  for (int k{0}; k < this->connectedTrees.size(); ++k) {
+    int id3{this->connectedTrees[k]->Root->ID};
+    for (int angle3{0}; angle3 < numAngles; ++angle3) {
+      for (int i{0}; i < this->connectedTrees.size(); ++i) {
+        int id1{this->connectedTrees[i]->Root->ID};
+        if (i == k) {
+          continue;
+        }
+
+        for (int angle1{0}; angle1 < numAngles; ++angle1) {
+          if (!this->neighboringMatrix.Exists(id1, id3, angle1, angle3)) {
+            continue;
+          }
+
+          DistanceHolder<R> &holder1{this->neighboringMatrix(id1, id3, angle1, angle3)};
+          for (int j{0}; j < this->connectedTrees.size(); ++j) {
+            int id2{this->connectedTrees[j]->Root->ID};
+            if (i == j) {
+              continue;
+            }
+            for (int angle2{0}; angle2 < numAngles; ++angle2) {
+              if (!this->neighboringMatrix.Exists(id3, id2, angle3, angle2)) {
+                continue;
+              }
+
+              DistanceHolder<R> &holder2{this->neighboringMatrix(id3, id2, angle3, angle2)};
+
+              Node<R> *node1;
+              Node<R> *node2;
+              std::deque<R> plan1;
+              std::deque<R> plan2;
+              std::deque<R> finalPlan;
+
+              bool reversed1{false};
+              bool reversed2{false};
+              plan1 = holder1.Plan;
+              if (holder1.Node1->SourceTree->Root->ID == id1) {
+                node1 = holder1.Node1;
+              } else {
+                node1 = holder1.Node2;
+                std::reverse(plan1.begin(), plan1.end());
+                reversed1 = true;
+              }
+
+              plan2 = holder2.Plan;
+              if (holder2.Node2->SourceTree->Root->ID == id2) {
+                node2 = holder2.Node2;
+              } else {
+                node2 = holder2.Node1;
+                std::reverse(plan2.begin(), plan2.end());
+                reversed2 = true;
+              }
+
+              R last{plan1.back()};   // root of id3
+              plan1.pop_back();
+              plan2.pop_front();
+              while (!plan1.empty() && !plan2.empty() && plan1.back() == plan2.front().GetInvertedPoint()) {
+                last = plan1.back();
+                plan1.pop_back();
+                plan2.pop_front();
+              }
+
+              if (!this->isPathFree(last, plan2.front())) {
+                continue; // path is blocked, shortcut not possible TODO: let it sink and think ? maybe ?
+              }
+
+              while (plan1.size() > 0) {
+                finalPlan.push_back(plan1.front());
+                plan1.pop_front();
+              }
+              finalPlan.push_back(last);
+              while (plan2.size() > 0) {
+                finalPlan.push_back(plan2.front());
+                plan2.pop_front();
+              }
+
+              double distance{computeDistance(finalPlan)};
+              if (!this->neighboringMatrix.Exists(id1, id2, angle1, angle2)) {
+                DistanceHolder<R> newLink{node1, node2, distance, finalPlan};
+                this->neighboringMatrix.AddLink(newLink, id1, id2, angle1, angle2, true);
+              } else {
+                DistanceHolder<R> &link{this->neighboringMatrix(id1, id2, angle1, angle2)};
+                if (distance < link.Distance - SFF_TOLERANCE) {
+                  link.Node1 = node1;
+                  link.Node2 = node2;
+                  link.Distance = distance;
+                  link.Plan = finalPlan;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+template<class R>
+void Solver<R, false>::computeTsp() {
   INFO("Computing TSP");
   TSPMatrix<R> tsp{this->problem, this->neighboringMatrix};
 
   // already TSP, run desired solver
   if (this->problem.TspType == Concorde) {
-    tspSolution = tsp.SolveByConcorde();
+    this->tspSolution = tsp.SolveByConcorde();
   } else if (this->problem.TspType == LKH) {
-    tspSolution = tsp.SolveByLKH();
+    this->tspSolution = tsp.SolveByLKH();
   } else {
     ERROR("TSP solver not implemented");
     exit(1);
   }
 
-  if (tspSolution.size() == 0) {
+  if (this->tspSolution.size() == 0) {
     WARN("TSP not solved");
     if (SaveTSPPaths <= this->problem.SaveOpt) {
       this->problem.SaveOpt = this->problem.SaveOpt - SaveTSPPaths;
@@ -230,8 +348,41 @@ void Solver<R>::computeTsp() {
   }
 }
 
+template <class R> 
+void Solver<R, true>::computeTsp() {
+  INFO("Computing TSP");
+  TSPMatrix<R> gatsp{this->problem, this->neighboringMatrix};
+  TSPMatrix<R> atsp{gatsp.TransformGATSPtoATSP()};
+
+  // converted to ATSP, run desired solver
+  TSPOrder tempSol;
+  if (this->problem.TspType == Concorde) {
+    tempSol = atsp.SolveByConcorde();
+  } else if (this->problem.TspType == LKH) {
+    tempSol = atsp.SolveByLKH();
+  } else {
+    ERROR("TSP solver not implemented");
+    exit(1);
+  }
+
+  if (tempSol.size() == 0) {
+    WARN("TSP not solved");
+    if (SaveTSPPaths <= this->problem.SaveOpt) {
+      this->problem.SaveOpt = this->problem.SaveOpt - SaveTSPPaths;
+    }
+  }
+
+  this->gatspSolution = atsp.TransformATSPSolToGATSP(tempSol);
+
+  // convert also to tsp solution
+  for (auto &pair : this->gatspSolution) {
+    auto [ nodeId, angleId ] = pair;
+    this->tspSolution.push_back(nodeId);
+  }
+}
+
 template<class R>
-void Solver<R>::checkIterationSaves(const int iter) {
+void SolverBase<R>::checkIterationSaves(const int iter) {
   if (this->problem.SaveFreq[SaveGoals] != 0 && iter % this->problem.SaveFreq[SaveGoals] == 0) {
     std::string prefix{"iter_" + std::to_string(iter) + "_"};
     this->saveCities(PrefixFileName(this->problem.FileNames[SaveGoals], prefix));
@@ -259,7 +410,7 @@ void Solver<R>::checkIterationSaves(const int iter) {
 }
 
 template<class R>
-void Solver<R>::saveCities(const FileStruct file) {
+void SolverBase<R>::saveCities(const FileStruct file) {
   INFO("Saving points");
   std::ofstream fileStream{file.fileName.c_str()};
   if (!fileStream.good()) {
@@ -274,12 +425,12 @@ void Solver<R>::saveCities(const FileStruct file) {
     if (file.type == Obj) {
       fileStream << "o Points\n";;
       for (Node<R>* &node : this->allNodes){
-        fileStream << "v" << DELIMITER_OUT << node->Position / problem.Env.ScaleFactor << "\n";
+        fileStream << "v" << DELIMITER_OUT << node->Position / this->problem.Env.ScaleFactor << "\n";
       }
     } else if (file.type == Map) {
-      fileStream << "#Cities" << DELIMITER_OUT << problem.Dimension << "\n";
+      fileStream << "#Cities" << DELIMITER_OUT << this->problem.Dimension << "\n";
       for(Node<R>* &node : this->allNodes) {
-        fileStream << node->Position / problem.Env.ScaleFactor << "\n";
+        fileStream << node->Position / this->problem.Env.ScaleFactor << "\n";
       }
     } else {
       throw std::string("Unimplemented file type!");
@@ -295,7 +446,7 @@ void Solver<R>::saveCities(const FileStruct file) {
 }
 
 template<class R>
-void Solver<R>::saveTrees(const FileStruct file) {
+void Solver<R, false>::saveTrees(const FileStruct file) {
   INFO("Saving trees");
   std::ofstream fileStream{file.fileName.c_str()};
   if (!fileStream.good()) {
@@ -310,7 +461,7 @@ void Solver<R>::saveTrees(const FileStruct file) {
     if (file.type == Obj) {
       fileStream << "o Trees\n";
       for (int i{0}; i < this->allNodes.size(); ++i) {
-        R temp{this->allNodes[i]->Position / problem.Env.ScaleFactor};
+        R temp{this->allNodes[i]->Position / this->problem.Env.ScaleFactor};
         fileStream << "v" << DELIMITER_OUT;
         temp.PrintPosition(fileStream);
         fileStream << "\n";
@@ -324,11 +475,11 @@ void Solver<R>::saveTrees(const FileStruct file) {
         }
       }
     } else if (file.type == Map) {
-      fileStream << "#Trees" << DELIMITER_OUT << problem.Dimension << "\n";
+      fileStream << "#Trees" << DELIMITER_OUT << this->problem.Dimension << "\n";
       for (int i{0}; i < this->trees.size(); ++i) {
         for (Node<R> &node : this->trees[i].Leaves) {
           if (!node.IsRoot()) {
-            fileStream << node.Position / problem.Env.ScaleFactor << DELIMITER_OUT << node.Closest->Position / problem.Env.ScaleFactor << DELIMITER_OUT << node.SourceTree->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
+            fileStream << node.Position / this->problem.Env.ScaleFactor << DELIMITER_OUT << node.Closest->Position / this->problem.Env.ScaleFactor << DELIMITER_OUT << node.SourceTree->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
           }
         }
       }
@@ -346,7 +497,116 @@ void Solver<R>::saveTrees(const FileStruct file) {
 }
 
 template<class R>
-void Solver<R>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime) {
+void Solver<R, true>::saveTrees(const FileStruct file) {
+  INFO("Saving trees");
+  std::ofstream fileStream{file.fileName.c_str()};
+  if (!fileStream.good()) {
+    std::stringstream message;
+    message << "Cannot create file at: " << file.fileName;
+
+    WARN(message.str());
+    return;
+  }
+
+  if (fileStream.is_open()) {
+    if (file.type == Obj) {
+      unsigned vertexInd{1};
+      std::deque<std::tuple<unsigned,unsigned>> vertexRanges;
+      fileStream << "o Trees\n";
+      for (int i{0}; i < this->allNodes.size(); ++i) {
+        Node<R> &node{*this->allNodes[i]};
+        if (node.IsRoot()) {
+          continue;
+        }
+        
+        if (!node.Closest->IsRoot()) {
+          unsigned startingInd{vertexInd};
+          R actPoint{node.Position};
+          R closestPoint{node.Closest->Position};
+          auto path{closestPoint.SampleDubinsPathTo(actPoint, this->problem.CollisionDist)};
+
+          for (auto &point : path) {
+            fileStream << "v" << DELIMITER_OUT;
+            R temp{point / this->problem.Env.ScaleFactor}; 
+            temp.PrintPosition(fileStream);
+            fileStream << "\n";
+          }
+
+          vertexInd += path.size();
+
+          vertexRanges.push_back(std::tuple<unsigned, unsigned>(startingInd, vertexInd - 1));
+        } else {
+          for (auto &angle : node.GetExpandedAngles()) {
+            unsigned startingInd{vertexInd};
+            R actPoint{node.Position};
+            R closestPoint{node.Closest->Position};
+            closestPoint.SetHeading(angle, this->problem.DubinsResolution);
+
+            auto path{closestPoint.SampleDubinsPathTo(actPoint, this->problem.CollisionDist)};
+            for (auto &point : path) {
+              fileStream << "v" << DELIMITER_OUT;
+              R temp{point / this->problem.Env.ScaleFactor}; 
+              temp.PrintPosition(fileStream);
+              fileStream << "\n";
+            }
+
+            vertexInd += path.size();
+
+            vertexRanges.push_back(std::tuple<unsigned, unsigned>(startingInd, vertexInd - 1));
+          }
+        }
+      }
+
+      for (auto &pair : vertexRanges) {
+        auto [ from, to ] = pair;
+        for (unsigned i{from}; i < to; ++i) {
+          fileStream << "l" << DELIMITER_OUT << i << DELIMITER_OUT << i + 1 << '\n';
+        }
+      }
+    } else if (file.type == Map) {
+      fileStream << "#Trees" << DELIMITER_OUT << this->problem.Dimension << "\n";
+      for (int i{0}; i < this->allNodes.size(); ++i) {
+        Node<R> &node{*this->allNodes[i]};
+        if (node.IsRoot()) {
+          continue;
+        }
+            
+        if (!node.Closest->IsRoot()) {
+          R actPoint{node.Position};
+          R closestPoint{node.Closest->Position};
+          auto path{closestPoint.SampleDubinsPathTo(actPoint, this->problem.CollisionDist)};
+
+          for (int j{0}; j < path.size() - 1; ++j) {
+            fileStream << path[j] / this->problem.Env.ScaleFactor << DELIMITER_OUT << path[j + 1] / this->problem.Env.ScaleFactor << DELIMITER_OUT << node.SourceTree->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
+          }
+        } else {
+          for (auto &angle : node.GetExpandedAngles()) {
+            R actPoint{node.Position};
+            R closestPoint{node.Closest->Position};
+            closestPoint.SetHeading(angle, this->problem.DubinsResolution);
+
+            auto path{closestPoint.SampleDubinsPathTo(actPoint, this->problem.CollisionDist)};
+            for (int j{0}; j < path.size() - 1; ++j) {
+              fileStream << path[j] / this->problem.Env.ScaleFactor << DELIMITER_OUT << path[j + 1] / this->problem.Env.ScaleFactor << DELIMITER_OUT << node.SourceTree->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
+            }
+          }
+        }
+      }
+    } else {
+      throw std::string("Unimplemented file type");
+    }
+
+    fileStream.flush();
+    fileStream.close();
+  } else {
+    std::stringstream message;
+    message << "Cannot open file at: " << file.fileName;
+    WARN(message.str());
+  }
+}
+
+template<class R>
+void Solver<R, false>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime) {
   INFO("Saving parameters");
   std::ofstream fileStream{file.fileName.c_str(), std::ios_base::openmode::_S_app};
   if (!fileStream.good()) {
@@ -381,11 +641,11 @@ void Solver<R>::saveParams(const FileStruct file, const int iterations, const bo
     int numRoots{this->problem.GetNumRoots()};
     for (int i{0}; i < numRoots; ++i) {
       for (int j{0}; j < i; ++j) {
-        double dist{neighboringMatrix(i,j).Distance};
+        double dist{this->neighboringMatrix(i,j).Distance};
         if (dist == std::numeric_limits<double>::max()) {
           fileStream << CSV_NO_PATH;
         } else {
-          fileStream << dist / problem.Env.ScaleFactor;
+          fileStream << dist / this->problem.Env.ScaleFactor;
         }
         if (i + 1 != numRoots || j + 1 != i) {
           fileStream << CSV_DELIMITER_2;
@@ -404,8 +664,73 @@ void Solver<R>::saveParams(const FileStruct file, const int iterations, const bo
   }
 }
 
+template<class R>
+void Solver<R, true>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime) {
+  INFO("Saving parameters");
+  std::ofstream fileStream{file.fileName.c_str(), std::ios_base::openmode::_S_app};
+  if (!fileStream.good()) {
+    std::stringstream message;
+    message << "Cannot create file at: " << file.fileName;
+
+    WARN(message.str());
+    return;
+  }
+
+  if (fileStream.is_open()) {
+    fileStream << this->problem.ID << CSV_DELIMITER;
+    fileStream << this->problem.Repetition << CSV_DELIMITER;
+    fileStream << iterations << CSV_DELIMITER;
+    fileStream << (solved ? "solved" : "unsolved") << CSV_DELIMITER;
+  
+    fileStream << "[";
+    bool first{true};
+    for (int i{0}; i < this->connected.size(); ++i) {
+        if (!first) {
+          fileStream << CSV_DELIMITER_2;
+        }
+        
+        if (this->connected[i]) {
+            fileStream << i + 1;
+            first = false;
+        }
+    }
+    fileStream << "]" << CSV_DELIMITER << "[";
+  
+    // do not print distance matrix as for non-dubins case -- would be too big (except single-goal)
+    if (this->problem.HasGoal) {
+      double dist;
+      bool exists{false};
+      if (this->neighboringMatrix.Exists(0, 1, 0, 0)) {
+        dist = this->neighboringMatrix(0, 1, 0, 0).Distance;
+        exists = true;
+      } else if (this->neighboringMatrix.Exists(1, 0, 0, 0)) {
+        dist = this->neighboringMatrix(1, 0, 0, 0).Distance;
+        exists = true;
+      }
+
+      if (exists && dist != std::numeric_limits<double>::max()) {
+        fileStream << dist / this->problem.Env.ScaleFactor;
+      } else {
+        fileStream << CSV_NO_PATH;
+      }
+    } else {
+      fileStream << CSV_NO_PATH;
+    }
+
+    fileStream << "]" << CSV_DELIMITER;
+    fileStream << elapsedTime.count() << "\n";
+
+    fileStream.flush();
+    fileStream.close();
+  } else {
+    std::stringstream message;
+    message << "Cannot open file at: " << file.fileName;
+    WARN(message.str());
+  }
+}
+
 template <class R>
-void Solver<R>::saveTsp(const FileStruct file) {
+void Solver<R, false>::saveTsp(const FileStruct file) {
   INFO("Saving TSP file");
   std::ofstream fileStream{file.fileName.c_str()};
   if (!fileStream.good()) {
@@ -417,7 +742,7 @@ void Solver<R>::saveTsp(const FileStruct file) {
   }
 
   if (fileStream.is_open()) {
-    double resolution{TSP_MAX * problem.Env.ScaleFactor / neighboringMatrix.GetMaximum() / 2};
+    double resolution{TSP_MAX * this->problem.Env.ScaleFactor / this->neighboringMatrix.GetMaximum() / 2};
 
     fileStream << "NAME: " << this->problem.ID << "\n";
     fileStream << "COMMENT: ";
@@ -427,32 +752,32 @@ void Solver<R>::saveTsp(const FileStruct file) {
         fileStream << TSP_DELIMITER;
       }
 
-      if (connected[i]) {
+      if (this->connected[i]) {
         fileStream << i;
         first = false;
       }
     }
     fileStream << ", resolution: " << resolution << "\n";
     fileStream << "TYPE: TSP\n";
-    fileStream << "DIMENSION: " << connected.size() << "\n";
+    fileStream << "DIMENSION: " << this->connected.size() << "\n";
     fileStream << "EDGE_WEIGHT_TYPE : EXPLICIT\n";
     fileStream << "EDGE_WEIGHT_FORMAT : LOWER_DIAG_ROW\n";
 
     fileStream << "EDGE_WEIGHT_SECTION\n";
     int numRoots{(int)this->connected.size()};
     for (int i{0}; i < numRoots; ++i) {
-      if (!connected[i]) {
+      if (!this->connected[i]) {
         continue;
       }
 
       for (int j{0}; j < i; ++j) {
-        if (!connected[j]) {
+        if (!this->connected[j]) {
           continue;
         }
         
         double dist{this->neighboringMatrix(i, j).Distance}; 
         if (dist != std::numeric_limits<double>::max()) {
-          fileStream << (int)(dist / problem.Env.ScaleFactor * resolution) << TSP_DELIMITER;        
+          fileStream << (int)(dist / this->problem.Env.ScaleFactor * resolution) << TSP_DELIMITER;        
         } else {
           fileStream << TSP_MAX << TSP_DELIMITER;
         }
@@ -469,8 +794,13 @@ void Solver<R>::saveTsp(const FileStruct file) {
   }
 }
 
+template <class R>
+void Solver<R, true>::saveTsp(const FileStruct file) {
+  ERROR("Saving DTSP file is not supported");
+}
+
 template<class R>
-void Solver<R>::savePaths(const FileStruct file) {
+void Solver<R, false>::savePaths(const FileStruct file) {
   INFO("Saving paths");
   std::ofstream fileStream{file.fileName.c_str()};
   if (!fileStream.good()) {
@@ -494,7 +824,7 @@ void Solver<R>::savePaths(const FileStruct file) {
 
           std::deque<R> &plan{holder.Plan};
           for (int k{0}; k < plan.size(); ++k) {
-            R temp{plan[k] / problem.Env.ScaleFactor};
+            R temp{plan[k] / this->problem.Env.ScaleFactor};
             fileStream << "v" << DELIMITER_OUT;
             temp.PrintPosition(fileStream);
             fileStream << "\n";
@@ -518,7 +848,7 @@ void Solver<R>::savePaths(const FileStruct file) {
         }
       }
     } else if (file.type == Map) {
-      fileStream << "#Paths" << DELIMITER_OUT << problem.Dimension << "\n";
+      fileStream << "#Paths" << DELIMITER_OUT << this->problem.Dimension << "\n";
       for (int i{0}; i < numRoots; ++i) {
         for (int j{i + 1}; j < numRoots; ++j) {
           DistanceHolder<R> &holder{this->neighboringMatrix(i, j)};
@@ -528,7 +858,7 @@ void Solver<R>::savePaths(const FileStruct file) {
 
           std::deque<R> &plan{holder.Plan};
           for (int k{0}; k < plan.size() - 1; ++k) {
-            fileStream << plan[k] / problem.Env.ScaleFactor << DELIMITER_OUT << plan[k+1] / problem.Env.ScaleFactor << "\n";
+            fileStream << plan[k] / this->problem.Env.ScaleFactor << DELIMITER_OUT << plan[k+1] / this->problem.Env.ScaleFactor << "\n";
           }
           fileStream << "\n";
         }
@@ -547,7 +877,91 @@ void Solver<R>::savePaths(const FileStruct file) {
 }
 
 template<class R>
-void Solver<R>::saveTspPaths(const FileStruct file) {
+void Solver<R, true>::savePaths(const FileStruct file) {
+  INFO("Saving paths");
+  std::ofstream fileStream{file.fileName.c_str()};
+  if (!fileStream.good()) {
+    std::stringstream message;
+    message << "Cannot create file at: " << file.fileName;
+
+    WARN(message.str());
+    return;
+  }
+
+  if (fileStream.is_open()) {
+    int numRoots{this->problem.GetNumRoots()};
+    int numAngles{this->problem.DubinsResolution};
+    if (file.type == Obj) {
+      unsigned vertexInd{1};
+      std::deque<std::tuple<unsigned,unsigned>> vertexRanges;
+      fileStream << "o Paths\n";
+      for (int i{0}; i < numRoots; ++i) {
+        for (int j{0}; j < numRoots; ++j) {
+          for (int k{0}; k < numAngles; ++k) {
+            for (int l{0}; l < numAngles; ++l) {
+              if (!this->neighboringMatrix.Exists(i, j, k, l)) {
+                continue;  
+              }
+              DistanceHolder<R> &holder{this->neighboringMatrix(i, j, k, l)};
+              std::deque<R> &plan{holder.Plan};
+              unsigned startingInd{vertexInd};
+              for (int m{0}; m < plan.size(); ++m) {
+                R actPoint{plan[m]};
+
+                fileStream << "v" << DELIMITER_OUT;
+                R temp{actPoint / this->problem.Env.ScaleFactor}; 
+                temp.PrintPosition(fileStream);
+                fileStream << "\n";
+              }
+              vertexInd += plan.size();
+              vertexRanges.push_back(std::tuple<unsigned, unsigned>(startingInd, vertexInd - 1));
+            }
+          }
+        }
+      }
+
+      for (auto &pair : vertexRanges) {
+        auto [ from, to ] = pair;
+        for (unsigned i{from}; i < to; ++i) {
+          fileStream << "l" << DELIMITER_OUT << i << DELIMITER_OUT << i + 1 << '\n';
+        }
+      }
+    } else if (file.type == Map) {
+      fileStream << "#Paths" << DELIMITER_OUT << this->problem.Dimension << "\n";
+      for (int i{0}; i < numRoots; ++i) {
+        for (int j{0}; j < numRoots; ++j) {
+          for (int k{0}; k < numAngles; ++k) {
+            for (int l{0}; l < numAngles; ++l) {
+              if (!this->neighboringMatrix.Exists(i, j, k, l)) {
+                continue;  
+              }
+              DistanceHolder<R> &holder{this->neighboringMatrix(i, j, k, l)};
+              std::deque<R> &plan{holder.Plan};
+              for (int m{0}; m < plan.size() - 1; ++m) {
+                R actPoint{plan[m]};
+                R lastPoint{plan[m + 1]};
+
+                fileStream << actPoint / this->problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / this->problem.Env.ScaleFactor << "\n";   
+              } 
+            }
+          }
+        }
+      }
+    } else {
+      throw std::string("Unimplemented file type");
+    }
+
+    fileStream.flush();
+    fileStream.close();
+  } else {
+    std::stringstream message;
+    message << "Cannot open file at: " << file.fileName;
+    WARN(message.str());
+  }  
+}
+
+template<class R>
+void Solver<R, false>::saveTspPaths(const FileStruct file) {
   INFO("Saving TSP paths");
   std::ofstream fileStream{file.fileName.c_str()};
   if (!fileStream.good()) {
@@ -563,8 +977,8 @@ void Solver<R>::saveTspPaths(const FileStruct file) {
     if (file.type == Obj) {
       fileStream << "o TspPaths\n";
       for (int i{0}; i < numRoots; ++i) {
-        int actNode{tspSolution[i]};
-        int nextNode{tspSolution[(i + 1) % numRoots]};
+        int actNode{this->tspSolution[i]};
+        int nextNode{this->tspSolution[(i + 1) % numRoots]};
         DistanceHolder<R> &holder{this->neighboringMatrix(actNode, nextNode)};
         
         if (holder.Node1 == NULL) {
@@ -574,7 +988,7 @@ void Solver<R>::saveTspPaths(const FileStruct file) {
 
         std::deque<R> &plan{holder.Plan};
         for (int k{0}; k < plan.size(); ++k) {
-          R temp{plan[k] / problem.Env.ScaleFactor};
+          R temp{plan[k] / this->problem.Env.ScaleFactor};
           fileStream << "v" << DELIMITER_OUT;
           temp.PrintPosition(fileStream);
           fileStream << "\n";
@@ -583,8 +997,8 @@ void Solver<R>::saveTspPaths(const FileStruct file) {
       
       uint32_t pointCounter{1};
       for (int i{0}; i < numRoots; ++i) {
-        int actNode{tspSolution[i]};
-        int nextNode{tspSolution[(i + 1) % numRoots]};
+        int actNode{this->tspSolution[i]};
+        int nextNode{this->tspSolution[(i + 1) % numRoots]};
         DistanceHolder<R> &holder{this->neighboringMatrix(actNode, nextNode)};
 
         if (holder.Node1 == NULL) {
@@ -599,10 +1013,10 @@ void Solver<R>::saveTspPaths(const FileStruct file) {
         ++pointCounter;
       }
     } else if (file.type == Map) {
-      fileStream << "#TspPaths" << DELIMITER_OUT << problem.Dimension << "\n";;
+      fileStream << "#TspPaths" << DELIMITER_OUT << this->problem.Dimension << "\n";;
       for (int i{0}; i < numRoots; ++i) {
-        int actNode{tspSolution[i]};
-        int nextNode{tspSolution[(i + 1) % numRoots]};
+        int actNode{this->tspSolution[i]};
+        int nextNode{this->tspSolution[(i + 1) % numRoots]};
         DistanceHolder<R> &holder{this->neighboringMatrix(actNode, nextNode)};
 
         if (holder.Node1 == NULL) {
@@ -612,7 +1026,7 @@ void Solver<R>::saveTspPaths(const FileStruct file) {
 
         std::deque<R> &plan{holder.Plan};
         for (int k{0}; k < plan.size() - 1; ++k) {
-          fileStream << plan[k] / problem.Env.ScaleFactor << DELIMITER_OUT << plan[k+1] / problem.Env.ScaleFactor << "\n";
+          fileStream << plan[k] / this->problem.Env.ScaleFactor << DELIMITER_OUT << plan[k+1] / this->problem.Env.ScaleFactor << "\n";
         }
         fileStream << "\n";
       }
@@ -629,8 +1043,89 @@ void Solver<R>::saveTspPaths(const FileStruct file) {
   }  
 }
 
+template <class R> 
+void Solver<R, true>::saveTspPaths(const FileStruct file) {
+  INFO("Saving TSP paths");
+  std::ofstream fileStream{file.fileName.c_str()};
+  if (!fileStream.good()) {
+    std::stringstream message;
+    message << "Cannot create file at: " << file.fileName;
+
+    WARN(message.str());
+    return;
+  }
+
+  if (fileStream.is_open()) {
+    int numRoots{this->problem.GetNumRoots()};
+    int numAngles{this->problem.DubinsResolution};
+    if (file.type == Obj) {
+      unsigned vertexInd{1};
+      std::deque<std::tuple<unsigned,unsigned>> vertexRanges;
+      fileStream << "o TspPaths\n";
+      for (int i{0}; i < numRoots; ++i) {
+        auto [ actNode, actAngle ] = this->gatspSolution[i];
+        auto [ nextNode, nextAngle ] = this->gatspSolution[(i + 1) % numRoots];
+        if (!this->neighboringMatrix.Exists(actNode, nextNode, actAngle, nextAngle)) {
+          ERROR("Invalid TSP solution");
+          exit(1);
+        }
+
+        DistanceHolder<R> &holder{this->neighboringMatrix(actNode, nextNode, actAngle, nextAngle)};
+        std::deque<R> &plan{holder.Plan};
+        unsigned startingInd{vertexInd};
+        for (int m{0}; m < plan.size(); ++m) {
+          R actPoint{plan[m]};
+
+          fileStream << "v" << DELIMITER_OUT;
+          R temp{actPoint / this->problem.Env.ScaleFactor}; 
+          temp.PrintPosition(fileStream);
+          fileStream << "\n";
+        }
+        vertexInd += plan.size();
+        vertexRanges.push_back(std::tuple<unsigned, unsigned>(startingInd, vertexInd - 1));    
+      }
+      
+      for (auto &pair : vertexRanges) {
+        auto [ from, to ] = pair;
+        for (unsigned i{from}; i < to; ++i) {
+          fileStream << "l" << DELIMITER_OUT << i << DELIMITER_OUT << i + 1 << '\n';
+        }
+      }
+    } else if (file.type == Map) {
+      fileStream << "#TspPaths" << DELIMITER_OUT << this->problem.Dimension << "\n";
+      for (int i{0}; i < numRoots; ++i) {
+        auto [ actNode, actAngle ] = this->gatspSolution[i];
+        auto [ nextNode, nextAngle ] = this->gatspSolution[(i + 1) % numRoots];
+        if (!this->neighboringMatrix.Exists(actNode, nextNode, actAngle, nextAngle)) {
+          ERROR("Invalid TSP solution");
+          exit(1);
+        }
+
+        DistanceHolder<R> &holder{this->neighboringMatrix(actNode, nextNode, actAngle, nextAngle)};
+        std::deque<R> &plan{holder.Plan};
+        for (int m{0}; m < plan.size() - 1; ++m) {
+          R actPoint{plan[m]};
+          R lastPoint{plan[m + 1]};
+
+          fileStream << actPoint / this->problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / this->problem.Env.ScaleFactor << "\n";
+          lastPoint = actPoint;
+        }  
+      }
+    } else {
+      throw std::string("Unimplemented file type");
+    }
+
+    fileStream.flush();
+    fileStream.close();
+  } else {
+    std::stringstream message;
+    message << "Cannot open file at: " << file.fileName;
+    WARN(message.str());
+  }  
+}
+
 template <class R>
-void Solver<R>::checkDistances(std::deque<Node<R> *> &plan, double distanceToCheck) {
+void SolverBase<R>::checkDistances(std::deque<Node<R> *> &plan, double distanceToCheck) {
   Node<R> *previous{nullptr};
   double distance{0};
   for (Node<R> *node : plan) {

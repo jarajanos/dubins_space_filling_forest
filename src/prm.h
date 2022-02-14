@@ -17,28 +17,46 @@
 #include "opendubins/dubins3D.h"
 #include "solver.h"
 
-template <class R> class ProbRoadMaps : public Solver<R> {
+template <class R> 
+class ProbRoadMapsBase : public Solver<R> {
 public:
-  ProbRoadMaps(Problem<R> &problem);
+  ProbRoadMapsBase(Problem<R> &problem);
 
   void Solve() override;
 
-private:
+protected:
   std::deque<PrmNode<R>> allPoints;
-
   FlannHolder<Node<R>> flannIndex;
 
-  void getPaths() override;
-  void getConnected() override;
-  void saveTrees(const FileStruct file) override;
+  virtual void getPaths() = 0;
+  virtual void getConnected() = 0;
+  virtual void saveTrees(const FileStruct file) = 0;
 };
 
-template <> void ProbRoadMaps<Point2DDubins>::getPaths();
-template <> void ProbRoadMaps<Point2DDubins>::getConnected();
-template <> void ProbRoadMaps<Point2DDubins>::saveTrees(const FileStruct file);
+template <class R, bool = isDubins<R>::value>
+class ProbRoadMaps : public ProbRoadMapsBase<R> {
+};
+
+template<class R>
+class ProbRoadMaps<R, false> : public ProbRoadMapsBase<R> {
+  using ProbRoadMapsBase<R>::ProbRoadMapsBase;
+  protected:
+    void getPaths() override;
+    void getConnected() override;
+    void saveTrees(const FileStruct file) override;
+};
+
+template<class R>
+class ProbRoadMaps<R, true> : public ProbRoadMapsBase<R> {
+  using ProbRoadMapsBase<R>::ProbRoadMapsBase;
+  protected:
+    void getPaths() override;
+    void getConnected() override;
+    void saveTrees(const FileStruct file) override;
+};
 
 template <class R>
-ProbRoadMaps<R>::ProbRoadMaps(Problem<R> &problem) : Solver<R>(problem) {
+ProbRoadMapsBase<R>::ProbRoadMapsBase(Problem<R> &problem) : Solver<R>(problem) {
   for (int j{0}; j < this->problem.Roots.size(); ++j) {
     PrmNode<R> &node{
         allPoints.emplace_back(this->problem.Roots[j], nullptr, nullptr, 0)};
@@ -52,7 +70,7 @@ ProbRoadMaps<R>::ProbRoadMaps(Problem<R> &problem) : Solver<R>(problem) {
   }
 }
 
-template <class R> void ProbRoadMaps<R>::Solve() {
+template <class R> void ProbRoadMapsBase<R>::Solve() {
   StopWatch sw;
 
   if (SaveGoals <= this->problem.SaveOpt) {
@@ -156,14 +174,15 @@ template <class R> void ProbRoadMaps<R>::Solve() {
   }
 }
 
-template <class R> void ProbRoadMaps<R>::getPaths() {
+template <class R> 
+void ProbRoadMaps<R, false>::getPaths() {
   for (int i{1}; i < this->problem.GetNumRoots(); ++i) {
     Dijkstra<R> dijkstra;
     std::vector<int> goals;
     for (int j{0}; j < i; ++j) {
       goals.push_back(j);
     }
-    std::deque<DistanceHolder<R>> plans{dijkstra.findPath(i, goals, allPoints)};
+    std::deque<DistanceHolder<R>> plans{dijkstra.findPath(i, goals, this->allPoints)};
     for (auto &holder : plans) {
       if (!holder.Exists()) {
         continue;
@@ -175,7 +194,8 @@ template <class R> void ProbRoadMaps<R>::getPaths() {
   }
 }
 
-template <class R> void ProbRoadMaps<R>::getConnected() {
+template <class R> 
+void ProbRoadMaps<R, false>::getConnected() {
   for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
     for (int j{i}; j < this->problem.GetNumRoots(); ++j) {
       if (!this->neighboringMatrix.Exists(i, j) ||
@@ -195,7 +215,8 @@ template <class R> void ProbRoadMaps<R>::getConnected() {
   }
 }
 
-template <class R> void ProbRoadMaps<R>::saveTrees(const FileStruct file) {
+template <class R> 
+void ProbRoadMaps<R, false>::saveTrees(const FileStruct file) {
   INFO("Saving trees");
   std::ofstream fileStream{file.fileName.c_str()};
   if (!fileStream.good()) {
@@ -216,7 +237,7 @@ template <class R> void ProbRoadMaps<R>::saveTrees(const FileStruct file) {
         fileStream << "\n";
       }
 
-      for (auto &node : allPoints) {
+      for (auto &node : this->allPoints) {
         for (auto &pair : node.VisibleNodes) {
           auto [neigh, dist] = pair;
           if (node.ID < neigh->ID) {
@@ -250,6 +271,69 @@ template <class R> void ProbRoadMaps<R>::saveTrees(const FileStruct file) {
     std::stringstream message;
     message << "Cannot open file at: " << file.fileName;
     WARN(message.str());
+  }
+}
+
+template <class R>
+void ProbRoadMaps<R, true>::getPaths() {
+  for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
+    Dijkstra<R> dijkstra;
+    std::vector<int> goals;
+    for (int j{0}; j < this->problem.GetNumRoots(); ++j) {
+      if (i == j) {
+        continue;
+      } 
+      goals.push_back(j);
+    }
+    std::deque<DistanceHolder<R>> plans{dijkstra.findPath(i, goals, this->allPoints)};
+    for (auto &holder : plans) {
+      if (!holder.Exists()) {
+        continue;
+      }
+
+      std::deque<R> &plan{holder.Plan};
+      plan.clear();
+
+      // one tree only
+      Node<R> *actual{holder.Node2};
+      Node<R> *next;
+      R startingPoint;
+      R finalPoint;
+      std::deque<R> localPath;
+
+      while (actual != holder.Node1) {
+        next = actual;
+        actual = actual->Closest;
+        
+        startingPoint = actual->Position;
+        finalPoint = next->Position;
+        localPath = startingPoint.SampleDubinsPathTo(finalPoint, this->problem.CollisionDist); 
+        plan.insert(plan.begin(), localPath.begin(), localPath.end());
+      }
+
+      int id1{holder.Node1->ID};
+      int id2{holder.Node2->ID};
+      this->neighboringMatrix.AddLink(holder, id1, id2, 0, 0, true);
+    }
+  }
+}
+
+template <class R> 
+void ProbRoadMaps<R, true>::getConnected() {
+  for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
+    for (int j{0}; j < this->problem.GetNumRoots(); ++j) {
+      if (!this->neighboringMatrix.Exists(i, j, 0, 0)) {
+        continue;
+      }
+
+      if (!this->connected[i]) {
+        this->connected[i] = true;
+      }
+
+      if (!this->connected[j]) {
+        this->connected[j] = true;
+      }
+    }
   }
 }
 

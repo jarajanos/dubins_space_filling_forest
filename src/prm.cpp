@@ -11,50 +11,6 @@
 
 #include "prm.h"
 
-template <>
-void ProbRoadMaps<Point2DDubins>::getPaths() {
-  //TODO
-  for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
-    Dijkstra<Point2DDubins> dijkstra;
-    std::vector<int> goals;
-    for (int j{0}; j < this->problem.GetNumRoots(); ++j) {
-      if (i == j) {
-        continue;
-      } 
-      goals.push_back(j);
-    }
-    std::deque<DistanceHolder<Point2DDubins>> plans{dijkstra.findPath(i, goals, allPoints)};
-    for (auto &holder : plans) {
-      if (!holder.Exists()) {
-        continue;
-      }
-      int id1{holder.Node1->ID};
-      int id2{holder.Node2->ID};
-      this->neighboringMatrix.AddLink(holder, id1, id2, 0, 0);
-    }
-  }
-}
-
-template <> 
-void ProbRoadMaps<Point2DDubins>::getConnected() {
-  //TODO
-  for (int i{0}; i < this->problem.GetNumRoots(); ++i) {
-    for (int j{i}; j < this->problem.GetNumRoots(); ++j) {
-      if (!this->neighboringMatrix.Exists(i, j, 0, 0)) {
-        continue;
-      }
-
-      if (!this->connected[i]) {
-        this->connected[i] = true;
-      }
-
-      if (!this->connected[j]) {
-        this->connected[j] = true;
-      }
-    }
-  }
-}
-
 template <> 
 void ProbRoadMaps<Point2DDubins>::saveTrees(const FileStruct file) {
   INFO("Saving trees");
@@ -69,7 +25,36 @@ void ProbRoadMaps<Point2DDubins>::saveTrees(const FileStruct file) {
 
   if (fileStream.is_open()) {
     if (file.type == Obj) {
-      ERROR("Not implemented");
+      unsigned vertexInd{1};
+      std::deque<std::tuple<unsigned,unsigned>> vertexRanges;
+      fileStream << "o Trees\n";
+      for (auto &node : this->allPoints) {
+        for (auto &pair : node.VisibleNodes) {
+          auto [neigh, dist] = pair;
+          if (neigh == &node) {
+            continue;
+          } 
+
+          unsigned startingInd{vertexInd};
+          auto path{node.Position.SampleDubinsPathTo(neigh->Position, this->problem.CollisionDist)};
+          for (int i{0}; i < path.size(); ++i) {
+            fileStream << "v" << DELIMITER_OUT;
+            Point2DDubins temp{path[i] / problem.Env.ScaleFactor}; 
+            temp.PrintPosition(fileStream);
+            fileStream << "\n";
+          }
+          vertexInd += path.size();
+
+          vertexRanges.push_back(std::tuple<unsigned, unsigned>(startingInd, vertexInd - 1));    
+        }
+      }
+      
+      for (auto &pair : vertexRanges) {
+        auto [ from, to ] = pair;
+        for (unsigned i{from}; i < to; ++i) {
+          fileStream << "l" << DELIMITER_OUT << i << DELIMITER_OUT << i + 1 << '\n';
+        }
+      }
     } else if (file.type == Map) {
       fileStream << "#Trees" << DELIMITER_OUT << this->problem.Dimension
                  << "\n";
@@ -94,6 +79,89 @@ void ProbRoadMaps<Point2DDubins>::saveTrees(const FileStruct file) {
           }
           actPoint = Point2DDubins(finishDub);
           fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << DELIMITER_OUT << node.ID << DELIMITER_OUT << node.GetAge() << "\n";
+        }
+      }
+    } else {
+      throw std::string("Unimplemented file type");
+    }
+
+    fileStream.flush();
+    fileStream.close();
+  } else {
+    std::stringstream message;
+    message << "Cannot open file at: " << file.fileName;
+    WARN(message.str());
+  }
+}
+
+template <> 
+void ProbRoadMaps<Point3DDubins>::saveTrees(const FileStruct file) {
+  INFO("Saving trees");
+  std::ofstream fileStream{file.fileName.c_str()};
+  if (!fileStream.good()) {
+    std::stringstream message;
+    message << "Cannot create file at: " << file.fileName;
+
+    WARN(message.str());
+    return;
+  }
+
+  if (fileStream.is_open()) {
+    if (file.type == Obj) {
+      unsigned vertexInd{1};
+      std::deque<std::tuple<unsigned,unsigned>> vertexRanges;
+      fileStream << "o Trees\n";
+      for (auto &node : this->allPoints) {
+        for (auto &pair : node.VisibleNodes) {
+          auto [neigh, dist] = pair;
+          if (neigh == &node) {
+            continue;
+          } 
+
+          unsigned startingInd{vertexInd};
+          auto path{node.Position.SampleDubinsPathTo(neigh->Position, this->problem.CollisionDist)};
+          for (int i{0}; i < path.size(); ++i) {
+            fileStream << "v" << DELIMITER_OUT;
+            Point3DDubins temp{path[i] / problem.Env.ScaleFactor}; 
+            temp.PrintPosition(fileStream);
+            fileStream << "\n";
+          }
+          vertexInd += path.size();
+
+          vertexRanges.push_back(std::tuple<unsigned, unsigned>(startingInd, vertexInd - 1));    
+        }
+      }
+      
+      for (auto &pair : vertexRanges) {
+        auto [ from, to ] = pair;
+        for (unsigned i{from}; i < to; ++i) {
+          fileStream << "l" << DELIMITER_OUT << i << DELIMITER_OUT << i + 1 << '\n';
+        }
+      }
+    } else if (file.type == Map) {
+      fileStream << "#Trees" << DELIMITER_OUT << this->problem.Dimension
+                 << "\n";
+      for (auto &node : this->allPoints) {
+        for (auto &pair : node.VisibleNodes) {
+          auto [neigh, dist] = pair;
+          if (neigh == &node) {
+            continue;
+          } 
+          opendubins::State3D finishDub{node.Position[0], node.Position[1], node.Position[2], node.Position.GetHeading(), node.Position.GetPitch()};
+          opendubins::State3D startDub{neigh->Position[0], neigh->Position[1], neigh->Position[2], neigh->Position.GetHeading(), neigh->Position.GetPitch()};
+          opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.Env.Limits.maxPitch, this->problem.Env.Limits.maxPitch};
+          
+          Point3DDubins lastPoint{startDub};
+          Point3DDubins actPoint;
+          double length{pathFromClosest.length};
+          double parts{length / this->problem.CollisionDist};
+          for (int index{1}; index < parts; ++index) {
+            actPoint = Point3DDubins(pathFromClosest.getState(index * this->problem.CollisionDist));
+            fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << DELIMITER_OUT << node.SourceTree->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
+            lastPoint = actPoint;
+          }
+          actPoint = Point3DDubins(finishDub);
+          fileStream << actPoint / problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / problem.Env.ScaleFactor << DELIMITER_OUT << node.SourceTree->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
         }
       }
     } else {

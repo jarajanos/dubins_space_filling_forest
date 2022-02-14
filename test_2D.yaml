@@ -21,10 +21,10 @@
       type: 'map'
       position: '[0; 0;0]'
 
-  acities:
+  cities:
     - "[100; 100;0]"
 
-  cities:
+  acities:
     - "[100; 100;0]"
     - "[1500; 1600;0]"
     - "[500; 1700;0]"
@@ -32,15 +32,15 @@
     - "[962; 828;0]"
     - "[1624; 1057;0]"
 
-  agoal: "[1500; 1600;0.8]"
+  goal: "[1500; 1600;0.8]"
 
   range:
     autodetect: true
 
   distances:
-    collision: 5
+    collision: 1
     sampling: 50
-    tree: 50
+    tree: 100
 
   algorithm:
     m2r-ratio: 10

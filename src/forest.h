@@ -952,6 +952,7 @@ void SpaceForest<R, true>::getPaths() {
           R startingPoint;
           R finalPoint;
           std::deque<R> localPath;
+          int lUpd{this->neighboringMatrix.OppositeAngleID(l)};
 
           while (!actual->IsRoot()) {
             next = actual;
@@ -965,16 +966,15 @@ void SpaceForest<R, true>::getPaths() {
 
           // intermediate path
           startingPoint = holder.Node1->DubinsPosition(k, numAngles, false);
-          finalPoint = holder.Node2->DubinsPosition(l, numAngles, true);
+          finalPoint = holder.Node2->DubinsPosition(lUpd, numAngles, true);
           localPath = startingPoint.SampleDubinsPathTo(finalPoint, this->problem.CollisionDist);
           plan.insert(plan.end(), localPath.begin(), localPath.end());
           plan.emplace_back(finalPoint);
 
           // second tree -- to ensure the same trajectory, the path is reconstructed "backwards" 
           // (same as in original tree) and then reversed -- this is also the reason why the angle 
-          // from the second root has to be (again) reverted
+          // from the second root has to be (again) reverted == lUpd
           actual = holder.Node2; 
-          int lUpd{this->neighboringMatrix.OppositeAngleID(l)};
           while(!actual->IsRoot()) {
             next = actual;
             actual = actual->Closest;
