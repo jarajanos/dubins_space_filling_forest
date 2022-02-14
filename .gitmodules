@@ -10,6 +10,3 @@
 [submodule "lib/gdip"]
 	path = lib/gdip
 	url = https://github.com/jarajanos/gdip
-[submodule "lib/RapidQuadrocopterTrajectories"]
-	path = lib/RapidQuadrocopterTrajectories
-	url = https://github.com/jarajanos/RapidQuadrocopterTrajectories
