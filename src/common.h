@@ -121,8 +121,9 @@ enum SaveOptions {
 enum SolverType{
   SFF,
   RRT,
-  Lazy,
-  PRM
+  LazyRRT,
+  PRM,
+  LazySFF
 };
 
 enum TSPType {
@@ -136,12 +137,11 @@ struct FileStruct {
 };
 
 struct Range {
-  double mins[3];
-  double maxs[3];
-  double maxPitch;
+  double mins[4];
+  double maxs[4];
 
-  Range(double minX, double maxX, double minY, double maxY, double minZ, double maxZ) 
-    : mins{minX, minY, minZ}, maxs{maxX, maxY, maxZ} {
+  Range(double minX, double maxX, double minY, double maxY, double minZ, double maxZ, double maxPitch) 
+    : mins{minX, minY, minZ, -maxPitch}, maxs{maxX, maxY, maxZ, maxPitch} {
     }
 
   void Parse(std::string &range, double scale, int order) {
@@ -152,12 +152,25 @@ struct Range {
       throw std::invalid_argument("Unknown format of range");
     }
 
-    mins[order] = std::stod(m[1]) * scale;
-    maxs[order] = std::stod(m[2]) * scale;
+    if (order != 3) {   // do not scale pitch angle
+      mins[order] = std::stod(m[1]) * scale;
+      maxs[order] = std::stod(m[2]) * scale;
+    } else {
+      mins[3] = std::stod(m[1]);
+      maxs[3] = std::stod(m[2]);
+    }
   }
 
   template <class R>
   bool IsInLimits(R &point);
+};
+
+struct DtpNode {
+  int Position;
+  int ActAngle;
+  double Distance{__DBL_MAX__};
+  int FirstAngle{-1};
+  int LastAngle{-1};
 };
 
 template<class R>

@@ -51,19 +51,24 @@ bool RandomGenerator<Point3D>::RandomPointInDistance(const Point3D& center, Poin
   temp.SetPosition(center[0] + cos(theta) * sin(phi) * distance, center[1] + sin(theta) * sin(phi)  * distance, center[2] + cos(phi) * distance);
 
   // rotation
-  double s{RandomProbability()};
-  double sigOne{sqrt(1-s)};
-  double sigTwo{sqrt(s)};
-  double thetaOne{2*M_PI*RandomProbability()};
-  double thetaTwo{2*M_PI*RandomProbability()};
+  bool inLimits{false};
+  double s, sigOne, sigTwo, thetaOne, thetaTwo;
+  while (!inLimits) {
+    s = RandomProbability();
+    sigOne = sqrt(1-s);
+    sigTwo = sqrt(s);
+    thetaOne = 2*M_PI*RandomProbability();
+    thetaTwo = 2*M_PI*RandomProbability();  
+  
+    Quaternion rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
+    temp.SetRotation(rotation);
 
-  Quaternion rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
-  temp.SetRotation(rotation);
+    // the distance is not exactly the expected one (might be much greater), therefore a point in the same direction with the correct distance is needed
+    point = center.GetStateInDistance(temp, distance);
+    inLimits = limits.IsInLimits(point);
+  }
 
-  // the distance is not exactly the expected one (might be much greater), therefore a point in the same direction with the correct distance is needed
-  point = center.GetStateInDistance(temp, distance);
-
-  return limits.IsInLimits(point);
+  return inLimits;
 }
 
 template<>
@@ -109,14 +114,19 @@ void RandomGenerator<Point3D>::RandomPointInSpace(Point3D& point) {
   point.SetPosition(uniSpaceX(rndEng), uniSpaceY(rndEng), uniSpaceZ(rndEng));
 
   // rotation
-  double s{RandomProbability()};
-  double sigOne{sqrt(1-s)};
-  double sigTwo{sqrt(s)};
-  double thetaOne{2*M_PI*RandomProbability()};
-  double thetaTwo{2*M_PI*RandomProbability()};
-
-  Quaternion rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
-  point.SetRotation(rotation);
+  bool inLimits{false};
+  double s, sigOne, sigTwo, thetaOne, thetaTwo;
+  while (!inLimits) {
+    s = RandomProbability();
+    sigOne = sqrt(1-s);
+    sigTwo = sqrt(s);
+    thetaOne = 2*M_PI*RandomProbability();
+    thetaTwo = 2*M_PI*RandomProbability();  
+  
+    Quaternion rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
+    point.SetRotation(rotation);
+    inLimits = limits.IsInLimits(point);
+  }
 }
 
 template<>

@@ -88,6 +88,7 @@ class Point3D {
     Point3D();
     Point3D(double x, double y, double z, double yaw, double pitch, double roll);
     Point3D(const std::string &s, double scale=1);
+    Point3D(const Point3DDubins &point);
     
     Quaternion GetRotation() const;
     void SetRotation(Quaternion q);
@@ -120,6 +121,7 @@ class Point3DDubins {
     Point3DDubins(double x, double y, double z, double yaw, double pitch);
     Point3DDubins(const std::string &s, double scale=1);
     Point3DDubins(opendubins::State3D dubinsState);
+    Point3DDubins(const Point3D &point);
 
     void SetRotation(double yaw, double pitch);
     void SetHeading(double yaw);

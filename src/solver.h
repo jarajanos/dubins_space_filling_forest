@@ -31,6 +31,10 @@ class SolverBase {
     }
 
     virtual void Solve() = 0;
+
+    DistanceMatrix<DistanceHolder<R>> &GetNeighboringMatrix();
+    TSPOrder &GetTSPSolution();
+
   protected:
     Problem<R> &problem;
     RandomGenerator<R> rnd;
@@ -653,6 +657,34 @@ void Solver<R, false>::saveParams(const FileStruct file, const int iterations, c
       }
     }
     fileStream << "]" << CSV_DELIMITER;
+
+    double tspLength{0};
+    if (this->tspSolution.size() == 0) {
+      tspLength = -1;
+    }
+    for (int tspOrder{0}; tspOrder < numRoots; ++tspOrder) {
+      int node1{this->tspSolution[tspOrder]};
+      int node2{this->tspSolution[(tspOrder + 1) % numRoots]};
+      if (!this->neighboringMatrix.Exists(node1, node2)) {
+        tspLength = -1;
+        break;
+      }
+
+      double dist{this->neighboringMatrix(node1, node2).Distance / this->problem.Env.ScaleFactor};
+      if (dist != std::numeric_limits<double>::max()) {
+        tspLength += dist;
+      } else {
+        tspLength = -1;
+        break;
+      }
+    }
+    
+    if (tspLength != -1) {
+      fileStream << tspLength << CSV_DELIMITER;
+    } else {
+      fileStream << CSV_NO_PATH << CSV_DELIMITER;
+    }
+
     fileStream << elapsedTime.count() << "\n";
 
     fileStream.flush();
@@ -718,6 +750,34 @@ void Solver<R, true>::saveParams(const FileStruct file, const int iterations, co
     }
 
     fileStream << "]" << CSV_DELIMITER;
+
+    double tspLength{0};
+    int numRoots{this->problem.GetNumRoots()};
+    if (this->gatspSolution.size() == 0) {
+      tspLength = -1;
+    }
+    for (int tspOrder{0}; tspOrder < numRoots && tspLength != -1; ++tspOrder) {
+      auto [ node1, angle1 ] = this->gatspSolution[tspOrder];
+      auto [ node2, angle2 ] = this->gatspSolution[(tspOrder + 1) % numRoots];
+      if (!this->neighboringMatrix.Exists(node1, node2, angle1, angle2)) {
+        tspLength = -1;
+        break;
+      }
+
+      double dist{this->neighboringMatrix(node1, node2, angle1, angle2).Distance / this->problem.Env.ScaleFactor};
+      if (dist != std::numeric_limits<double>::max()) {
+        tspLength += dist;
+      } else {
+        tspLength = -1;
+      }
+    }
+    
+    if (tspLength != -1) {
+      fileStream << tspLength << CSV_DELIMITER;
+    } else {
+      fileStream << CSV_NO_PATH << CSV_DELIMITER;
+    }
+
     fileStream << elapsedTime.count() << "\n";
 
     fileStream.flush();
@@ -1143,6 +1203,16 @@ void SolverBase<R>::checkDistances(std::deque<Node<R> *> &plan, double distanceT
     ERROR("Distances mismatch");
     exit(1);
   }
+}
+
+template<class R>
+DistanceMatrix<DistanceHolder<R>> &SolverBase<R>::GetNeighboringMatrix() {
+  return this->neighboringMatrix;
+}
+
+template<class R>
+TSPOrder &SolverBase<R>::GetTSPSolution() {
+  return this->tspSolution;
 }
 
 #endif /* __SOLVER_H__ */

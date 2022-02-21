@@ -41,6 +41,9 @@ bool Range::IsInLimits(Point3D &point) {
     valid &= point[i] <= this->maxs[i];
   }
 
+  valid &= point.GetRotation().GetPitch() >= this->mins[3];
+  valid &= point.GetRotation().GetPitch() <= this->maxs[3];
+
   return valid;
 }
 
@@ -52,8 +55,8 @@ bool Range::IsInLimits(Point3DDubins &point) {
     valid &= point[i] <= this->maxs[i];
   }
 
-  valid &= point.GetPitch() >= -this->maxPitch;
-  valid &= point.GetPitch() <= this->maxPitch;
+  valid &= point.GetPitch() >= this->mins[3] - 5e-2;
+  valid &= point.GetPitch() <= this->maxs[3] + 5e-2;
 
   return valid;
 }

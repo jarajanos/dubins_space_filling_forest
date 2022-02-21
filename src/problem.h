@@ -59,6 +59,11 @@ struct Problem {
     }
   }
 
+  Problem(const Problem<Point3DDubins> &problem) {
+    ERROR("Unsupported problem conversion");
+    exit(1);
+  }
+
   int GetNumRoots() {
     if (HasGoal) {
      return Roots.size() + 1;
@@ -68,5 +73,7 @@ struct Problem {
     return 1;
   }
 };
+
+template<> Problem<Point3D>::Problem(const Problem<Point3DDubins> &problem);
 
 #endif /* __PROBLEM_H__ */

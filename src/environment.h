@@ -29,7 +29,12 @@ class Triangle {
   Triangle(R x, R y, R z) : vertices{x, y, z} {
   }
 
-  inline R operator[](int i) {
+  Triangle(const Triangle<Point3DDubins> &t) {
+    ERROR("Unsupported conversion");
+    exit(1);
+  }
+
+  inline R operator[](int i) const {
     return vertices[i];
   }
 
@@ -37,22 +42,24 @@ class Triangle {
   R vertices[3];
 };
 
+template<> Triangle<Point3D>::Triangle(const Triangle<Point3DDubins> &t);
+template<> Triangle<Point3DDubins>::Triangle(const Triangle<Point3DDubins> &t);
+
 template <class R>
 class Environment {
   public:
     std::deque<Obstacle<R>> Obstacles;
-    Obstacle<R> *Robot;
-    Range Limits{__DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__};
+    std::shared_ptr<Obstacle<R>> Robot;
+    Range Limits{__DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__, __DBL_MAX__};
     bool HasMap{true};
     double ScaleFactor;
 
-    Environment() : Robot{nullptr} {
+    Environment() {
     }
 
-    ~Environment() {
-      if (Robot != nullptr) {
-        delete Robot;
-      }
+    Environment(const Environment<Point3DDubins> &env) {
+      ERROR("Unsupported conversion of environment");
+      exit(1);
     }
 
     bool Collide(R position); // whether robot in such position collides with any known obstacle
@@ -66,6 +73,8 @@ class Environment {
 
 };
 
+template<> Environment<Point3D>::Environment(const Environment<Point3DDubins> &env);
+
 template<class R>
 class Obstacle {
   public:
@@ -74,17 +83,25 @@ class Obstacle {
 
     R Position;
     Obstacle() {}
+    Obstacle(const Obstacle<Point3DDubins> &obst) {
+      ERROR("Unsupported conversion of obstacle");
+      exit(1);
+    }
 
     Obstacle(const std::string fileName, const FileType type, const R position, const double scaleFactor);
     Obstacle(const std::string fileName, const FileType type, const double scaleFactor);
 
-    virtual ~Obstacle();
+    //virtual ~Obstacle();
     void ParseOBJFile(const std::string fileName);
     void ParseMapFile(const std::string fileName);
   
     R GetPosition();
-    RAPID_model *GetRapidModel();
-    Range &GetRange();
+    std::shared_ptr<RAPID_model> GetRapidModel() const;
+    Range GetRange() const;
+    double GetScale() const;
+
+    std::vector<R> GetFacePoints() const;
+    std::vector<Triangle<R>> GetFaces() const;
 
     static bool Collide(Obstacle<R> &object1, R pos1, Obstacle<R> &object2, R pos2);
     static bool Collide(Obstacle<R> &object1, Obstacle<R> &object2);
@@ -93,8 +110,8 @@ class Obstacle {
   protected:
     std::vector<R> facePoints;
     std::vector<Triangle<R>> faces;
-    RAPID_model *rapidModel = NULL;
-    Range localRange{__DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__};
+    std::shared_ptr<RAPID_model> rapidModel;
+    Range localRange{__DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__, __DBL_MAX__, -__DBL_MAX__, __DBL_MAX__};
     double scale{1};
     inline static int rapidId = 0;
     inline static double eyeRotation[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}; 
@@ -104,13 +121,15 @@ class Obstacle {
     virtual void updateLocalRange(double coords[]);
 };
 
+template<> Obstacle<Point3D>::Obstacle(const Obstacle<Point3DDubins> &obst);
+
 template <class R>
 Obstacle<R>::Obstacle(const std::string fileName, const FileType type, const double scaleFactor) : Obstacle<R>(fileName, type, R(), scaleFactor) {
 }
 
 template <class R>
 Obstacle<R>::Obstacle(const std::string fileName, const FileType type, const R position, const double scaleFactor) : Position{position}, scale{scaleFactor} {
-  this->rapidModel = new RAPID_model();
+  this->rapidModel = std::make_shared<RAPID_model>();
   this->rapidModel->BeginModel();
 
   if (type == Obj) {
@@ -124,12 +143,12 @@ Obstacle<R>::Obstacle(const std::string fileName, const FileType type, const R p
   this->rapidModel->EndModel();
 }
 
-template <class R>
-Obstacle<R>::~Obstacle() {
-  if (rapidModel != NULL) {
-    delete rapidModel;
-  }
-}
+// template <class R>
+// Obstacle<R>::~Obstacle() {
+//   if (rapidModel != NULL) {
+//     delete rapidModel;
+//   }
+// }
 
 template <class R>
 void Obstacle<R>::ParseOBJFile(const std::string fileName) {
@@ -189,13 +208,28 @@ R Obstacle<R>::GetPosition() {
 }
 
 template <class R>
-RAPID_model *Obstacle<R>::GetRapidModel() {
+std::shared_ptr<RAPID_model> Obstacle<R>::GetRapidModel() const {
   return this->rapidModel;
 }
 
 template <class R>
-Range& Obstacle<R>::GetRange() {
+Range Obstacle<R>::GetRange() const {
   return this->localRange;
+}
+
+template <class R>
+double Obstacle<R>::GetScale() const {
+  return this->scale;
+}
+
+template <class R>
+std::vector<R> Obstacle<R>::GetFacePoints() const {
+  return this->facePoints;
+}
+
+template <class R>
+std::vector<Triangle<R>> Obstacle<R>::GetFaces() const {
+  return this->faces;
 }
 
 template <class R>
@@ -206,7 +240,7 @@ bool Environment<R>::Collide(R position) {
   
   bool retVal{false};
   for (Obstacle<R> &obs : this->Obstacles) {
-    retVal |= Obstacle<R>::Collide(obs, *(this->Robot), position);
+    retVal |= Obstacle<R>::Collide(obs, *(this->Robot.get()), position);
   }
   return retVal;
 }

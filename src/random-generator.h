@@ -57,10 +57,10 @@ RandomGenerator<R>::RandomGenerator(const Range samplingRange) : limits{sampling
   //rndEng = randomEngine(1644768989840546946); // deterministic behaviour
 
   uniDistAngle = std::uniform_real_distribution<double>(-M_PI, M_PI);
-  uniDistPitch = std::uniform_real_distribution<double>(-limits.maxPitch, limits.maxPitch);
   uniSpaceX = std::uniform_real_distribution<double>(limits.mins[0], limits.maxs[0]);
   uniSpaceY = std::uniform_real_distribution<double>(limits.mins[1], limits.maxs[1]);
   uniSpaceZ = std::uniform_real_distribution<double>(limits.mins[2], limits.maxs[2]);
+  uniDistPitch = std::uniform_real_distribution<double>(limits.mins[3], limits.maxs[3]);
   uniProb = std::uniform_real_distribution<double>(0, 1);
 }
 

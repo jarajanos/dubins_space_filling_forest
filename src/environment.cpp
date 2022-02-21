@@ -11,6 +11,20 @@
 
 #include "environment.h"
 
+template<> 
+Triangle<Point3DDubins>::Triangle(const Triangle<Point3DDubins> &t) {
+  for (int i{0}; i < 3; ++i) {
+    this->vertices[i] = t[i];
+  }  
+}
+
+template<> 
+Triangle<Point3D>::Triangle(const Triangle<Point3DDubins> &t) {
+  for (int i{0}; i < 3; ++i) {
+    this->vertices[i] = Point3D(t[i]);
+  }
+}
+
 template <>
 void Obstacle<Point2D>::addFacet(int objId, int offset, int faceInts[3]) {
   Point3D faceCache[3];
@@ -246,7 +260,7 @@ bool Obstacle<Point2D>::Collide(Obstacle<Point2D> &object1, Point2D pos1, Obstac
   pos1.FillRotationMatrix(rotMat1);
   pos2.FillRotationMatrix(rotMat2);
 
-  RAPID_Collide(rotMat1, (vecPos1.To3DVector()).GetRawCoords(), object1.GetRapidModel(), rotMat2, (vecPos2.To3DVector()).GetRawCoords(), object2.GetRapidModel());
+  RAPID_Collide(rotMat1, (vecPos1.To3DVector()).GetRawCoords(), object1.GetRapidModel().get(), rotMat2, (vecPos2.To3DVector()).GetRawCoords(), object2.GetRapidModel().get());
   return RAPID_num_contacts != 0;
 }
 
@@ -257,7 +271,7 @@ bool Obstacle<Point2DDubins>::Collide(Obstacle<Point2DDubins> &object1, Point2DD
   pos1.FillRotationMatrix(rotMat1);
   pos2.FillRotationMatrix(rotMat2);
 
-  RAPID_Collide(rotMat1, (vecPos1.To3DVector()).GetRawCoords(), object1.GetRapidModel(), rotMat2, (vecPos2.To3DVector()).GetRawCoords(), object2.GetRapidModel());
+  RAPID_Collide(rotMat1, (vecPos1.To3DVector()).GetRawCoords(), object1.GetRapidModel().get(), rotMat2, (vecPos2.To3DVector()).GetRawCoords(), object2.GetRapidModel().get());
   return RAPID_num_contacts != 0;
 }
 
@@ -268,7 +282,7 @@ bool Obstacle<Point3D>::Collide(Obstacle<Point3D> &object1, Point3D pos1, Obstac
   pos1.FillRotationMatrix(rotMat1);
   pos2.FillRotationMatrix(rotMat2);
 
-  RAPID_Collide(rotMat1, vecPos1.GetRawCoords(), object1.GetRapidModel(), rotMat2, vecPos2.GetRawCoords(), object2.GetRapidModel());
+  RAPID_Collide(rotMat1, vecPos1.GetRawCoords(), object1.GetRapidModel().get(), rotMat2, vecPos2.GetRawCoords(), object2.GetRapidModel().get());
   return RAPID_num_contacts != 0;
 }
 
@@ -279,7 +293,7 @@ bool Obstacle<Point3DDubins>::Collide(Obstacle<Point3DDubins> &object1, Point3DD
   pos1.FillRotationMatrix(rotMat1);
   pos2.FillRotationMatrix(rotMat2);
 
-  RAPID_Collide(rotMat1, vecPos1.GetRawCoords(), object1.GetRapidModel(), rotMat2, vecPos2.GetRawCoords(), object2.GetRapidModel());
+  RAPID_Collide(rotMat1, vecPos1.GetRawCoords(), object1.GetRapidModel().get(), rotMat2, vecPos2.GetRawCoords(), object2.GetRapidModel().get());
   return RAPID_num_contacts != 0;
 }
 
@@ -295,7 +309,7 @@ bool Obstacle<Point2D>::Collide(Obstacle<Point2D> &object, Obstacle<Point2D> &ro
   double rotMat2[3][3];
   robPos.FillRotationMatrix(rotMat2);
 
-  RAPID_Collide(Obstacle<Point2D>::eyeRotation, (vecPos1.To3DVector()).GetRawCoords(), object.GetRapidModel(), rotMat2, (vecPos2.To3DVector()).GetRawCoords(), robot.GetRapidModel());
+  RAPID_Collide(Obstacle<Point2D>::eyeRotation, (vecPos1.To3DVector()).GetRawCoords(), object.GetRapidModel().get(), rotMat2, (vecPos2.To3DVector()).GetRawCoords(), robot.GetRapidModel().get());
   return RAPID_num_contacts != 0;
 }
 
@@ -305,7 +319,7 @@ bool Obstacle<Point2DDubins>::Collide(Obstacle<Point2DDubins> &object, Obstacle<
   double rotMat2[3][3];
   robPos.FillRotationMatrix(rotMat2);
 
-  RAPID_Collide(Obstacle<Point2DDubins>::eyeRotation, (vecPos1.To3DVector()).GetRawCoords(), object.GetRapidModel(), rotMat2, (vecPos2.To3DVector()).GetRawCoords(), robot.GetRapidModel());
+  RAPID_Collide(Obstacle<Point2DDubins>::eyeRotation, (vecPos1.To3DVector()).GetRawCoords(), object.GetRapidModel().get(), rotMat2, (vecPos2.To3DVector()).GetRawCoords(), robot.GetRapidModel().get());
   return RAPID_num_contacts != 0;
 }
 
@@ -315,7 +329,7 @@ bool Obstacle<Point3D>::Collide(Obstacle<Point3D> &object, Obstacle<Point3D> &ro
   double rotMat2[3][3];
   robPos.FillRotationMatrix(rotMat2);
 
-  RAPID_Collide(Obstacle<Point3D>::eyeRotation, vecPos1.GetRawCoords(), object.GetRapidModel(), rotMat2, vecPos2.GetRawCoords(), robot.GetRapidModel());
+  RAPID_Collide(Obstacle<Point3D>::eyeRotation, vecPos1.GetRawCoords(), object.GetRapidModel().get(), rotMat2, vecPos2.GetRawCoords(), robot.GetRapidModel().get());
   return RAPID_num_contacts != 0;
 }
 
@@ -325,6 +339,34 @@ bool Obstacle<Point3DDubins>::Collide(Obstacle<Point3DDubins> &object, Obstacle<
   double rotMat2[3][3];
   robPos.FillRotationMatrix(rotMat2);
 
-  RAPID_Collide(Obstacle<Point3DDubins>::eyeRotation, vecPos1.GetRawCoords(), object.GetRapidModel(), rotMat2, vecPos2.GetRawCoords(), robot.GetRapidModel());
+  RAPID_Collide(Obstacle<Point3DDubins>::eyeRotation, vecPos1.GetRawCoords(), object.GetRapidModel().get(), rotMat2, vecPos2.GetRawCoords(), robot.GetRapidModel().get());
   return RAPID_num_contacts != 0;
+}
+
+template<> 
+Environment<Point3D>::Environment(const Environment<Point3DDubins> &env) {
+  this->Robot = std::make_shared<Obstacle<Point3D>>(*env.Robot);
+  this->Limits = env.Limits;
+  this->HasMap = env.HasMap;
+  this->ScaleFactor = env.ScaleFactor;
+
+  for (auto &obst : env.Obstacles) {
+    this->Obstacles.emplace_back(obst);
+  }
+}
+
+template<> 
+Obstacle<Point3D>::Obstacle(const Obstacle<Point3DDubins> &obst) {
+  this->Position = Point3D(obst.Position);
+  this->rapidModel = obst.GetRapidModel();
+  this->scale = obst.GetScale();
+  this->localRange = obst.GetRange();
+
+  for (auto &face : obst.GetFaces()) {
+    this->faces.emplace_back(face);
+  }
+
+  for (auto &facePoint : obst.GetFacePoints()) {
+    this->facePoints.emplace_back(facePoint);
+  } 
 }

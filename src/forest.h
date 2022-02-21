@@ -21,6 +21,7 @@ class SpaceForestBase : public Solver<R> {
   public:
     SpaceForestBase(Problem<R> &problem);
     void Solve() override;
+    void PureSolve(int &iter, bool &solved, std::chrono::duration<double> &elapsedTime);
   
   protected:
     std::deque<Node<R>*> frontier;
@@ -155,18 +156,48 @@ SpaceForest<R,false>::SpaceForest(Problem<R> &problem) : SpaceForestBase<R>(prob
 
 template<class R>
 void SpaceForestBase<R>::Solve() {
-  Node<R> *nodeToExpand;
-  StopWatch timeMeasure;
-
   if (SaveGoals <= this->problem.SaveOpt) {
     this->saveCities(this->problem.FileNames[SaveGoals]);
   }
 
-  timeMeasure.Start();
-
   int iter{0};
   bool solved{false};
+  std::chrono::duration<double> elapsedTime;
+  PureSolve(iter, solved, elapsedTime);
+
+  if (SaveTree <= this->problem.SaveOpt) {
+    this->saveTrees(this->problem.FileNames[SaveTree]);
+  }
+
+  if (SaveRoadmap <= this->problem.SaveOpt) {
+    this->savePaths(this->problem.FileNames[SaveRoadmap]);
+  }
+
+  this->getConnected();
+  if (SaveParams <= this->problem.SaveOpt) {
+    this->saveParams(this->problem.FileNames[SaveParams], iter, solved, elapsedTime);
+  }
+
+  if (SaveTSPFile <= this->problem.SaveOpt) {
+    this->saveTsp(this->problem.FileNames[SaveTSPFile]);
+  }
+
+  if (this->problem.ComputeTSP && SaveTSPPaths <= this->problem.SaveOpt) {
+    this->saveTspPaths(this->problem.FileNames[SaveTSPPaths]);
+  }
+
+  if (SaveFrontiers <= this->problem.SaveOpt) {
+    this->saveFrontiers(this->problem.FileNames[SaveFrontiers]);
+  }
+}
+
+template<class R>
+void SpaceForestBase<R>::PureSolve(int &iter, bool &solved, std::chrono::duration<double> &elapsedTime) {
+  StopWatch timeMeasure;
+  Node<R> *nodeToExpand;
+
   bool emptyFrontier{false};
+  timeMeasure.Start();
   // iterate
   while (!solved && iter < this->problem.MaxIterations) {
     Tree<R> *rndTree{nullptr};
@@ -262,37 +293,13 @@ void SpaceForestBase<R>::Solve() {
   }
 
   timeMeasure.Stop();
+  elapsedTime = timeMeasure.GetElapsed();
 
-  if (SaveTree <= this->problem.SaveOpt) {
-    this->saveTrees(this->problem.FileNames[SaveTree]);
-  }
-  
   getPaths();
   this->getAllPaths();
 
   if (this->problem.ComputeTSP) {
     this->computeTsp();
-  }
-
-  if (SaveRoadmap <= this->problem.SaveOpt) {
-    this->savePaths(this->problem.FileNames[SaveRoadmap]);
-  }
-
-  this->getConnected();
-  if (SaveParams <= this->problem.SaveOpt) {
-    this->saveParams(this->problem.FileNames[SaveParams], iter, solved, timeMeasure.GetElapsed());
-  }
-
-  if (SaveTSPFile <= this->problem.SaveOpt) {
-    this->saveTsp(this->problem.FileNames[SaveTSPFile]);
-  }
-
-  if (this->problem.ComputeTSP && SaveTSPPaths <= this->problem.SaveOpt) {
-    this->saveTspPaths(this->problem.FileNames[SaveTSPPaths]);
-  }
-
-  if (SaveFrontiers <= this->problem.SaveOpt) {
-    this->saveFrontiers(this->problem.FileNames[SaveFrontiers]);
   }
 }
 

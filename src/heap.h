@@ -53,6 +53,22 @@ struct HeapNode<PrmNode<R>> {
   }
 };
 
+template<>
+struct HeapNode<DtpNode> {
+  DtpNode *Node;
+
+  HeapNode(DtpNode* node, DtpNode *refPoint) : Node{node} {
+  }
+
+  double Distance() {
+    return Node->Distance;
+  }
+
+  friend bool operator==(const HeapNode<DtpNode> &a, const HeapNode<DtpNode> &b) {
+    return a.Node == b.Node;
+  }
+};
+
 template<class R>
 class Heap {
   public:

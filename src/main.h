@@ -27,6 +27,7 @@
 #include "rrt.h"
 #include "lazy.h"
 #include "prm.h"
+#include "lazy-sff.h"
 
 int main(int argc, char *argv[]);
 template <class R> void SolveProblem(YAML::Node &config, Problem<R> &problem);

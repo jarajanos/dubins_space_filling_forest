@@ -10,9 +10,9 @@ SOURCES := $(wildcard src/*.cpp)
 SOURCES := $(SOURCES:src/%=%)
 OBJECTS := $(patsubst %.c,%.o, $(patsubst %.cpp,%.o,$(SOURCES)))
 
-INCLUDE := -I. -I./lib/rapid-2.01 -I./lib/ann/ann/include -I./lib/yaml-cpp/include -I./lib/gdip/gdip/include
-LIBPATH := -L./lib/ -L./lib/ann/ -L./lib/flann/ -L./lib/rapid-2.01 -L./lib/yaml-cpp/build -L./lib/gdip/gdip/lib
-LIBS := -lgmp -lRAPID -llz4 -lyaml-cpp -lopendubins_core -lstdc++fs
+INCLUDE := -I. -I./lib/rapid-2.01 -I./lib/ann/ann/include -I./lib/yaml-cpp/include -I./lib/gdip/gdip/include -I./lib/RapidQuadrocopterTrajectories/C++
+LIBPATH := -L./lib/ -L./lib/ann/ -L./lib/flann/ -L./lib/rapid-2.01 -L./lib/yaml-cpp/build -L./lib/gdip/gdip/lib -L./lib/RapidQuadrocopterTrajectories/lib
+LIBS := -lgmp -lRAPID -llz4 -lyaml-cpp -lopendubins_core -lstdc++fs -lquad-trajectories
 
 CXXFLAGS := -std=c++17
 CXX := g++
@@ -25,7 +25,7 @@ RELEXE := $(RELDIR)/$(TARGET)
 RELOBJS := $(addprefix $(OBJDIR)/, $(addprefix $(RELDIR)/, $(OBJECTS)))
 RELFLAGS := $(CXXFLAGS) -O3 -fno-math-errno
 
-.PHONY: all clean debug release prep rapid flann yaml install gdip concorde lkh solver
+.PHONY: all clean debug release prep rapid flann yaml install gdip concorde lkh solver trajectories
 
 all: release
 
@@ -56,7 +56,7 @@ prep:
 	@mkdir -p $(DBGDIR)
 	@mkdir -p $(RELDIR)
 
-install: rapid flann yaml gdip release
+install: rapid flann yaml gdip release trajetories
 
 solver: concorde lkh
 
@@ -83,6 +83,10 @@ concorde:
 lkh:
 	@echo "Preparing LKH solver..."
 	@cd ./solver/lkh; ./install.sh
+
+trajectories:
+	@echo "Preparing LKH solver..."
+	@cd ./lib/RapidQuadrocopterTrajectories; make
 
 clean:
 	@echo "Cleaning..."

@@ -321,6 +321,10 @@ Point3D::Point3D(const std::string &s, double scale) {
   rotation = Quaternion(std::stod(m[4]), std::stod(m[5]), std::stod(m[6]));
 }
 
+// for conversion of 3D Dubins problem to 3D for LazySFF 
+Point3D::Point3D(const Point3DDubins &point) : coords{point[0], point[1], point[2]}, rotation{point.GetHeading(), point.GetPitch(), 0} {
+}
+
 Quaternion Point3D::GetRotation() const {
   return rotation;
 }
@@ -474,6 +478,11 @@ Point3DDubins::Point3DDubins(const std::string &s, double scale) {
   // rotation
   this->yaw = std::stod(m[4]);
   this->pitch = std::stod(m[5]);
+}
+
+Point3DDubins::Point3DDubins(const Point3D &point) : coords{point[0], point[1], point[2]} {
+  this->yaw = point.GetRotation().GetYaw();
+  this->pitch = point.GetRotation().GetPitch();
 }
 
 void Point3DDubins::SetHeading(double yaw) {

@@ -22,6 +22,10 @@ int main(int argc, char *argv[]) {
   }
 
   try {
+    std::stringstream ss;
+    ss << "Solving problem file " << argv[1];
+    INFO(ss.str());
+    
     config = YAML::LoadFile(argv[1]);
   } catch (...) {
     ERROR("Error loading configuration file!");
@@ -65,10 +69,12 @@ void SolveProblem(YAML::Node &config, Problem<R> &problem) {
     solver = std::make_unique<SpaceForest<R>>(problem);
   } else if (problem.Solver == RRT) {
     solver = std::make_unique<RapidExpTree<R>>(problem);
-  } else if (problem.Solver == Lazy) {
+  } else if (problem.Solver == LazyRRT) {
     solver = std::make_unique<LazyTSP<R>>(problem);
   } else if (problem.Solver == PRM) {
     solver = std::make_unique<ProbRoadMaps<R>>(problem);
+  } else if (problem.Solver == LazySFF) {
+    solver = std::make_unique<LazySpaceForest<R>>(problem);
   } else {
     ERROR("Unimplemented problem solver");
   }
@@ -97,10 +103,12 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
       problem.Solver = SFF;
     } else if (!strcmp(value.c_str(), "rrt")) {
       problem.Solver = RRT;
-    } else if (!strcmp(value.c_str(), "lazy")) {
-      problem.Solver = Lazy;
+    } else if (!strcmp(value.c_str(), "lazy-rrt")) {
+      problem.Solver = LazyRRT;
     } else if (!strcmp(value.c_str(), "prm")) {
       problem.Solver = PRM;
+    } else if (!strcmp(value.c_str(), "lazy-sff")) {
+      problem.Solver = LazySFF;
     } else {
       throw std::invalid_argument("unknown solver type in \"problem\" root node, use either sff, rrt or lazy");
     }
@@ -133,7 +141,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
 
     // TSP solver
     node = config["TSP-solver"];
-    if (!node.IsDefined() && problem.Solver == Lazy) {
+    if (!node.IsDefined() && problem.Solver == LazyRRT) {
       throw std::invalid_argument("missing TSP solver parameters for Lazy solver!");
     } else if (node.IsDefined()) {
       problem.ComputeTSP = true;
@@ -195,22 +203,12 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     } else if (subNode.IsDefined()) {
       problem.DubinsResolution = subNode.as<int>();
     }
-    subNode = node["max-pitch"];
-    if (problem.Dimension == D3Dubins) {
-      if (!subNode.IsDefined()) {
-        INFO("Pitch range for 3D Dubins problem missing, defaulting to +/- (3.14 / 2) !");
-        problem.Env.Limits.maxPitch = M_PI_2;
-      } else if (subNode.IsDefined()) {
-        problem.Env.Limits.maxPitch = subNode.as<double>();
-      }
-      Point3DDubins::MaxPitch = problem.Env.Limits.maxPitch;
-    }
     subNode = node["bias"];
     if (subNode.IsDefined()) {
       problem.PriorityBias = subNode.as<double>();
     }
 
-    if (problem.Solver == Lazy && problem.PriorityBias != 0) {
+    if (problem.Solver == LazyRRT && problem.PriorityBias != 0) {
       throw std::invalid_argument("priority bias for Lazy solver is not implemented");
     }
 
@@ -229,7 +227,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     if (GetFile(node, tempFile)) {
       throw std::invalid_argument("invalid file node in \"robot\" root node");
     }
-    problem.Env.Robot = new Obstacle<R>(tempFile.fileName, tempFile.type, scale);
+    problem.Env.Robot = std::make_shared<Obstacle<R>>(tempFile.fileName, tempFile.type, scale);
 
     // parse range
     node = config["range"];
@@ -262,6 +260,25 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
         tempText = subNode.as<std::string>();
         problem.Env.Limits.Parse(tempText, scale, 2);
       }
+
+      subNode = node["pitch"];
+      if (!subNode.IsDefined()) {
+        if (problem.Dimension == D3Dubins) {
+          WARN("missing pitch node in \"range\" root node, settings to +/- (3.14 / 2)");
+          problem.Env.Limits.maxs[3] = M_PI_2;
+          problem.Env.Limits.mins[3] = -M_PI_2;
+        } else if (problem.Dimension == D3) {
+          problem.Env.Limits.maxs[3] = __DBL_MAX__;
+          problem.Env.Limits.mins[3] = -__DBL_MAX__;
+        }
+      } else {
+        tempText = subNode.as<std::string>();
+        problem.Env.Limits.Parse(tempText, scale, 3);
+        if (problem.Env.Limits.mins[3] != -problem.Env.Limits.maxs[3]) {
+          std::invalid_argument("invalid pitch node in \"range\" root node: angles must be symmetric");
+        }
+      }
+      Point3DDubins::MaxPitch = problem.Env.Limits.maxs[3];
     }
 
     // parse obstacles
@@ -288,7 +305,8 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
         Obstacle<R> &obst{problem.Env.Obstacles.emplace_back(tempFile.fileName, tempFile.type, pos, scale)};
 
         if (problem.AutoRange) {
-          problem.Env.ProcessLimits(obst.GetRange());
+          Range obstRange{obst.GetRange()};
+          problem.Env.ProcessLimits(obstRange);
         }
       }
     }
@@ -316,7 +334,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     // parse goal
     node = config["goal"];
     if (node.IsDefined()) {
-      if (problem.Solver == Lazy) {
+      if (problem.Solver == LazyRRT) {
         throw std::invalid_argument("single point path planning not defined for Lazy solver (use RRT/RRT* solver instead)");
       } else if (problem.Roots.size() > 1) {
         WARN("Multi-source planning with one goal has not been tested");

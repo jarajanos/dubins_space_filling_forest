@@ -149,7 +149,7 @@ void ProbRoadMaps<Point3DDubins>::saveTrees(const FileStruct file) {
           } 
           opendubins::State3D finishDub{node.Position[0], node.Position[1], node.Position[2], node.Position.GetHeading(), node.Position.GetPitch()};
           opendubins::State3D startDub{neigh->Position[0], neigh->Position[1], neigh->Position[2], neigh->Position.GetHeading(), neigh->Position.GetPitch()};
-          opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, -this->problem.Env.Limits.maxPitch, this->problem.Env.Limits.maxPitch};
+          opendubins::Dubins3D pathFromClosest{startDub, finishDub, this->problem.DubinsRadius, this->problem.Env.Limits.mins[3], this->problem.Env.Limits.maxs[3]};
           
           Point3DDubins lastPoint{startDub};
           Point3DDubins actPoint;
