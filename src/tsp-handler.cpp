@@ -28,9 +28,11 @@ TSPMatrix<Point2DDubins>::TSPMatrix(Problem<Point2DDubins> &problem,
               for (int l{0}; l < resolution; ++l) {
                 if (neighboringMatrix.Exists(i, j, k, l)) {
                   double dist{neighboringMatrix(i, j, k, l).Distance};
-                  data[i * resolution + k][j * resolution + l] = dist;
+                  if (dist != std::numeric_limits<double>::max()) {
+                    data[i * resolution + k][j * resolution + l] = dist;
 
-                  maxLength = MAX(maxLength, dist);
+                    maxLength = MAX(maxLength, dist);
+                  }
                 }
               }
             }
@@ -64,9 +66,11 @@ TSPMatrix<Point3DDubins>::TSPMatrix(Problem<Point3DDubins> &problem,
               for (int l{0}; l < resolution; ++l) {
                 if (neighboringMatrix.Exists(i, j, k, l)) {
                   double dist{neighboringMatrix(i, j, k, l).Distance};
-                  data[i * resolution + k][j * resolution + l] = dist;
+                  if (dist != std::numeric_limits<double>::max()) {
+                    data[i * resolution + k][j * resolution + l] = dist;
 
-                  maxLength = MAX(maxLength, dist);
+                    maxLength = MAX(maxLength, dist);
+                  }
                 }
               }
             }

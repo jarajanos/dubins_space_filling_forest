@@ -211,7 +211,7 @@ void Point2DDubins::operator+=(const Vector &translate) {
 bool operator==(const Point2DDubins &p1, const Point2DDubins &p2) {
   bool equal{true};
   for (int i{0}; i < 3; ++i) {
-    equal &= (p1[i] == p2[i]);
+    equal &= inBounds(p1[i], p2[i], EQ_TOLERANCE);
   }
 
   return equal;
@@ -546,7 +546,11 @@ void Point3DDubins::operator+=(const Vector &translate) {
 }
 
 bool operator==(const Point3DDubins &p1, const Point3DDubins &p2) {
-  return p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2] && p1.yaw == p2.yaw && p1.pitch == p2.pitch;
+  bool equal{true};
+  for (int i{0}; i < 5 && equal; ++i) {
+    equal &= inBounds(p1[i], p2[i], EQ_TOLERANCE);
+  }
+  return equal;
 }
 
 bool operator!=(const Point3DDubins &p1, const Point3DDubins &p2) {
@@ -572,6 +576,15 @@ Point3DDubins operator/(const Point3DDubins &p1, const double scale) {
 }
 
 double Point3DDubins::Distance(const Point3DDubins &other) const {
+  bool equal{true};
+  for (int i{0}; i < 3; ++i) {
+    equal &= inBounds((*this)[i], other[i], EQ_TOLERANCE);
+  }
+
+  if (equal) {
+    return 0;
+  }
+
   opendubins::State3D startDub{coords[0], coords[1], coords[2], GetHeading(), GetPitch()};
   opendubins::State3D finishDub{other[0], other[1], other[2], other.GetHeading(), other.GetPitch()};
   opendubins::Dubins3D pathDub{startDub, finishDub, DubinsRadius, -MaxPitch, MaxPitch};
@@ -584,8 +597,11 @@ Point3DDubins Point3DDubins::GetStateInDistance(Point3DDubins &other, double dis
   opendubins::State3D finishDub{other[0], other[1], other[2], other.GetHeading(), other.GetPitch()};
   opendubins::Dubins3D pathDub{startDub, finishDub, DubinsRadius, -MaxPitch, MaxPitch};
   
-  opendubins::State3D temp{pathDub.getState(dist)};
+  if (pathDub.getLength() == std::numeric_limits<double>::max()) {
+    return Point3DDubins();
+  }
 
+  opendubins::State3D temp{pathDub.getState(dist)};
   return Point3DDubins(temp);
 }
 
@@ -596,8 +612,11 @@ std::deque<Point3DDubins> Point3DDubins::SampleDubinsPathTo(const Point3DDubins 
   opendubins::Dubins3D pathDub{startDub, finishDub, DubinsRadius, -MaxPitch, MaxPitch};
 
   double pathDist{pathDub.length};
-  double parts{pathDist / dist};
+  if (pathDist == std::numeric_limits<double>::max()) {
+    return retVal;
+  }
 
+  double parts{pathDist / dist};
   retVal.emplace_back(*this);
   for (int index{1}; index < parts; ++index) {
     opendubins::State3D temp{pathDub.getState(index * pathDist / parts)};

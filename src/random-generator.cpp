@@ -46,14 +46,14 @@ template<>
 bool RandomGenerator<Point3D>::RandomPointInDistance(const Point3D& center, Point3D& point, const double distance) {
   Point3D temp;
 
-  double phi{uniDistAngle(rndEng)};
-  double theta{uniDistAngle(rndEng)};
-  temp.SetPosition(center[0] + cos(theta) * sin(phi) * distance, center[1] + sin(theta) * sin(phi)  * distance, center[2] + cos(phi) * distance);
-
   // rotation
   bool inLimits{false};
   double s, sigOne, sigTwo, thetaOne, thetaTwo;
   while (!inLimits) {
+    double phi{uniDistAngle(rndEng)};
+    double theta{uniDistAngle(rndEng)};
+    temp.SetPosition(center[0] + cos(theta) * sin(phi) * distance, center[1] + sin(theta) * sin(phi)  * distance, center[2] + cos(phi) * distance);
+
     s = RandomProbability();
     sigOne = sqrt(1-s);
     sigTwo = sqrt(s);
@@ -74,18 +74,24 @@ bool RandomGenerator<Point3D>::RandomPointInDistance(const Point3D& center, Poin
 template<>
 bool RandomGenerator<Point3DDubins>::RandomPointInDistance(const Point3DDubins& center, Point3DDubins& point, const double distance) {
   Point3DDubins temp;
-  
-  double phi{uniDistAngle(rndEng)};
-  double theta{uniDistAngle(rndEng)};
-  temp.SetPosition(center[0] + cos(theta) * sin(phi) * distance, center[1] + sin(theta) * sin(phi)  * distance, center[2] + cos(phi) * distance);
 
-  // rotation
-  temp.SetHeading(uniDistAngle(rndEng));
-  temp.SetPitch(uniDistAngle(rndEng));
-
+  double dist{std::numeric_limits<double>::max()};
+  opendubins::Dubins3D dubPath;
   opendubins::State3D a{center[0], center[1], center[2], center.GetHeading(), center.GetPitch()};
-  opendubins::State3D b{temp[0], temp[1], temp[2], temp.GetHeading(), temp.GetPitch()};
-  opendubins::Dubins3D dubPath{a, b, Point3DDubins::DubinsRadius, -Point3DDubins::MaxPitch, Point3DDubins::MaxPitch};
+  opendubins::State3D b;
+  while (dist == std::numeric_limits<double>::max()) {
+    double phi{uniDistAngle(rndEng)};
+    double theta{uniDistAngle(rndEng)};
+    temp.SetPosition(center[0] + cos(theta) * sin(phi) * distance, center[1] + sin(theta) * sin(phi)  * distance, center[2] + cos(phi) * distance);
+
+    // rotation
+    temp.SetHeading(uniDistAngle(rndEng));
+    temp.SetPitch(uniDistAngle(rndEng));
+    
+    b = opendubins::State3D{temp[0], temp[1], temp[2], temp.GetHeading(), temp.GetPitch()};
+    dubPath = opendubins::Dubins3D{a, b, Point3DDubins::DubinsRadius, -Point3DDubins::MaxPitch, Point3DDubins::MaxPitch};
+    dist = dubPath.getLength();
+  }
 
   // get point in exact distance
   point = Point3DDubins(dubPath.getState(distance));

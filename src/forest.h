@@ -656,6 +656,7 @@ bool SpaceForest<R, false>::checkBorders(int id1, int id2) {
 
 template<class R>
 void SpaceForest<R, false>::getPaths() {
+  INFO("Reconstructing paths");
   // due to optimizations, the distance might have changed -> update it
   int numRoots{this->problem.GetNumRoots()};
   for (int i{0}; i < numRoots; ++i) {
@@ -915,6 +916,7 @@ bool SpaceForest<R, true>::checkBorders(int id1, int id2) {
 
 template<class R>
 void SpaceForest<R, true>::getPaths() {
+  INFO("Reconstructing paths");
   // due to optimizations, the distance might have changed -> update it
   int numRoots{this->problem.GetNumRoots()};
   int numAngles{this->problem.DubinsResolution};
@@ -938,8 +940,10 @@ void SpaceForest<R, true>::getPaths() {
             if (!checkAngles || this->isPathFree(point1, point2)) {
               // update distance for angle pair angle1 & angle2, but the "angle2" part is flown in opposite direction -> 
               // save it for oposite expanded angle (which should be the same trajectory) (ensured by AddLink, with secondIsInlet==false)
-              holder.UpdateDistance(angle1, angle2);
-              this->neighboringMatrix.AddLink(holder, i, j, angle1, angle2, false);
+              bool valid{holder.UpdateDistance(angle1, angle2)};  // returns false when infinity
+              if (valid) {
+                this->neighboringMatrix.AddLink(holder, i, j, angle1, angle2, false);
+              }
             }
           }
         }

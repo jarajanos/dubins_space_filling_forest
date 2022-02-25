@@ -93,6 +93,10 @@ bool SolverBase<Point3DDubins>::isPathFree(const Point3DDubins start, const Poin
   opendubins::State3D finishDub{finish[0], finish[1], finish[2], finish.GetHeading(), finish.GetPitch()};
   opendubins::Dubins3D pathDub{startDub, finishDub, this->problem.DubinsRadius, this->problem.Env.Limits.mins[3], this->problem.Env.Limits.maxs[3]};
   double distance{pathDub.length};
+  if (distance == std::numeric_limits<double>::max()) {
+    return false;
+  }
+
   double parts{distance / problem.CollisionDist};
   bool isFree{true};
 

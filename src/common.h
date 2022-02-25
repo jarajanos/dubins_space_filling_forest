@@ -29,6 +29,7 @@
 #define MIN(X, Y) ((X < Y) ? (X) : (Y))
 #define MAX(X, Y) ((X > Y) ? (X) : (Y))
 #define SQR(X)    ((X) * (X))
+#define ABS(X)    ((X) < 0 ? (-(X)) : (X))
 
 #define ERROR(mess)  std::cerr << "[\033[1;31m ERR\033[0m ]  " << mess << "\n"
 #define INFO(mess)   std::cout << "[\033[1;34m INF\033[0m ]  " << mess << "\n"
@@ -230,8 +231,9 @@ struct DistanceHolder<R, false> {
     return Node1 != nullptr;
   }
 
-  void UpdateDistance() {
+  bool UpdateDistance() {
     Distance = Node1->DistanceToRoot() + Node2->DistanceToRoot() + Node1->Distance(*Node2);
+    return true;
   }
 };
 
@@ -274,11 +276,11 @@ struct DistanceHolder<R, true> {
     return Distance != std::numeric_limits<double>::max();
   }
 
-  void UpdateDistance(int angleId1=-1, int angleId2=-1) {
+  bool UpdateDistance(int angleId1=-1, int angleId2=-1) {
     Distance = Node1->Distance(*Node2);
     if (Distance >= std::numeric_limits<double>::max()) {
-      ERROR("Infinity distance between points");
-      return;
+      //ERROR("Infinity distance between points");
+      return false;
     }
 
     if (angleId1 != -1) {
@@ -288,8 +290,8 @@ struct DistanceHolder<R, true> {
     }
 
     if (Distance >= std::numeric_limits<double>::max()) {
-      ERROR("Infinity distance to root 1");
-      return;
+      //ERROR("Infinity distance to root 1");
+      return false;
     }
 
     if (angleId2 != -1) {
@@ -299,9 +301,10 @@ struct DistanceHolder<R, true> {
     }
 
     if (Distance >= std::numeric_limits<double>::max()) {
-      ERROR("Infinity distance to root 2");
-      return;
+      //ERROR("Infinity distance to root 2");
+      return false;
     }
+    return true;
   }
 };
 
@@ -522,6 +525,11 @@ class StopWatch {
 template <typename T> 
 int sgn(T val) {
     return (T(0) < val) - (val < T(0));
+}
+
+template <typename T>
+inline bool inBounds(const T &a, const T &b, const T difference) {
+  return ABS(a-b) < difference;
 }
 
 template <class T>

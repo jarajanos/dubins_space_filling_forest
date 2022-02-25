@@ -121,16 +121,18 @@ TSPMatrix<R>::TSPMatrix(Problem<R> &problem, DistanceMatrix<DistanceHolder<R>> &
         for (int j{0}; j < i; ++j) {
           if (neighboringMatrix.Exists(i, j)) {
             double dist{neighboringMatrix(i, j).Distance};
-            data[i][j] = dist;
-            data[j][i] = dist;
+            if (dist != std::numeric_limits<double>::max()) {
+              data[i][j] = dist;
+              data[j][i] = dist;
 
-            maxLength = MAX(maxLength, dist);
+              maxLength = MAX(maxLength, dist);
+            }
           }
         }
       }
 
       bigM = maxLength * size;
-      // replate all nonexisting paths with M
+      // replace all nonexisting paths with M
       for (int i{0}; i < size; ++i) {
         for (int j{0}; j < size; ++j) {
           if (data[i][j] == -1) {

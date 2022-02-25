@@ -31,8 +31,9 @@ class LazyTSPBase : public Solver<R> {
     std::deque<Tree<R> *> treesToDel;
     
     void runRRT(DistanceHolder<R> *edge, int &iterations);
+    virtual void fillPlan(std::deque<R> &plan, Node<R> *lastNode, Node<R> *goal) = 0;
     virtual void processResults(TSPMatrix<R> &matrix, TSPOrder &solution, std::deque<std::tuple<int,int>> &edgePairs) = 0;
-    virtual double updateEdge(std::tuple<int, int> selectedEdge, int iter) = 0;
+    virtual double updateEdge(std::tuple<int, int> selectedEdge, int &iter) = 0;
     virtual void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) = 0;
     virtual TSPMatrix<R> getTspMatrix() = 0;
 
@@ -51,7 +52,8 @@ class LazyTSP<R, false> : public LazyTSPBase<R> {
     LazyTSP(Problem<R> &problem);
 
   protected:
-    double updateEdge(std::tuple<int, int> selectedEdge, int iter) override;
+    void fillPlan(std::deque<R> &plan, Node<R> *lastNode, Node<R> *goal) override;
+    double updateEdge(std::tuple<int, int> selectedEdge, int &iter) override;
     void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) override;
     TSPMatrix<R> getTspMatrix() override;
     void processResults(TSPMatrix<R> &matrix, TSPOrder &solution, std::deque<std::tuple<int,int>> &edgePairs) override;
@@ -66,7 +68,8 @@ class LazyTSP<R, true> : public LazyTSPBase<R> {
     LazyTSP(Problem<R> &problem);
 
   protected:
-    double updateEdge(std::tuple<int, int> selectedEdge, int iter) override;
+    void fillPlan(std::deque<R> &plan, Node<R> *lastNode, Node<R> *goal) override;
+    double updateEdge(std::tuple<int, int> selectedEdge, int &iter) override;
     void rewireNodes(Node<R> *newNode, Node<R> &neighbor, double newDistance) override;
     TSPMatrix<R> getTspMatrix() override;
     void processResults(TSPMatrix<R> &matrix, TSPOrder &solution, std::deque<std::tuple<int,int>> &edgePairs) override;
@@ -108,7 +111,7 @@ LazyTSP<R, true>::LazyTSP(Problem<R> &problem) : LazyTSPBase<R>(problem) {
         continue;
       }
       DistanceHolder<R> dist{&(this->rootNodes[i]), &(this->rootNodes[j]), this->rootNodes[i].Distance(this->rootNodes[j])};
-      this->neighboringMatrix.AddLink(dist, i, j, 0, 0);
+      this->neighboringMatrix.AddLink(dist, i, j, 0, 0, true);
     }
   }
 }
@@ -141,7 +144,7 @@ void LazyTSPBase<R>::Solve() {
   bool solved{false};
   int iter{0};
   int maxNumTrees{this->problem.GetNumRoots() * (this->problem.GetNumRoots() - 1) / 2};
-  while (!solved && iter != maxNumTrees * this->problem.MaxIterations) {
+  while (!solved && iter <= maxNumTrees * this->problem.MaxIterations) {
     prevDist = newDist;
 
     // run TSP = create file, execute, read output
@@ -167,6 +170,12 @@ void LazyTSPBase<R>::Solve() {
     newDist = 0;
     for (auto &pair : selectedEdges) {
       newDist += updateEdge(pair, iter);
+    }
+
+    // partial rrt query not solved
+    if (newDist >= std::numeric_limits<double>::max()) {
+      solved = false;
+      break;
     }
 
     solved = (newDist >= prevDist - SFF_TOLERANCE && newDist <= prevDist + SFF_TOLERANCE);
@@ -198,7 +207,7 @@ TSPMatrix<R> LazyTSP<R, true>::getTspMatrix() {
 }
 
 template<class R>
-double LazyTSP<R, false>::updateEdge(std::tuple<int, int> selectedEdge, int iter) {
+double LazyTSP<R, false>::updateEdge(std::tuple<int, int> selectedEdge, int &iter) {
   int first, second;
   std::tie(first, second) = selectedEdge;
   DistanceHolder<R> &edge{this->neighboringMatrix(first, second)};
@@ -209,7 +218,7 @@ double LazyTSP<R, false>::updateEdge(std::tuple<int, int> selectedEdge, int iter
 }
 
 template<class R>
-double LazyTSP<R, true>::updateEdge(std::tuple<int, int> selectedEdge, int iter) {
+double LazyTSP<R, true>::updateEdge(std::tuple<int, int> selectedEdge, int &iter) {
   int first, second;
   double retVal;
   std::tie(first, second) = selectedEdge;
@@ -228,7 +237,7 @@ double LazyTSP<R, true>::updateEdge(std::tuple<int, int> selectedEdge, int iter)
     }
     retVal = edge.Distance;
   }
-  
+
   return retVal;
 }
 
@@ -334,13 +343,7 @@ void LazyTSPBase<R>::runRRT(DistanceHolder<R> *edge, int &iterations) {
       edge->Distance = goalDistance + newNode->DistanceToRoot();
       
       // fill-in plan
-      edge->Plan.push_front(goal->Position);
-      Node<R> *nodeToPush{newNode};
-      edge->Plan.push_front(nodeToPush->Position);
-      while (!nodeToPush->IsRoot()) {
-        nodeToPush = nodeToPush->Closest;
-        edge->Plan.push_front(nodeToPush->Position);
-      }
+      this->fillPlan(edge->Plan, newNode, goal);
     }
   }
 
@@ -349,6 +352,30 @@ void LazyTSPBase<R>::runRRT(DistanceHolder<R> *edge, int &iterations) {
   }
 
   iterations += iter;
+}
+
+template<class R>
+void LazyTSP<R,false>::fillPlan(std::deque<R> &plan, Node<R> *lastNode, Node<R> *goal) {
+  plan.push_front(goal->Position);
+  Node<R> *nodeToPush{lastNode};
+  plan.push_front(nodeToPush->Position);
+  while (!nodeToPush->IsRoot()) {
+    nodeToPush = nodeToPush->Closest;
+    plan.push_front(nodeToPush->Position);
+  }
+}
+
+template<class R>
+void LazyTSP<R,true>::fillPlan(std::deque<R> &plan, Node<R> *lastNode, Node<R> *goal) {
+  plan.push_front(goal->Position);
+  Node<R> *start{lastNode};
+  Node<R> *end{goal};
+  while (!end->IsRoot() || end == goal) {
+    auto localPath{start->Position.SampleDubinsPathTo(end->Position, this->problem.CollisionDist)};
+    plan.insert(plan.begin(), localPath.begin(), localPath.end());
+    end = start;
+    start = start->Closest;
+  }
 }
 
 template<class R>

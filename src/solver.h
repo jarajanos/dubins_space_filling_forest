@@ -717,12 +717,12 @@ void Solver<R, true>::saveParams(const FileStruct file, const int iterations, co
     fileStream << "[";
     bool first{true};
     for (int i{0}; i < this->connected.size(); ++i) {
-        if (!first) {
-          fileStream << CSV_DELIMITER_2;
-        }
-        
         if (this->connected[i]) {
-            fileStream << i + 1;
+            if (!first) {
+              fileStream << CSV_DELIMITER_2;
+            }
+         
+            fileStream << i;
             first = false;
         }
     }

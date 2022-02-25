@@ -1,0 +1,65 @@
+---
+  problem:
+    solver: 'lazy-sff'
+    optimize: true
+    iterations: 10000
+    dimension: '3DDubins'
+  
+  delimiters:
+    standard: ' '
+    name: '_'
+
+  TSP-solver:
+    type: 'LKH'
+
+  robot:
+    path: './models/3D/robot_cylinder_small.obj'
+    type: 'obj'
+
+  obstacles:
+    - path: './models/3D/dense_3D.obj'
+      type: 'obj'
+      position: '[0; 0; 0; 0; 0]'
+
+  cities:
+    - '[1500; 1600; 423; 0; 0]'
+    - '[100; 100;64; 0; 0]'
+    - '[500; 1700;319; 0; 0]'
+  
+  #goal: '[0.30319967716688234; 0.057430173261578954; 7; 0; 0]'
+
+  range:
+    autodetect: true
+    pitch: '[-0.3;0.3]'
+
+  distances:
+    collision: 1
+    sampling: 80
+    tree: 100
+
+  algorithm:
+    m2r-ratio: 10
+    bias: 0
+    misses: 5
+    dubins-radius: 5
+    dubins-resolution: 2
+  
+  save:
+    goals:
+      path: 'output/goals.obj'
+      type: 'obj'
+    params:
+      path: 'output/params.csv'
+      id: 'sff_3d'
+    TSP-file:
+      path: 'output/tsp.tsp'
+    TSP-paths:
+      path: 'output/tsp.obj'
+      type: 'obj'
+    tree:
+      path: 'output//tree_dense.obj'
+      type: 'obj'
+      frequency: '0'
+    roadmap:
+      path: 'output//rawPath_dense.obj'
+      type: 'obj'

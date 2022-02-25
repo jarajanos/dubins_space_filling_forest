@@ -52,6 +52,8 @@
 #define DEFAULT_THRES_MISS 3
 #define SFF_TOLERANCE 1e-9
 
+#define EQ_TOLERANCE 1e-6
+
 #define DEFAULT_SAMP_DIST 1
 
 #define FLANN_NUM_KD_TREES    4
