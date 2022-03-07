@@ -53,6 +53,11 @@ int main(int argc, char *argv[]) {
     problem.Repetition = repetition;
     problem.Dimension = D3Dubins;
     SolveProblem(config, problem);
+  } else if (dim == "3DPolynom") {
+    Problem<Point3DPolynom> problem;
+    problem.Repetition = repetition;
+    problem.Dimension = D3Polynom;
+    //SolveProblem(config, problem);
   } else {
     ERROR("Invalid value of \"dimension\" node in \"problem\" root node.");
     exit(1);
@@ -118,6 +123,16 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
       throw std::invalid_argument("invalid optimize node in \"problem\" root node");
     }
     problem.Optimize = subNode.as<bool>();
+
+    subNode = node["connect-only"];
+    if (subNode.IsDefined()) {
+      if (problem.Solver != SFF && problem.Solver != LazySFF) {
+        WARN("Parameter \"connect-only\" applicable only for SFF-based solvers, the value will be ignored");
+      }
+      problem.ConnectOnly = subNode.as<bool>();
+    } else {
+      problem.ConnectOnly = false;
+    }
 
     subNode = node["iterations"];
     if (!subNode.IsDefined()) {
@@ -375,6 +390,55 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     }
     problem.DistTree = subNode.as<double>() * scale;
 
+    // parse dynamics
+    node = config["dynamics"];
+    if (node.IsDefined()) {
+      if (problem.Dimension != D3Polynom) {
+        WARN("Dynamic feasibility of trajectory is checked only for polynomial trajectories");
+      }
+
+      subNode = node["min-thrust"];
+      if (!subNode.IsDefined()) {
+        WARN("Missing \"min-thrust\" parameter in config file, defaulting to " << DEFAULT_MIN_THRUST << " m/s^2");
+        problem.MinThrust = DEFAULT_MIN_THRUST * scale;
+      } else {
+        problem.MinThrust = subNode.as<double>() * scale;
+      }
+
+      subNode = node["max-thrust"];
+      if (!subNode.IsDefined()) {
+        WARN("Missing \"max-thrust\" parameter in config file, defaulting to " << DEFAULT_MAX_THRUST << " m/s^2");
+        problem.MaxThrust = DEFAULT_MAX_THRUST * scale;
+      } else {
+        problem.MaxThrust = subNode.as<double>() * scale;
+      }
+
+      subNode = node["max-rotation-speed"];
+      if (!subNode.IsDefined()) {
+        WARN("Missing \"max-rotation-speed\" parameter in config file, defaulting to " << DEFAULT_MAX_ROTSPEED << " rad/s");
+        problem.MaxRotSpeed = DEFAULT_MAX_ROTSPEED;
+      } else {
+        problem.MaxRotSpeed = subNode.as<double>();
+      }
+
+      subNode = node["segment-time"];
+      if (!subNode.IsDefined() && problem.Dimension == D3Polynom) {
+        throw std::invalid_argument("invalid/missing \"segment-time\" parameter in \"dynamics\" node");
+      } else if (subNode.IsDefined()) {
+        problem.SegmentTime = subNode.as<double>();
+      }
+
+      subNode = node["control-interval"];
+      if (!subNode.IsDefined()) {
+        WARN("Missing \"control-interval\" parameter in config file, defaulting to " << DEFAULT_CTRL_INT << " s");
+        problem.CtrlInterval = DEFAULT_CTRL_INT;
+      } else {
+        problem.CtrlInterval = subNode.as<double>();
+      }
+    } else if (problem.Dimension == D3Polynom) {
+      throw std::invalid_argument("missing specification of dynamics in configuration file");
+    }
+
     // parse save
     node = config["save"];
     if (node.IsDefined()) {
@@ -473,6 +537,8 @@ bool GetFile(YAML::Node &node, FileStruct &file, int repetition, bool includeIte
   } else {
     std::string value{subNode.as<std::string>()};
     if (!strcmp(value.c_str(), "map")) {
+      file.type = Map;
+    } else if (!strcmp(value.c_str(), "tri")) {
       file.type = Map;
     } else if (!strcmp(value.c_str(), "obj")) {
       file.type = Obj;

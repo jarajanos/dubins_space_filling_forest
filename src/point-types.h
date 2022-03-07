@@ -26,6 +26,8 @@ class Point3DDubins;
 #include "opendubins/dubins.h"
 #include "opendubins/dubins3D.h"
 
+#include "Vec3.h"
+
 class Point2D {
   public:
     Point2D();
@@ -152,14 +154,42 @@ class Point3DDubins {
     double pitch;
 };
 
+class Point3DPolynom {
+  public:
+    Point3DPolynom();
+    Point3DPolynom(double x, double y, double z);
+    Point3DPolynom(const std::string &s, double scale=1);
+    Point3DPolynom(const Vec3 pos);
+
+    void SetPosition(double x, double y, double z);
+    const double* GetPosition() const;
+    const double* GetRawCoords() const;
+    const double operator[](int i) const;
+    void operator+=(const Vector &translate);
+    friend bool operator==(const Point3DPolynom &p1, const Point3DPolynom &p2);
+    friend bool operator!=(const Point3DPolynom &p1, const Point3DPolynom &p2);
+    friend bool operator<(const Point3DPolynom &p1, const Point3DPolynom &p2);
+    friend Point3DPolynom operator/(const Point3DPolynom &p1, const double scale);    // scale position (NOT the rotation)
+    double Distance(const Point3DPolynom &other) const;
+    Point3DPolynom GetStateInDistance(Point3DPolynom &other, double dist) const;
+    void FillRotationMatrix(double (&matrix)[3][3]) const;
+
+  protected:
+    double coords[3];
+    double velocity[3];
+    double acceleration[3];
+};
+
 class PointVector3D : public Vector {
   public:
     PointVector3D();
     PointVector3D(double x, double y, double z);
     PointVector3D(Point3D p);
     PointVector3D(Point3DDubins p);
+    PointVector3D(Point3DPolynom p);
     PointVector3D(Point3D p1, Point3D p2);
     PointVector3D(Point3DDubins p1, Point3DDubins p2);
+    PointVector3D(Point3DPolynom p1, Point3DPolynom p2);
 };
 
 class PointVector2D : public Vector {

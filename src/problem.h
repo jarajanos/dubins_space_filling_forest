@@ -24,6 +24,7 @@ struct Problem {
 
   SolverType Solver;
   bool Optimize;
+  bool ConnectOnly;
 
   Environment<R> Env;
   std::deque<R> Roots;
@@ -37,6 +38,12 @@ struct Problem {
   double SamplingDist;
   double CollisionDist;
   double DubinsRadius;
+
+  double MinThrust;
+  double MaxThrust;
+  double MaxRotSpeed;
+  double SegmentTime;
+  double CtrlInterval;
   
   int MaxIterations;
   double PriorityBias{0};

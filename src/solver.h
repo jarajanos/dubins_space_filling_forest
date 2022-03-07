@@ -22,6 +22,9 @@
 #include "opendubins/dubins.h"
 #include "opendubins/dubins3D.h"
 
+#include "RapidTrajectoryGenerator.h"
+using namespace RapidQuadrocopterTrajectoryGenerator;
+
 template<class R>
 class SolverBase {
   public:
@@ -918,6 +921,9 @@ void Solver<R, false>::savePaths(const FileStruct file) {
 
           std::deque<R> &plan{holder.Plan};
           for (int k{0}; k < plan.size() - 1; ++k) {
+            if (plan[k] == plan[k + 1]) {
+              continue;
+            }
             fileStream << plan[k] / this->problem.Env.ScaleFactor << DELIMITER_OUT << plan[k+1] / this->problem.Env.ScaleFactor << "\n";
           }
           fileStream << "\n";
@@ -1000,6 +1006,9 @@ void Solver<R, true>::savePaths(const FileStruct file) {
               for (int m{0}; m < plan.size() - 1; ++m) {
                 R actPoint{plan[m]};
                 R lastPoint{plan[m + 1]};
+                if (actPoint == lastPoint) {
+                  continue;
+                }
 
                 fileStream << actPoint / this->problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / this->problem.Env.ScaleFactor << "\n";   
               } 
@@ -1166,6 +1175,9 @@ void Solver<R, true>::saveTspPaths(const FileStruct file) {
         for (int m{0}; m < plan.size() - 1; ++m) {
           R actPoint{plan[m]};
           R lastPoint{plan[m + 1]};
+          if (actPoint == lastPoint) {
+            continue;
+          }
 
           fileStream << actPoint / this->problem.Env.ScaleFactor << DELIMITER_OUT << lastPoint / this->problem.Env.ScaleFactor << "\n";
           lastPoint = actPoint;

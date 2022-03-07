@@ -1,7 +1,8 @@
 ---
   problem:
-    solver: 'lazy-rrt'
-    optimize: false
+    solver: 'sff'
+    optimize: true
+    connect-only: true
     iterations: 100000
     dimension: '3DDubins'
   
@@ -38,13 +39,13 @@
     pitch: '[-0.3;0.3]'
 
   distances:
-    collision: 0.01
+    collision: 0.05
     sampling: 1.6
     tree: 2
 
   algorithm:
     m2r-ratio: 10
-    bias: 0
+    bias: 0.95
     misses: 5
     dubins-radius: 0.5
     dubins-resolution: 2
@@ -59,11 +60,11 @@
     TSP-file:
       path: 'output/tsp.tsp'
     TSP-paths:
-      path: 'output/tsp.obj'
-      type: 'obj'
+      path: 'output/tsp.tri'
+      type: 'map'
     tree:
-      path: 'output//tree5_normal_building.obj'
-      type: 'obj'
+      path: 'output//tree5_normal_building.tri'
+      type: 'map'
       frequency: '0'
     roadmap:
       path: 'output//rawPath5_normal_building.obj'

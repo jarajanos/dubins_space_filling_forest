@@ -63,7 +63,7 @@ std::string Rtrim(const std::string &s);
 std::string Trim(const std::string &s);
 std::string ToLower(std::string s);
 
-// FLANN FUNCTOR
+// FLANN FUNCTORS
 template<class T>
 struct D6Distance {
   typedef bool is_vector_space_distance;
@@ -93,14 +93,42 @@ struct D6Distance {
   }
 };
 
+template<class T>
+struct D9Distance {
+	typedef bool is_kdtree_distance;
+
+  typedef T ElementType;
+  typedef typename flann::Accumulator<T>::Type ResultType;
+
+  template<typename Iterator1, typename Iterator2>
+	ResultType operator()(Iterator1 a, Iterator2 b, size_t size, ResultType /*worst_dist*/= -1) const	{
+		ResultType result = ResultType();
+		ResultType diff;
+
+    for (int i{0}; i < 9; ++i) {
+      diff = (ResultType) *a++ - *b++;
+      result += diff * diff;
+    }
+
+		return result;
+	}
+
+	template<typename U, typename V>
+	inline ResultType accum_dist(const U& a, const V& b, int) const
+			{
+		return (a - b) * (a - b);
+	}
+};
+
 enum Dimensions {
   D2 = 0,
   D2Dubins = 1,
   D3 = 2,
-  D3Dubins = 3
+  D3Dubins = 3,
+  D3Polynom = 4
 };
 
-const static inline size_t NumDimensions[] = { 2, 3, 3, 6 };
+const static inline size_t NumDimensions[] = { 2, 3, 3, 6, 9 };
 
 enum FileType {
   Map,

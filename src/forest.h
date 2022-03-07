@@ -143,7 +143,6 @@ template<class R>
 SpaceForest<R,true>::SpaceForest(Problem<R> &problem) : SpaceForestBase<R>(problem) {
   for (int i{0}; i < this->trees.size(); ++i) {
     Node<R> *node{this->trees[i].Root};
-    node->ExpandedAngles = std::deque<int>(this->problem.DubinsResolution);
     for (int i{0}; i < this->problem.DubinsResolution; ++i) {
       node->ExpandedAngles.push_back(i);
     }
@@ -275,12 +274,12 @@ void SpaceForestBase<R>::PureSolve(int &iter, bool &solved, std::chrono::duratio
       }
 
       bool connected{false};
-      if (emptyFrontier) {
+      if (emptyFrontier || this->problem.ConnectOnly) {
         // check whether all trees are connected
         connected = checkConnected() == this->problem.GetNumRoots();
       }
 
-      solved = (!this->problem.HasGoal && emptyFrontier && connected);
+      solved = (!this->problem.HasGoal && (emptyFrontier || this->problem.ConnectOnly) && connected);
     } else if (solved) {
       // update the connected trees to correct params output
       checkConnected(); 
@@ -288,7 +287,7 @@ void SpaceForestBase<R>::PureSolve(int &iter, bool &solved, std::chrono::duratio
   }
 
   // consider as solved also the case, where frontiers are not empty, but all trees are connected
-  if (!solved && !this->problem.HasGoal) {
+  if (!solved && !this->problem.HasGoal && !this->problem.ConnectOnly) {
     solved = checkConnected() == this->problem.GetNumRoots();
   }
 
@@ -760,16 +759,34 @@ bool SpaceForest<R, true>::expandNode(Node<R> *expanded, bool &solved, const uns
     }
   } else {
     // check all angles - root only
+    distances.resize(this->problem.DubinsResolution);
     bool oneSuitable{false};
-    for (int i{0}; i < this->problem.DubinsResolution; ++i) {
-      R temp{expanded->Position};
-      temp.SetHeading(i, this->problem.DubinsResolution);
-      if (this->isPathFree(temp, newPoint)) {
-        oneSuitable = true;
-        expandedAngles.push_back(i);
-        distances.push_back(temp.Distance(newPoint));
-      } else {
-        distances.push_back(std::numeric_limits<double>::max());
+    if (this->problem.HasGoal) {
+      for (int i{0}; i < this->problem.DubinsResolution; ++i) {
+        R temp{expanded->Position};
+        temp.SetHeading(i, this->problem.DubinsResolution);
+        if (this->isPathFree(temp, newPoint)) {
+          oneSuitable = true;
+          expandedAngles.push_back(i);
+          distances[i] = temp.Distance(newPoint);
+        } else {
+          distances[i] = std::numeric_limits<double>::max();
+        }
+      }
+    } else {
+      for (int i{0}; i < this->problem.DubinsResolution / 2; ++i) {   // divide by two -- eliminate points without paths to and from root
+        R temp{expanded->Position};
+        temp.SetHeading(i, this->problem.DubinsResolution);
+        if (this->isPathFree(temp, newPoint) && this->isPathFree(newPoint, temp)) {
+          oneSuitable = true;
+          expandedAngles.push_back(i);
+          expandedAngles.push_back(i + this->problem.DubinsResolution / 2);
+          distances[i] = temp.Distance(newPoint);
+          distances[i + this->problem.DubinsResolution / 2] = newPoint.Distance(temp);
+        } else {
+          distances[i] = std::numeric_limits<double>::max();
+          distances[i + this->problem.DubinsResolution / 2] = std::numeric_limits<double>::max();
+        }
       }
     }
 
@@ -880,7 +897,7 @@ void SpaceForest<R, true>::rewireNodes(Node<R> *newNode, Node<R> &neighbor, doub
 // solved = there exists ANY path connecting all roots, BUT IT MIGHT NOT BE CONTINUOUS
 template<class R>
 bool SpaceForest<R, true>::checkBorders(int id1, int id2) {
-  auto link{this->borders(id1, id2)}; 
+  auto &link{this->borders(id1, id2)}; 
   if (link.empty()) {
     return false;
   } else if (link[0].IsValid) {

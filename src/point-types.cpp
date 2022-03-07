@@ -656,6 +656,115 @@ void Point3DDubins::PrintPosition(std::ostream &out) {
   out << (*this)[0] << DELIMITER_OUT << (*this)[1] << DELIMITER_OUT << (*this)[2];
 }
 
+Point3DPolynom::Point3DPolynom() : Point3DPolynom(0,0,0) {
+}
+
+Point3DPolynom::Point3DPolynom(double x, double y, double z) : coords{x, y, z}, acceleration{0,0,0}, velocity{0,0,0} {
+}
+
+Point3DPolynom::Point3DPolynom(const std::string &s, double scale) {
+  std::regex r("\\[(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*)\\]");
+  std::smatch m;
+  std::regex_search(s, m, r);
+  if (m.size() != 6) {
+    throw std::invalid_argument("Unknown format of point");
+  }
+
+  //position
+  for (int i{0}; i < 3; ++i) {
+    coords[i] = std::stod(m[i + 1]) * scale;
+    velocity[i] = std::stod(m[i + 4]);
+    acceleration[i] = std::stod(m[i + 7]);
+  }
+}
+
+Point3DPolynom::Point3DPolynom(const Vec3 pos) : Point3DPolynom(pos.x, pos.y, pos.z) {
+}
+
+void Point3DPolynom::SetPosition(double x, double y, double z) {
+  coords[0] = x;
+  coords[1] = y;
+  coords[2] = z;
+}
+
+const double* Point3DPolynom::GetPosition() const {
+  return coords;
+}
+
+const double* Point3DPolynom::GetRawCoords() const {
+  return coords;
+}
+
+const double Point3DPolynom::operator[](int i) const {
+  if (i < 3) {
+    return coords[i];
+  } else if (i < 6) {
+    return velocity[i - 3];
+  } else if (i < 9) {
+    return acceleration[i - 6];
+  }
+
+  return 1;
+}
+
+void Point3DPolynom::operator+=(const Vector &translate) {
+  for (int i{0}; i < 3; ++i) {
+    coords[i] += translate[i];
+  }
+}
+
+bool operator==(const Point3DPolynom &p1, const Point3DPolynom &p2) {
+  bool equal{true};
+  for (int i{0}; i < 9 && equal; ++i) {
+    equal &= inBounds(p1[i], p2[i], EQ_TOLERANCE);
+  }
+  return equal;
+}
+
+bool operator!=(const Point3DPolynom &p1, const Point3DPolynom &p2) {
+  return !(p1 == p2);
+}
+
+bool operator<(const Point3DPolynom &p1, const Point3DPolynom &p2) {
+  for (int i{0}; i < 9; ++i) {
+    if (p1[i] == p2[i]) {
+      continue;
+    }
+
+    return p1[i] < p2[i];
+  }
+  return false;
+}
+
+Point3DPolynom operator/(const Point3DPolynom &p1, const double scale) {
+  Point3DPolynom newPoint{p1};
+  for (int i{0}; i < 3; ++i) {
+    newPoint.coords[i] /= scale;
+  }
+  
+  return newPoint;
+}
+
+double Point3DPolynom::Distance(const Point3DPolynom &other) const {
+  // TODO
+}
+
+Point3DPolynom Point3DPolynom::GetStateInDistance(Point3DPolynom &other, double dist) const {
+  // TODO
+}
+
+void Point3DPolynom::FillRotationMatrix(double (&matrix)[3][3]) const {
+  matrix[0][0] = 1;
+  matrix[0][1] = 0;
+  matrix[0][2] = 0;
+  matrix[1][0] = 0;
+  matrix[1][1] = 1;
+  matrix[1][2] = 0;
+  matrix[2][0] = 0;
+  matrix[2][1] = 0;
+  matrix[2][2] = 1;
+}
+
 PointVector3D::PointVector3D() : Vector(3) {
   this->coords.get()[0] = 0;
   this->coords.get()[1] = 0;
@@ -674,6 +783,9 @@ PointVector3D::PointVector3D(Point3D p) : PointVector3D(p[0], p[1], p[2]) {
 PointVector3D::PointVector3D(Point3DDubins p) : PointVector3D(p[0], p[1], p[2]) {
 }
 
+PointVector3D::PointVector3D(Point3DPolynom p) : PointVector3D(p[0], p[1], p[2]) {
+}
+
 PointVector3D::PointVector3D(Point3D p1, Point3D p2) : Vector(3) {
   for (int i{0}; i < 3; ++i) {
     this->coords.get()[i] = p2[i] - p1[i];
@@ -681,6 +793,12 @@ PointVector3D::PointVector3D(Point3D p1, Point3D p2) : Vector(3) {
 }
 
 PointVector3D::PointVector3D(Point3DDubins p1, Point3DDubins p2) : Vector(3) {
+  for (int i{0}; i < 3; ++i) {
+    this->coords.get()[i] = p2[i] - p1[i];
+  }
+}
+
+PointVector3D::PointVector3D(Point3DPolynom p1, Point3DPolynom p2) : Vector(3) {
   for (int i{0}; i < 3; ++i) {
     this->coords.get()[i] = p2[i] - p1[i];
   }

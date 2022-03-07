@@ -240,6 +240,17 @@ class FlannHolder<Node<Point3DDubins>> {
     void CreateIndex(flann::Matrix<float> &matrix);
 };
 
+template<>
+class FlannHolder<Node<Point3DPolynom>> {
+  public:
+    flann::Index<D9Distance<float>> *Index{nullptr};
+    std::deque<float *> PtrsToDel;
+
+    ~FlannHolder();
+
+    void CreateIndex(flann::Matrix<float> &matrix);
+};
+
 template<class R>
 class Tree {
   public:

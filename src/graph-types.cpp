@@ -91,6 +91,24 @@ FlannHolder<Node<Point3DDubins>>::~FlannHolder() {
   }
 }
 
+void FlannHolder<Node<Point3DPolynom>>::CreateIndex(flann::Matrix<float> &matrix) {
+  Index = new flann::Index<D9Distance<float>>(matrix, flann::KDTreeIndexParams(FLANN_NUM_KD_TREES));
+  Index->buildIndex();
+  this->PtrsToDel.push_back(matrix.ptr());
+}
+
+FlannHolder<Node<Point3DPolynom>>::~FlannHolder() {
+  if (Index != nullptr) {
+    delete Index;
+  }
+  
+  for (auto ptr : PtrsToDel) {
+    if (ptr != nullptr) {
+      delete[] ptr;
+    }
+  }
+}
+
 // does not make sense = only purpose is correct ordering in DistanceHolder - position of Node in argument MAKES sense here, the problem is not symmetric
 template<>
 bool NodeBase<Point2DDubins>::operator<(const NodeBase<Point2DDubins> &l) {

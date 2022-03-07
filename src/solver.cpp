@@ -112,6 +112,38 @@ bool SolverBase<Point3DDubins>::isPathFree(const Point3DDubins start, const Poin
   return isFree;
 }
 
+template<>
+bool SolverBase<Point3DPolynom>::isPathFree(const Point3DPolynom start, const Point3DPolynom finish) {
+  Vec3 startPos{start[0], start[1], start[2]};
+  Vec3 startVel{start[3], start[4], start[5]};
+  Vec3 startAcc{start[6], start[7], start[8]};
+
+  Vec3 finishPos{finish[0], finish[1], finish[2]};
+  Vec3 finishVel{finish[3], finish[4], finish[5]};
+  Vec3 finishAcc{finish[6], finish[7], finish[8]};
+
+  Vec3 gravity{0,0,-GRAVITY};
+
+  RapidTrajectoryGenerator traj(startPos, startVel, startAcc, gravity);
+  traj.SetGoalPosition(finishPos);
+  traj.SetGoalVelocity(finishVel);
+  traj.SetGoalAcceleration(finishAcc);
+
+  traj.Generate(this->problem.SegmentTime);
+
+  double parts{this->problem.SegmentTime / this->problem.CtrlInterval};
+  bool isFree{true};
+  for (int index{0}; index < parts && isFree; ++index) {
+    Vec3 pos{traj.GetPosition(index * this->problem.CtrlInterval)};
+    Point3DPolynom pos3D{pos};
+
+    isFree &= !problem.Env.Collide(pos3D);
+  }
+  traj.GetPosition(this->problem.CtrlInterval);
+
+  return isFree;
+}
+
 // approximation for getAllPaths
 template <>
 double Solver<Point2DDubins>::computeDistance(std::deque<Point2DDubins> &plan) {

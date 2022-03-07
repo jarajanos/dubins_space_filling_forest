@@ -18,32 +18,35 @@
     type: 'obj'
 
   obstacles:
-    - path: './models/3D/dense_3D.obj'
+    - path: './models/3D/triang.obj'
       type: 'obj'
       position: '[0; 0; 0; 0; 0]'
 
   cities:
-    - '[1500; 1600; 423; 0; 0]'
-    - '[100; 100;64; 0; 0]'
-    - '[500; 1700;319; 0; 0]'
+    - '[-3.289; 1.164; 1.678; 0; 0]'
+    - '[-0.625; 4.185; 0.751; 0; 0]' 
+    - '[0.967; -0.527; 1; 0; 0]'
   
   #goal: '[0.30319967716688234; 0.057430173261578954; 7; 0; 0]'
 
   range:
-    autodetect: true
-    pitch: '[-0.3;0.3]'
+    autodetect: false
+    x: "[-7;7]"
+    y: "[-7;7]"
+    z: "[0;10]"
+    pitch: '[-0.5;0.5]'
 
   distances:
-    collision: 1
-    sampling: 80
-    tree: 100
+    collision: 0.01
+    sampling: 1.6
+    tree: 2
 
   algorithm:
     m2r-ratio: 10
     bias: 0.95
     misses: 5
-    dubins-radius: 5
-    dubins-resolution: 2
+    dubins-radius: 0.1
+    dubins-resolution: 8
 
   dynamics:
     min-thrust: 1
@@ -60,14 +63,14 @@
       path: 'output/params.csv'
       id: 'sff_3d'
     TSP-file:
-      path: 'output/tsp.tsp'
+      path: 'output/tsp_triang.tsp'
     TSP-paths:
-      path: 'output/tsp_dense.tri'
+      path: 'output/tsp_triang.tri'
       type: 'map'
     tree:
-      path: 'output//tree_dense.obj'
+      path: 'output//tree_triang.obj'
       type: 'obj'
       frequency: '0'
     roadmap:
-      path: 'output//rawPath_dense.tri'
+      path: 'output//rawPath_triang.tri'
       type: 'tri'
