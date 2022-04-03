@@ -192,46 +192,59 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
 
     // algorithm node
     node = config["algorithm"];
-    if (!node.IsDefined()) {
-      throw std::invalid_argument("invalid \"algorithm\" root node");
-    }
-    subNode = node["m2r-ratio"];
-    if (!subNode.IsDefined()) {
-      throw std::invalid_argument("invalid m2r-ratio node in \"algorithm\" root node");
-    }
-    scale = subNode.as<double>();
-    subNode = node["misses"];
-    if (subNode.IsDefined()) {
-      problem.MaxMisses = subNode.as<int>();
-    }
-    subNode = node["dubins-radius"];
-    if ((problem.Dimension == D2Dubins || problem.Dimension == D3Dubins) && !subNode.IsDefined()) {
-      throw std::invalid_argument("dubins radius missing");
-    } else if (subNode.IsDefined()) {
-      problem.DubinsRadius = subNode.as<double>() * scale;
-      Point2DDubins::DubinsRadius = subNode.as<double>() * scale;
-      Point3DDubins::DubinsRadius = subNode.as<double>() * scale;
-    }
-    subNode = node["dubins-resolution"];
-    if ((problem.Dimension == D2Dubins || problem.Dimension == D3Dubins) && !subNode.IsDefined()) {
-      throw std::invalid_argument("dubins resolution missing");
-    } else if (subNode.IsDefined()) {
-      problem.DubinsResolution = subNode.as<int>();
-    }
-    subNode = node["bias"];
-    if (subNode.IsDefined()) {
-      problem.PriorityBias = subNode.as<double>();
-    }
+    if (node.IsDefined()) {
+      subNode = node["m2r-ratio"];
+      if (subNode.IsDefined()) {
+        scale = subNode.as<double>();
+      } else {
+        scale = 1;
+      }
+      subNode = node["misses"];
+      if (subNode.IsDefined()) {
+        problem.MaxMisses = subNode.as<int>();
+      }
+      subNode = node["dubins-radius"];
+      if ((problem.Dimension == D2Dubins || problem.Dimension == D3Dubins) && !subNode.IsDefined()) {
+        throw std::invalid_argument("dubins radius missing");
+      } else if (subNode.IsDefined()) {
+        problem.DubinsRadius = subNode.as<double>() * scale;
+        Point2DDubins::DubinsRadius = subNode.as<double>() * scale;
+        Point3DDubins::DubinsRadius = subNode.as<double>() * scale;
+      }
+      subNode = node["dubins-resolution"];
+      if ((problem.Dimension == D2Dubins || problem.Dimension == D3Dubins) && !subNode.IsDefined()) {
+        throw std::invalid_argument("dubins resolution missing");
+      } else if (subNode.IsDefined()) {
+        problem.DubinsResolution = subNode.as<int>();
+      }
+      subNode = node["bias"];
+      if (subNode.IsDefined()) {
+        problem.PriorityBias = subNode.as<double>();
+      }
 
-    if (problem.Solver == LazyRRT && problem.PriorityBias != 0) {
-      throw std::invalid_argument("priority bias for Lazy solver is not implemented");
-    }
+      if (problem.Solver == LazyRRT && problem.PriorityBias != 0) {
+        throw std::invalid_argument("priority bias for Lazy solver is not implemented");
+      }
 
-    subNode = node["prm-connections"];
-    if (problem.Solver == PRM && !problem.Optimize && !subNode.IsDefined()) {
-      throw std::invalid_argument("number of connections for classic sPRM must be defined!");
-    } else if (subNode.IsDefined()) {
-      problem.PrmConnections = subNode.as<int>();
+      subNode = node["prm-connections"];
+      if (problem.Solver == PRM && !problem.Optimize && !subNode.IsDefined()) {
+        throw std::invalid_argument("number of connections for classic sPRM must be defined!");
+      } else if (subNode.IsDefined()) {
+        problem.PrmConnections = subNode.as<int>();
+      }
+    } else {
+      scale = 1;
+      if (problem.Dimension == D2Dubins || problem.Dimension == D3Dubins) {
+        throw std::invalid_argument("dubins radius, resolution in \"algorithm\" node missing");
+      }
+
+      if (problem.Solver == LazyRRT && problem.PriorityBias != 0) {
+        throw std::invalid_argument("priority bias for Lazy solver not implemented");
+      }
+
+      if (problem.Solver == PRM && !problem.Optimize) {
+        throw std::invalid_argument("number of connections for classic sPRM must be defined!");
+      }
     }
 
     // robot node
@@ -247,39 +260,40 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     // parse range
     node = config["range"];
     if (!node.IsDefined()) {
-      throw std::invalid_argument("invalid \"range\" root node");
-    }
-    subNode = node["autodetect"];
-    problem.AutoRange = (subNode.IsDefined() && subNode.as<bool>());
+      problem.AutoRange = true;
+    } else {
+      subNode = node["autodetect"];
+      problem.AutoRange = (subNode.IsDefined() && subNode.as<bool>());
 
-    if (!problem.AutoRange) {
-      std::string tempText;
-      subNode = node['x'];
-      if (!subNode.IsDefined()) {
-        throw std::invalid_argument("invalid x node in \"range\" root node");
-      }
-      tempText = subNode.as<std::string>();
-      problem.Env.Limits.Parse(tempText, scale, 0);
-
-      subNode = node['y'];
-      if (!subNode.IsDefined()) {
-        throw std::invalid_argument("invalid y node in \"range\" root node");
-      }
-      tempText = subNode.as<std::string>();
-      problem.Env.Limits.Parse(tempText, scale, 1);
-
-      subNode = node['z'];
-      if (!subNode.IsDefined() && (problem.Dimension == D3 || problem.Dimension == D3Dubins)) {
-        throw std::invalid_argument("invalid z node in \"range\" root node");
-      } else if (subNode.IsDefined()) {
+      if (!problem.AutoRange) {
+        std::string tempText;
+        subNode = node['x'];
+        if (!subNode.IsDefined()) {
+          throw std::invalid_argument("invalid x node in \"range\" root node");
+        }
         tempText = subNode.as<std::string>();
-        problem.Env.Limits.Parse(tempText, scale, 2);
+        problem.Env.Limits.Parse(tempText, scale, 0);
+
+        subNode = node['y'];
+        if (!subNode.IsDefined()) {
+          throw std::invalid_argument("invalid y node in \"range\" root node");
+        }
+        tempText = subNode.as<std::string>();
+        problem.Env.Limits.Parse(tempText, scale, 1);
+
+        subNode = node['z'];
+        if (!subNode.IsDefined() && (problem.Dimension == D3 || problem.Dimension == D3Dubins)) {
+          throw std::invalid_argument("invalid z node in \"range\" root node");
+        } else if (subNode.IsDefined()) {
+          tempText = subNode.as<std::string>();
+          problem.Env.Limits.Parse(tempText, scale, 2);
+        }
       }
 
       subNode = node["pitch"];
       if (!subNode.IsDefined()) {
         if (problem.Dimension == D3Dubins) {
-          WARN("missing pitch node in \"range\" root node, settings to +/- (3.14 / 2)");
+          WARN("missing pitch node in \"range\" root node, setting to +/- (3.14 / 2)");
           problem.Env.Limits.maxs[3] = M_PI_2;
           problem.Env.Limits.mins[3] = -M_PI_2;
         } else if (problem.Dimension == D3) {
@@ -301,6 +315,9 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     if (!node.IsDefined()) {
       problem.Env.HasMap = false;
       problem.Env.ScaleFactor = scale;
+      if (problem.AutoRange) {
+        throw std::invalid_argument("cannot use autorange setting for configuration without map");
+      }
     } else {
       problem.Env.ScaleFactor = scale;
 
@@ -361,6 +378,8 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
       }
       problem.HasGoal = true;
       problem.Goal = R(node.as<std::string>(), scale);
+    } else if (problem.Roots.size() == 1) {
+      throw std::invalid_argument("more cities or a goal must be specified");
     }
     
     if (!problem.HasGoal && problem.PriorityBias != 0 && problem.Solver == RRT) {

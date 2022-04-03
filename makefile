@@ -56,7 +56,7 @@ prep:
 	@mkdir -p $(DBGDIR)
 	@mkdir -p $(RELDIR)
 
-install: rapid flann yaml gdip release trajetories
+install: rapid flann yaml gdip release trajectories
 
 solver: concorde lkh
 

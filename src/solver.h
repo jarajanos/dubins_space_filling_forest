@@ -112,7 +112,7 @@ class Solver<R, true> : public SolverBase<R> {
 };
 
 template<class R>
-SolverBase<R>::SolverBase(Problem<R> &problem) : problem{problem}, rnd{problem.Env.Limits} {
+SolverBase<R>::SolverBase(Problem<R> &problem) : problem{problem}, rnd{problem.Env.Limits, problem.MaxMisses} {
   this->connected = std::vector<bool>((size_t)problem.GetNumRoots(), false);
 }
 
@@ -665,12 +665,11 @@ void Solver<R, false>::saveParams(const FileStruct file, const int iterations, c
     if (this->tspSolution.size() == 0) {
       tspLength = -1;
     }
-    for (int tspOrder{0}; tspOrder < numRoots; ++tspOrder) {
+    for (int tspOrder{0}; tspOrder < numRoots && tspLength != -1; ++tspOrder) {
       int node1{this->tspSolution[tspOrder]};
       int node2{this->tspSolution[(tspOrder + 1) % numRoots]};
       if (!this->neighboringMatrix.Exists(node1, node2)) {
         tspLength = -1;
-        break;
       }
 
       double dist{this->neighboringMatrix(node1, node2).Distance / this->problem.Env.ScaleFactor};
@@ -678,7 +677,6 @@ void Solver<R, false>::saveParams(const FileStruct file, const int iterations, c
         tspLength += dist;
       } else {
         tspLength = -1;
-        break;
       }
     }
     

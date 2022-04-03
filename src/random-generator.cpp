@@ -42,6 +42,7 @@ bool RandomGenerator<Point2DDubins>::RandomPointInDistance(const Point2DDubins& 
   return limits.IsInLimits(point);
 }
 
+// Marsaglia, G. (1972), "Choosing a Point from the Surface of a Sphere", 
 template<>
 bool RandomGenerator<Point3D>::RandomPointInDistance(const Point3D& center, Point3D& point, const double distance) {
   Point3D temp;
@@ -49,10 +50,14 @@ bool RandomGenerator<Point3D>::RandomPointInDistance(const Point3D& center, Poin
   // rotation
   bool inLimits{false};
   double s, sigOne, sigTwo, thetaOne, thetaTwo;
-  while (!inLimits) {
-    double phi{uniDistAngle(rndEng)};
-    double theta{uniDistAngle(rndEng)};
-    temp.SetPosition(center[0] + cos(theta) * sin(phi) * distance, center[1] + sin(theta) * sin(phi)  * distance, center[2] + cos(phi) * distance);
+  int iter{0};
+  while (!inLimits && iter < maxIter) {
+    double u{normProb(rndEng)};
+    double v{normProb(rndEng)};
+    double w{normProb(rndEng)};
+
+    double norm{sqrt(u*u + v*v + w*w)};
+    temp.SetPosition(center[0] + u * distance / norm, center[1] + v * distance / norm, center[2] + w * distance / norm);
 
     s = RandomProbability();
     sigOne = sqrt(1-s);
@@ -66,11 +71,13 @@ bool RandomGenerator<Point3D>::RandomPointInDistance(const Point3D& center, Poin
     // the distance is not exactly the expected one (might be much greater), therefore a point in the same direction with the correct distance is needed
     point = center.GetStateInDistance(temp, distance);
     inLimits = limits.IsInLimits(point);
+    ++iter;
   }
 
   return inLimits;
 }
 
+// Marsaglia, G. (1972), "Choosing a Point from the Surface of a Sphere", 
 template<>
 bool RandomGenerator<Point3DDubins>::RandomPointInDistance(const Point3DDubins& center, Point3DDubins& point, const double distance) {
   Point3DDubins temp;
@@ -79,10 +86,14 @@ bool RandomGenerator<Point3DDubins>::RandomPointInDistance(const Point3DDubins& 
   opendubins::Dubins3D dubPath;
   opendubins::State3D a{center[0], center[1], center[2], center.GetHeading(), center.GetPitch()};
   opendubins::State3D b;
-  while (dist == std::numeric_limits<double>::max()) {
-    double phi{uniDistAngle(rndEng)};
-    double theta{uniDistAngle(rndEng)};
-    temp.SetPosition(center[0] + cos(theta) * sin(phi) * distance, center[1] + sin(theta) * sin(phi)  * distance, center[2] + cos(phi) * distance);
+  int iter{0};
+  while (dist == std::numeric_limits<double>::max() && iter < maxIter) {
+    double u{normProb(rndEng)};
+    double v{normProb(rndEng)};
+    double w{normProb(rndEng)};
+
+    double norm{sqrt(u*u + v*v + w*w)};
+    temp.SetPosition(center[0] + u * distance / norm, center[1] + v * distance / norm, center[2] + w * distance / norm);
 
     // rotation
     temp.SetHeading(uniDistAngle(rndEng));
@@ -91,11 +102,16 @@ bool RandomGenerator<Point3DDubins>::RandomPointInDistance(const Point3DDubins& 
     b = opendubins::State3D{temp[0], temp[1], temp[2], temp.GetHeading(), temp.GetPitch()};
     dubPath = opendubins::Dubins3D{a, b, Point3DDubins::DubinsRadius, -Point3DDubins::MaxPitch, Point3DDubins::MaxPitch};
     dist = dubPath.getLength();
+    ++iter;
   }
 
-  // get point in exact distance
-  point = Point3DDubins(dubPath.getState(distance));
-  return limits.IsInLimits(point);
+  if (iter != maxIter) {
+    // get point in exact distance
+    point = Point3DDubins(dubPath.getState(distance));
+    return limits.IsInLimits(point);
+  }
+
+  return false;
 }
 
 /**
@@ -122,7 +138,8 @@ void RandomGenerator<Point3D>::RandomPointInSpace(Point3D& point) {
   // rotation
   bool inLimits{false};
   double s, sigOne, sigTwo, thetaOne, thetaTwo;
-  while (!inLimits) {
+  int iter{0};
+  while (!inLimits && iter < maxIter) {
     s = RandomProbability();
     sigOne = sqrt(1-s);
     sigTwo = sqrt(s);
@@ -132,6 +149,7 @@ void RandomGenerator<Point3D>::RandomPointInSpace(Point3D& point) {
     Quaternion rotation{cos(thetaTwo) * sigTwo, sin(thetaOne) * sigOne, cos(thetaOne) * sigOne, sin(thetaTwo) * sigTwo};
     point.SetRotation(rotation);
     inLimits = limits.IsInLimits(point);
+    ++iter;
   }
 }
 

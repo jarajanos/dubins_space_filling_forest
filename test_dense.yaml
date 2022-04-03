@@ -1,56 +1,40 @@
 ---
-  problem:
-    solver: 'sff'
-    optimize: true
-    connect-only: false
-    iterations: 100000
-    dimension: '3DDubins'
-  
-  delimiters:
-    standard: ' '
-    name: '_'
-
   TSP-solver:
-    type: 'LKH'
-
-  robot:
-    path: './models/3D/robot_cylinder_small.obj'
-    type: 'obj'
-
-  obstacles:
-    - path: './models/3D/dense_3D.obj'
-      type: 'obj'
-      position: '[0; 0; 0; 0; 0]'
-
+    type: Concorde
+  algorithm:
+    bias: 0.95
+    dubins-radius: 2
+    dubins-resolution: 2
+    m2r-ratio: 10
+    misses: 5
   cities:
-    - '[1500; 1600; 423; 0; 0]'
-    - '[100; 100;64; 0; 0]'
-    - '[500; 1700;319; 0; 0]'
-  
-  #goal: '[0.30319967716688234; 0.057430173261578954; 7; 0; 0]'
-
-  range:
-    autodetect: true
-    pitch: '[-0.3;0.3]'
-
+  - '[1500; 1600; 423; 0; 0]'
+  - '[100; 100;64; 0; 0]'
+  - '[500; 1700;319; 0; 0]'
+  - '[1440; 330;752; 0; 0]'
+  - '[765; 828;549; 0; 0]'
+  delimiters:
+    name: _
+    standard: ' '
   distances:
     collision: 1
     sampling: 80
     tree: 100
-
-  algorithm:
-    m2r-ratio: 10
-    bias: 0.95
-    misses: 5
-    dubins-radius: 5
-    dubins-resolution: 2
-
-  dynamics:
-    min-thrust: 1
-    max-thrust: 5
-    max-rotation-speed: 5
-    segment-time: 1
-    control-interval: 0.01
+  obstacles:
+  - path: .//maps//dense_3D.obj
+    position: '[0;0;0;0;0]'
+    type: obj
+  problem:
+    dimension: 3DDubins
+    iterations: 100000
+    optimize: true
+    solver: sff
+  range:
+    autodetect: true
+    pitch: '[-0.5;0.5]'
+  robot:
+    path: ./models/robot_small.obj
+    type: obj
 
   save:
     goals:
@@ -66,7 +50,7 @@
       type: 'map'
     tree:
       path: 'output//tree_dense.obj'
-      type: 'obj'
+      type: 'map'
       frequency: '0'
     roadmap:
       path: 'output//rawPath_dense.tri'

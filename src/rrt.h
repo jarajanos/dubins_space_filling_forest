@@ -130,6 +130,10 @@ void RapidExpTreeBase<R>::Solve() {
   }
   
   this->getConnected();
+  if (this->problem.ComputeTSP) {
+    this->computeTsp();
+  }
+  
   if (SaveParams <= this->problem.SaveOpt) {
     this->saveParams(this->problem.FileNames[SaveParams], iter, solved, watch.GetElapsed());
   }

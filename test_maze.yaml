@@ -14,19 +14,19 @@
     type: 'obj'
 
   obstacles:
-    - path: './maps/maze2.obj'
+    - path: './maps/maze.obj'
       type: 'obj'
       position: '[0; 0;0]'
 
-  #cities:
-  #  - "[0;0;0]"
-   
   cities:
-    - "[750; -845;0]"
+    - "[0;0;0]"
+   
+  #cities:
+  #  - "[750; -845;0]"
 
-  #goal: "[-844; 850;0]"
+  goal: "[-844; 850;0]"
 
-  goal: "[600; -900;0]"
+  #goal: "[600; -900;0]"
 
   range:
     autodetect: true
