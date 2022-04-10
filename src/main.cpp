@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     Problem<Point3DPolynom> problem;
     problem.Repetition = repetition;
     problem.Dimension = D3Polynom;
-    //SolveProblem(config, problem);
+    SolveProblem(config, problem);
   } else {
     ERROR("Invalid value of \"dimension\" node in \"problem\" root node.");
     exit(1);
@@ -301,6 +301,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
           problem.Env.Limits.mins[3] = -__DBL_MAX__;
         }
       } else {
+        std::string tempText;
         tempText = subNode.as<std::string>();
         problem.Env.Limits.Parse(tempText, scale, 3);
         if (problem.Env.Limits.mins[3] != -problem.Env.Limits.maxs[3]) {
@@ -416,6 +417,13 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
         WARN("Dynamic feasibility of trajectory is checked only for polynomial trajectories");
       }
 
+      subNode = node["free-sampling"];
+      if (!subNode.IsDefined()) {
+        problem.FreeSampling = true;
+      } else {
+        problem.FreeSampling = subNode.as<bool>();
+      }
+
       subNode = node["min-thrust"];
       if (!subNode.IsDefined()) {
         WARN("Missing \"min-thrust\" parameter in config file, defaulting to " << DEFAULT_MIN_THRUST << " m/s^2");
@@ -440,11 +448,22 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
         problem.MaxRotSpeed = subNode.as<double>();
       }
 
+      subNode = node["gravity"];
+      if (!subNode.IsDefined()) {
+        WARN("Missing \"gravity\" parameter in config file, defaulting to " << DEF_GRAVITY << " m/s^2");
+        problem.Gravity = DEF_GRAVITY;
+      } else {
+        problem.Gravity = subNode.as<double>();
+      }
+      Point3DPolynom::Gravity = problem.Gravity;
+
       subNode = node["segment-time"];
       if (!subNode.IsDefined() && problem.Dimension == D3Polynom) {
         throw std::invalid_argument("invalid/missing \"segment-time\" parameter in \"dynamics\" node");
       } else if (subNode.IsDefined()) {
         problem.SegmentTime = subNode.as<double>();
+        problem.AvgVelocity = problem.SamplingDist / problem.SegmentTime;
+        Point3DPolynom::AverageVelocity = problem.AvgVelocity;
       }
 
       subNode = node["control-interval"];

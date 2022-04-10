@@ -26,7 +26,10 @@ class Point3DDubins;
 #include "opendubins/dubins.h"
 #include "opendubins/dubins3D.h"
 
+#include "RapidTrajectoryGenerator.h"
 #include "Vec3.h"
+
+using namespace RapidQuadrocopterTrajectoryGenerator;
 
 class Point2D {
   public:
@@ -156,12 +159,17 @@ class Point3DDubins {
 
 class Point3DPolynom {
   public:
+    inline static double AverageVelocity;
+    inline static double Gravity;
+
     Point3DPolynom();
     Point3DPolynom(double x, double y, double z);
     Point3DPolynom(const std::string &s, double scale=1);
     Point3DPolynom(const Vec3 pos);
 
     void SetPosition(double x, double y, double z);
+    void SetVelocity(double x, double y, double z);
+    void SetAcceleration(double x, double y, double z);
     const double* GetPosition() const;
     const double* GetRawCoords() const;
     const double operator[](int i) const;
@@ -171,9 +179,13 @@ class Point3DPolynom {
     friend bool operator<(const Point3DPolynom &p1, const Point3DPolynom &p2);
     friend Point3DPolynom operator/(const Point3DPolynom &p1, const double scale);    // scale position (NOT the rotation)
     double Distance(const Point3DPolynom &other) const;
+    double EuclideanDistance(const Point3DPolynom &other) const;
     Point3DPolynom GetStateInDistance(Point3DPolynom &other, double dist) const;
+    std::deque<Point3DPolynom> SampleTrajectory(Point3DPolynom &other, double interval);
     void FillRotationMatrix(double (&matrix)[3][3]) const;
+    void PrintPosition(std::ostream &out);
 
+    Point3D GetPositionOnly();
   protected:
     double coords[3];
     double velocity[3];
@@ -208,5 +220,6 @@ std::ostream& operator<<(std::ostream &out, const Point2D &p);
 std::ostream& operator<<(std::ostream &out, const Point2DDubins &p);
 std::ostream& operator<<(std::ostream &out, const Point3D &p);
 std::ostream& operator<<(std::ostream &out, const Point3DDubins &p);
+std::ostream& operator<<(std::ostream &out, const Point3DPolynom &p);
 
 #endif

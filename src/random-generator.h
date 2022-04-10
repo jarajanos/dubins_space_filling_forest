@@ -19,13 +19,19 @@
 #include <chrono>
 
 #include "common.h"
+#include "problem.h"
+
+#include "RapidTrajectoryGenerator.h"
+using namespace RapidQuadrocopterTrajectoryGenerator;
+
+#define TO_SIGN(A)  ((A) * 2 - 1)
 
 typedef std::mt19937_64 randomEngine;   // set used random engine
 
 template <class R>
 class RandomGenerator {
   public:
-    RandomGenerator(const Range samplingRange, const int maxIter);
+    RandomGenerator(Problem<R> &problem);
 
     bool RandomPointInDistance(const R& center, R& point, const double distance);
     void RandomPointInSpace(R& point);
@@ -33,9 +39,9 @@ class RandomGenerator {
     double RandomProbability();
 
   private:
+    Problem<R> &problem;
     Range limits;
     int maxIter;
-    double Distance;
     randomEngine rndEng;
 
     std::uniform_real_distribution<double> uniDistAngle;
@@ -48,7 +54,8 @@ class RandomGenerator {
 };
 
 template<class R>
-RandomGenerator<R>::RandomGenerator(const Range samplingRange, const int maxIter) : limits{samplingRange}, maxIter{maxIter} {
+RandomGenerator<R>::RandomGenerator(Problem<R> &problem) 
+  : limits{problem.Env.Limits}, maxIter{problem.MaxIterations}, problem{problem} {
   // seed with actual time
   std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds> tSeed{std::chrono::high_resolution_clock::now()};
   std::uint_fast64_t uSeed{static_cast<uint_fast64_t>(tSeed.time_since_epoch().count())};

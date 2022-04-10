@@ -128,7 +128,7 @@ enum Dimensions {
   D3Polynom = 4
 };
 
-const static inline size_t NumDimensions[] = { 2, 3, 3, 6, 9 };
+const static inline size_t NumDimensions[] = { 2, 3, 3, 6, 3 };
 
 enum FileType {
   Map,
@@ -626,6 +626,8 @@ inline std::ostream& operator<<(std::ostream &out, const Dimensions &d) {
     return out << "3D";
   } else if (d == D3Dubins) {
     return out << "3DDubins";
+  } else if (d == D3Polynom) {
+    return out << "3DPolynom";
   } else {
     ERROR("Unimplemented dimension print!");
     return out;

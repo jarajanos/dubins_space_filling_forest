@@ -16,51 +16,52 @@
 #include <string>
 
 #ifndef DELIMITER_OUT
-#define DELIMITER_OUT (" ")
+#define DELIMITER_OUT         (" ")
 #endif
 
 #ifndef CSV_DELIMITER
-#define CSV_DELIMITER (",")
+#define CSV_DELIMITER         (",")
 #endif
 
 #ifndef CSV_DELIMITER_2
-#define CSV_DELIMITER_2 (";")
+#define CSV_DELIMITER_2       (";")
 #endif
 
 #ifndef TSP_DELIMITER
-#define TSP_DELIMITER (" ")
+#define TSP_DELIMITER         (" ")
 #endif
 
-#define CSV_NO_PATH   "NaN"
+#define CSV_NO_PATH           "NaN"
 
 // used for LazyTSP
 #ifndef TEMP_TSP
-#define TEMP_TSP      "tempTsp"
+#define TEMP_TSP              "tempTsp"
 #endif
 
 #ifndef TEMP_DIR
-#define TEMP_DIR   "temp/"
+#define TEMP_DIR              "temp/"
 #endif
 
-#define TSP_TOLERANCE     1e-5
-#define TSP_MAX_10        (1 << 10)
-#define TSP_MAX_100       (1 << 12)
-#define TSP_MAX           (1 << 20)
-#define DEFAULT_CONCORDE  "solver/concorde/concorde/TSP/concorde"
-#define DEFUALT_LKH       "solver/lkh/LKH-3.0.6/LKH"
+#define TSP_TOLERANCE         1e-5
+#define TSP_MAX_10            (1 << 10)
+#define TSP_MAX_100           (1 << 12)
+#define TSP_MAX               (1 << 20)
+#define DEFAULT_CONCORDE      "solver/concorde/concorde/TSP/concorde"
+#define DEFUALT_LKH           "solver/lkh/LKH-3.0.6/LKH"
 
-#define DEFAULT_THRES_MISS 3
-#define SFF_TOLERANCE 1e-9
+#define DEFAULT_THRES_MISS    3
+#define SFF_TOLERANCE         1e-9
 
-#define EQ_TOLERANCE 1e-6
+#define EQ_TOLERANCE          1e-6
 
-#define DEFAULT_SAMP_DIST 1
-#define DEFAULT_MIN_THRUST 0
-#define DEFAULT_MAX_THRUST 1
-#define DEFAULT_MAX_ROTSPEED 1
-#define DEFAULT_CTRL_INT 0.01
+#define DEFAULT_SAMP_DIST     1
+#define DEFAULT_MIN_THRUST    0
+#define DEFAULT_MAX_THRUST    1
+#define DEFAULT_MAX_ROTSPEED  1
+#define DEFAULT_CTRL_INT      0.01
+#define AVG_VEL_STD_MULT      0.5
 
-#define GRAVITY 9.81
+#define DEF_GRAVITY           9.81
 
 #define FLANN_NUM_KD_TREES    4
 #define FLANN_NUM_SEARCHES    128

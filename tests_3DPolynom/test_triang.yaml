@@ -1,0 +1,39 @@
+---
+  problem: 
+    connect-only: true 
+    dimension: 3DDubins 
+    iterations: 100000
+    optimize: true
+    solver: sff
+
+  TSP-solver: {path: ./solver/lkh/LKH-3.0.6/LKH, type: LKH}
+  algorithm: {bias: 0.95, dubins-radius: 0.1, dubins-resolution: 2, m2r-ratio: 10, misses: 5}
+  cities: ['[-3.289; 1.164; 1.678; 0; 0]', '[-0.625; 4.185; 0.751; 0; 0]', '[4.168;
+      3.060; 5.156; 0; 0]', '[0.967; -0.527; 1; 0; 0]', '[-4.449; -2.532; 9.431; 0;
+      0]']
+  delimiters: {name: _, standard: ' '}
+  distances: {collision: 0.01, sampling: 1.6, tree: 2}
+  obstacles:
+  - {path: .//maps//triang.obj, position: '[0;0;0;0;0]', type: obj}
+  range: {autodetect: false, pitch: '[-0.5;0.5]', x: '[-10;10]', y: '[-10;10]', z: '[0;10]'}
+  robot: {path: ./models/robot_small.obj, type: obj}
+
+  save:
+    goals:
+      path: 'output/goals.obj'
+      type: 'obj'
+    params:
+      path: 'output/params.csv'
+      id: 'sff_3d'
+    TSP-file:
+      path: 'output/tsp_triang.tsp'
+    TSP-paths:
+      path: 'output/tsp_triang.tri'
+      type: 'map'
+    tree:
+      path: 'output//tree_triang.obj'
+      type: 'tri'
+      frequency: '0'
+    roadmap:
+      path: 'output//rawPath_triang.tri'
+      type: 'tri'

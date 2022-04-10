@@ -92,7 +92,11 @@ FlannHolder<Node<Point3DDubins>>::~FlannHolder() {
 }
 
 void FlannHolder<Node<Point3DPolynom>>::CreateIndex(flann::Matrix<float> &matrix) {
-  Index = new flann::Index<D9Distance<float>>(matrix, flann::KDTreeIndexParams(FLANN_NUM_KD_TREES));
+  // Distance including velocity and acceleration
+  // !!! CHANGE ALSO IN HEADER FILE & NUMDIMENSIONS IN COMMON.H !!!
+  //Index = new flann::Index<D9Distance<float>>(matrix, flann::KDTreeIndexParams(FLANN_NUM_KD_TREES)); 
+  // Distance including "3D position difference" only
+  Index = new flann::Index<flann::L2_3D<float>>(matrix, flann::KDTreeIndexParams(FLANN_NUM_KD_TREES));
   Index->buildIndex();
   this->PtrsToDel.push_back(matrix.ptr());
 }

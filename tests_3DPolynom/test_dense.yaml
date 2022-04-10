@@ -1,0 +1,57 @@
+---
+  TSP-solver:
+    type: Concorde
+  algorithm:
+    bias: 0.95
+    dubins-radius: 2
+    dubins-resolution: 2
+    m2r-ratio: 10
+    misses: 5
+  cities:
+  - '[1500; 1600; 423; 0; 0]'
+  - '[100; 100;64; 0; 0]'
+  - '[500; 1700;319; 0; 0]'
+  - '[1440; 330;752; 0; 0]'
+  - '[765; 828;549; 0; 0]'
+  delimiters:
+    name: _
+    standard: ' '
+  distances:
+    collision: 1
+    sampling: 80
+    tree: 100
+  obstacles:
+  - path: .//maps//dense_3D.obj
+    position: '[0;0;0;0;0]'
+    type: obj
+  problem:
+    dimension: 3DDubins
+    iterations: 100000
+    optimize: true
+    solver: sff
+  range:
+    autodetect: true
+    pitch: '[-0.5;0.5]'
+  robot:
+    path: ./models/robot_small.obj
+    type: obj
+
+  save:
+    goals:
+      path: 'output/goals.obj'
+      type: 'obj'
+    params:
+      path: 'output/params.csv'
+      id: 'sff_3d'
+    TSP-file:
+      path: 'output/tsp.tsp'
+    TSP-paths:
+      path: 'output/tsp_dense.tri'
+      type: 'map'
+    tree:
+      path: 'output//tree_dense.obj'
+      type: 'map'
+      frequency: '0'
+    roadmap:
+      path: 'output//rawPath_dense.tri'
+      type: 'tri'

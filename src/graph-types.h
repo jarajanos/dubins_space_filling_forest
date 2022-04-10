@@ -243,7 +243,8 @@ class FlannHolder<Node<Point3DDubins>> {
 template<>
 class FlannHolder<Node<Point3DPolynom>> {
   public:
-    flann::Index<D9Distance<float>> *Index{nullptr};
+    //flann::Index<D9Distance<float>> *Index{nullptr};
+    flann::Index<flann::L2_3D<float>> *Index{nullptr};
     std::deque<float *> PtrsToDel;
 
     ~FlannHolder();

@@ -49,6 +49,9 @@ class SpaceForestBase : public Solver<R> {
     void checkIterationSaves(const int iter) override;
 };
 
+template<> bool SpaceForestBase<Point3DPolynom>::checkExpandedTree(Node<Point3DPolynom> *expanded, Point3DPolynom* newPoint, flann::Matrix<float> &matrix);
+template<> bool SpaceForestBase<Point3DPolynom>::checkOtherTrees(Node<Point3DPolynom> *expanded, Point3DPolynom* newPoint, flann::Matrix<float> &matrix, bool &solved);
+
 template<class R, bool = isDubins<R>::value>
 class SpaceForest : public SpaceForestBase<R> {
 
@@ -615,7 +618,7 @@ bool SpaceForest<R, false>::filterNode(Node<R> &neighbor) {
 
 template<class R>
 void SpaceForest<R, false>::emplaceNewNode(Node<R> *expanded, R* newPoint, Node<R>* &newNode, const int iteration) {
-  newNode = &(expanded->SourceTree->Leaves.emplace_back(*newPoint, expanded->SourceTree, expanded, newPoint->Distance(expanded->Position), iteration));
+  newNode = &(expanded->SourceTree->Leaves.emplace_back(*newPoint, expanded->SourceTree, expanded, expanded->Position.Distance(*newPoint), iteration));
 }
 
 template<class R>

@@ -666,7 +666,7 @@ Point3DPolynom::Point3DPolynom(const std::string &s, double scale) {
   std::regex r("\\[(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*)\\]");
   std::smatch m;
   std::regex_search(s, m, r);
-  if (m.size() != 6) {
+  if (m.size() != 10) {
     throw std::invalid_argument("Unknown format of point");
   }
 
@@ -685,6 +685,18 @@ void Point3DPolynom::SetPosition(double x, double y, double z) {
   coords[0] = x;
   coords[1] = y;
   coords[2] = z;
+}
+
+void Point3DPolynom::SetVelocity(double x, double y, double z) {
+  velocity[0] = x;
+  velocity[1] = y;
+  velocity[2] = z;
+}
+    
+void Point3DPolynom::SetAcceleration(double x, double y, double z) {
+  acceleration[0] = x;
+  acceleration[1] = y;
+  acceleration[2] = z;
 }
 
 const double* Point3DPolynom::GetPosition() const {
@@ -745,12 +757,97 @@ Point3DPolynom operator/(const Point3DPolynom &p1, const double scale) {
   return newPoint;
 }
 
+// trajectory distance
 double Point3DPolynom::Distance(const Point3DPolynom &other) const {
-  // TODO
+  double totalDist{EuclideanDistance(other)};
+  double totalTime{totalDist / AverageVelocity};
+
+  Vec3 pos0{(*this)[0], (*this)[1], (*this)[2]};
+  Vec3 vel0{(*this)[3], (*this)[4], (*this)[5]};
+  Vec3 acc0{(*this)[6], (*this)[7], (*this)[8]};
+
+  Vec3 posf{other[0], other[1], other[2]};
+  Vec3 velf{other[3], other[4], other[5]};
+  Vec3 accf{other[6], other[7], other[8]};
+
+  Vec3 gravity{0,0,-Gravity};
+  RapidTrajectoryGenerator traj(pos0, vel0, acc0, gravity);
+  traj.SetGoalPosition(posf);
+  traj.SetGoalVelocity(velf);
+  traj.SetGoalAcceleration(accf);
+
+  traj.Generate(totalTime);
+
+  return traj.GetCost();
+}
+
+// Euclidean 9D distance
+double Point3DPolynom::EuclideanDistance(const Point3DPolynom &other) const {
+  double distance{0};
+  for (int i{0}; i < 9; ++i) {
+    distance += POW((*this)[i] - other[i]);
+  }
+  
+  distance = sqrt(distance);
+  return distance;
 }
 
 Point3DPolynom Point3DPolynom::GetStateInDistance(Point3DPolynom &other, double dist) const {
-  // TODO
+  Point3D start{(*this)[0], (*this)[1], (*this)[2], 0, 0, 0};
+  Point3D finish{other[0], other[1], other[2], 0, 0, 0};
+  double totalDist{start.Distance(finish)};
+  double totalTime{totalDist / AverageVelocity};
+
+  Vec3 pos0{(*this)[0], (*this)[1], (*this)[2]};
+  Vec3 vel0{(*this)[3], (*this)[4], (*this)[5]};
+  Vec3 acc0{(*this)[6], (*this)[7], (*this)[8]};
+
+  Vec3 posf{other[0], other[1], other[2]};
+  Vec3 velf{other[3], other[4], other[5]};
+  Vec3 accf{other[6], other[7], other[8]};
+
+  Vec3 gravity{0,0,-this->Gravity};
+  RapidTrajectoryGenerator traj(pos0, vel0, acc0, gravity);
+  traj.SetGoalPosition(posf);
+  traj.SetGoalVelocity(velf);
+  traj.SetGoalAcceleration(accf);
+
+  traj.Generate(totalTime);
+
+  return Point3DPolynom(traj.GetPosition(dist / AverageVelocity));
+}
+
+std::deque<Point3DPolynom> Point3DPolynom::SampleTrajectory(Point3DPolynom &other, double interval) {
+  std::deque<Point3DPolynom> retVal;
+
+  Point3D start{GetPositionOnly()};
+  Point3D finish{other.GetPositionOnly()};
+  double totalDist{start.Distance(finish)};
+  double totalTime{totalDist / AverageVelocity};
+
+  Vec3 pos0{(*this)[0], (*this)[1], (*this)[2]};
+  Vec3 vel0{(*this)[3], (*this)[4], (*this)[5]};
+  Vec3 acc0{(*this)[6], (*this)[7], (*this)[8]};
+
+  Vec3 posf{other[0], other[1], other[2]};
+  Vec3 velf{other[3], other[4], other[5]};
+  Vec3 accf{other[6], other[7], other[8]};
+
+  Vec3 gravity{0,0,-this->Gravity};
+  RapidTrajectoryGenerator traj(pos0, vel0, acc0, gravity);
+  traj.SetGoalPosition(posf);
+  traj.SetGoalVelocity(velf);
+  traj.SetGoalAcceleration(accf);
+
+  traj.Generate(totalTime);
+
+  double parts{totalTime / interval};
+  for (int i{0}; i < parts; ++i) {
+    Vec3 pos{traj.GetPosition(i * interval)};
+    retVal.emplace_back(pos);
+  }
+
+  return retVal;
 }
 
 void Point3DPolynom::FillRotationMatrix(double (&matrix)[3][3]) const {
@@ -763,6 +860,14 @@ void Point3DPolynom::FillRotationMatrix(double (&matrix)[3][3]) const {
   matrix[2][0] = 0;
   matrix[2][1] = 0;
   matrix[2][2] = 1;
+}
+
+void Point3DPolynom::PrintPosition(std::ostream &out) {
+  out << (*this)[0] << DELIMITER_OUT << (*this)[1] << DELIMITER_OUT << (*this)[2];
+}
+
+Point3D Point3DPolynom::GetPositionOnly() {
+  return Point3D((*this)[0], (*this)[1], (*this)[2], 0, 0, 0);
 }
 
 PointVector3D::PointVector3D() : Vector(3) {
@@ -851,4 +956,8 @@ std::ostream& operator<<(std::ostream &out, const Point3D &p) {
 
 std::ostream& operator<<(std::ostream &out, const Point3DDubins &p) {
   return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << p[2] << DELIMITER_OUT << p.GetHeading() << DELIMITER_OUT << p.GetPitch() << DELIMITER_OUT << "0";
+}
+
+std::ostream& operator<<(std::ostream &out, const Point3DPolynom &p) {
+  return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << p[2] << DELIMITER_OUT << "0" << DELIMITER_OUT << "0" << DELIMITER_OUT << "0";
 }

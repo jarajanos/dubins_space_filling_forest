@@ -61,6 +61,17 @@ bool Range::IsInLimits(Point3DDubins &point) {
   return valid;
 }
 
+template<>
+bool Range::IsInLimits(Point3DPolynom &point) {
+  bool valid{true};
+  for (int i{0}; i < 3; ++i) {
+    valid &= point[i] >= this->mins[i];
+    valid &= point[i] <= this->maxs[i];
+  }
+
+  return valid;
+}
+
 void StopWatch::Start() {
   this->startTime = std::chrono::high_resolution_clock::now();
 }

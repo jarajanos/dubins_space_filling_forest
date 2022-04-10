@@ -185,7 +185,7 @@ void LazySpaceForest<Point3DDubins>::saveTspPaths(const FileStruct file) {
     if (file.type == Obj) {
       fileStream << "o TspPaths\n";
       int vertexCnt{0};
-      int numPoints{pathPoints.size()};
+      int numPoints{static_cast<int>(pathPoints.size())};
       for (int i{0}; i < numPoints; ++i) {
         auto [ actNode, actAngle ] = this->gatspSolution[i];
         auto [ nextNode, nextAngle ] = this->gatspSolution[(i + 1) % numRoots];

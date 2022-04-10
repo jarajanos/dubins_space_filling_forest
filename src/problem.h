@@ -33,6 +33,7 @@ struct Problem {
   bool ComputeTSP{false};
 
   bool AutoRange{false};
+  bool FreeSampling{true};
 
   double DistTree;
   double SamplingDist;
@@ -44,6 +45,8 @@ struct Problem {
   double MaxRotSpeed;
   double SegmentTime;
   double CtrlInterval;
+  double AvgVelocity;
+  double Gravity;
   
   int MaxIterations;
   double PriorityBias{0};

@@ -93,6 +93,9 @@ class Solver<R, false> : public SolverBase<R> {
     void saveTspPaths(const FileStruct file);
 };
 
+template<> void Solver<Point3DPolynom, false>::saveTrees(const FileStruct file);
+template<> void Solver<Point3DPolynom, false>::savePaths(const FileStruct file);
+
 template<class R>
 class Solver<R, true> : public SolverBase<R> {
   public:
@@ -112,7 +115,7 @@ class Solver<R, true> : public SolverBase<R> {
 };
 
 template<class R>
-SolverBase<R>::SolverBase(Problem<R> &problem) : problem{problem}, rnd{problem.Env.Limits, problem.MaxMisses} {
+SolverBase<R>::SolverBase(Problem<R> &problem) : problem{problem}, rnd{problem} {
   this->connected = std::vector<bool>((size_t)problem.GetNumRoots(), false);
 }
 
