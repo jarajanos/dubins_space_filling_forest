@@ -124,3 +124,9 @@ template<>
 bool NodeBase<Point3DDubins>::operator<(const NodeBase<Point3DDubins> &l) {
   return true;
 }
+
+// does not make sense = only purpose is correct ordering in DistanceHolder - position of Node in argument MAKES sense here, the problem is not symmetric
+template<>
+bool NodeBase<Point3DPolynom>::operator<(const NodeBase<Point3DPolynom> &l) {
+  return true;
+}

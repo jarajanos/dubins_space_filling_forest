@@ -69,6 +69,7 @@ class NodeBase {
 
 template<> bool NodeBase<Point2DDubins>::operator<(const NodeBase<Point2DDubins> &l);
 template<> bool NodeBase<Point3DDubins>::operator<(const NodeBase<Point3DDubins> &l);
+template<> bool NodeBase<Point3DPolynom>::operator<(const NodeBase<Point3DPolynom> &l);
 
 template<class R>
 class Node<R, false> : public NodeBase<R> {

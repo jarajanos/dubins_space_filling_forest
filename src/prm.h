@@ -46,6 +46,8 @@ class ProbRoadMaps<R, false> : public ProbRoadMapsBase<R> {
     void saveTrees(const FileStruct file) override;
 };
 
+template<> void ProbRoadMaps<Point3DPolynom, false>::saveTrees(const FileStruct file);
+
 template<class R>
 class ProbRoadMaps<R, true> : public ProbRoadMapsBase<R> {
   using ProbRoadMapsBase<R>::ProbRoadMapsBase;

@@ -168,8 +168,11 @@ class Point3DPolynom {
     Point3DPolynom(const Vec3 pos);
 
     void SetPosition(double x, double y, double z);
+    void SetPosition(Vec3 vec);
     void SetVelocity(double x, double y, double z);
+    void SetVelocity(Vec3 vec);
     void SetAcceleration(double x, double y, double z);
+    void SetAcceleration(Vec3 vec);
     const double* GetPosition() const;
     const double* GetRawCoords() const;
     const double operator[](int i) const;

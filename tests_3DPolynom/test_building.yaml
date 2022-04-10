@@ -1,9 +1,9 @@
 ---
   problem: 
     dimension: 3DPolynom
-    iterations: 100000 
+    iterations: 100000
     optimize: true
-    solver: 'sff'
+    solver: 'rrt'
 
   TSP-solver: 
     path: ./solver/lkh/LKH-3.0.6/LKH

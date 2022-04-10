@@ -29,6 +29,7 @@ class RapidExpTreeBase : public Solver<R> {
     UnionFind<Tree<R> *> expandedTrees;
 
     void expandNode(Tree<R> *tree, bool &solved, const unsigned int iteration);
+    double getApproxDistance(Node<R> &start, Node<R> &goal);
     bool getAndCheckNewPoint(Tree<R> *treeToExpand, R *newPoint, Node<R>* &parent);
     bool optimizeConnections(Tree<R> *treeToExpand, R *newPoint, Node<R>* &parent, Node<R>* &newNode, const unsigned iteration);
     bool checkOtherRewire(Tree<R> *treeToExpand, R *newPoint, Node<R>* &newNode);
@@ -38,6 +39,8 @@ class RapidExpTreeBase : public Solver<R> {
     virtual void getPaths() override {};
     void getConnectedTrees();
 };
+
+template<> double RapidExpTreeBase<Point3DPolynom>::getApproxDistance(Node<Point3DPolynom> &start, Node<Point3DPolynom> &goal);
 
 template<class R, bool = isDubins<R>::value>
 class RapidExpTree : public RapidExpTreeBase<R> {
@@ -214,6 +217,12 @@ bool RapidExpTreeBase<R>::optimizeConnections(Tree<R> *treeToExpand, R *newPoint
   return false;
 }
 
+
+template<class R>
+double RapidExpTreeBase<R>::getApproxDistance(Node<R> &start, Node<R> &goal) {
+  return start.Distance(goal);
+}
+
 template<class R>
 bool RapidExpTreeBase<R>::checkOtherRewire(Tree<R> *treeToExpand, R *newPoint, Node<R>* &newNode) {
   flann::Matrix<float> refPoint{new float[PROBLEM_DIMENSION], 1, PROBLEM_DIMENSION};
@@ -232,7 +241,7 @@ bool RapidExpTreeBase<R>::checkOtherRewire(Tree<R> *treeToExpand, R *newPoint, N
 
     tree->Flann.Index->knnSearch(refPoint, indices, dists, 1, flann::SearchParams(FLANN_NUM_SEARCHES));
     Node<R> &neighbor{tree->Leaves[indices[0][0]]}; // just one-to-one connection
-    double neighDist{neighbor.Distance(*newPoint)};
+    double neighDist{getApproxDistance(neighbor, *newNode)};
 
     if (neighDist < this->problem.DistTree && this->isPathFree(*newPoint, neighbor.Position)) {
       // create link

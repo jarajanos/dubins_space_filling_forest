@@ -687,16 +687,34 @@ void Point3DPolynom::SetPosition(double x, double y, double z) {
   coords[2] = z;
 }
 
+void Point3DPolynom::SetPosition(Vec3 vec) {
+  coords[0] = vec.x;
+  coords[1] = vec.y;
+  coords[2] = vec.z;
+}
+
 void Point3DPolynom::SetVelocity(double x, double y, double z) {
   velocity[0] = x;
   velocity[1] = y;
   velocity[2] = z;
+}
+
+void Point3DPolynom::SetVelocity(Vec3 vec) {
+  velocity[0] = vec.x;
+  velocity[1] = vec.y;
+  velocity[2] = vec.z;
 }
     
 void Point3DPolynom::SetAcceleration(double x, double y, double z) {
   acceleration[0] = x;
   acceleration[1] = y;
   acceleration[2] = z;
+}
+
+void Point3DPolynom::SetAcceleration(Vec3 vec) {
+  acceleration[0] = vec.x;
+  acceleration[1] = vec.y;
+  acceleration[2] = vec.z;
 }
 
 const double* Point3DPolynom::GetPosition() const {
@@ -793,6 +811,8 @@ double Point3DPolynom::EuclideanDistance(const Point3DPolynom &other) const {
 }
 
 Point3DPolynom Point3DPolynom::GetStateInDistance(Point3DPolynom &other, double dist) const {
+  Point3DPolynom retVal;
+
   Point3D start{(*this)[0], (*this)[1], (*this)[2], 0, 0, 0};
   Point3D finish{other[0], other[1], other[2], 0, 0, 0};
   double totalDist{start.Distance(finish)};
@@ -814,7 +834,11 @@ Point3DPolynom Point3DPolynom::GetStateInDistance(Point3DPolynom &other, double 
 
   traj.Generate(totalTime);
 
-  return Point3DPolynom(traj.GetPosition(dist / AverageVelocity));
+  retVal.SetPosition(traj.GetPosition(dist / AverageVelocity));
+  retVal.SetVelocity(traj.GetVelocity(dist / AverageVelocity));
+  retVal.SetAcceleration(traj.GetAcceleration(dist / AverageVelocity));
+
+  return retVal;
 }
 
 std::deque<Point3DPolynom> Point3DPolynom::SampleTrajectory(Point3DPolynom &other, double interval) {

@@ -163,3 +163,74 @@ void LazyTSP<Point3DDubins>::savePaths(const FileStruct file, const std::deque<s
     WARN(message.str());
   }  
 }
+
+template<>
+void LazyTSP<Point3DPolynom>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths) {
+  INFO("Saving paths");
+  std::ofstream fileStream{file.fileName.c_str()};
+  if (!fileStream.good()) {
+    std::stringstream message;
+    message << "Cannot create file at: " << file.fileName;
+    ERROR(message.str());
+    return;
+  }
+
+  if (fileStream.is_open()) {
+    int numRoots{this->problem.GetNumRoots()};
+    if (file.type == Obj) {
+      unsigned vertexInd{1};
+      std::deque<std::tuple<unsigned,unsigned>> vertexRanges;
+      fileStream << "o Paths\n";
+      for (auto &pair : selectedPaths) {
+        auto [ first, second ] = pair;
+        DistanceHolder<Point3DPolynom> &holder{this->neighboringMatrix(first, second)};
+
+        unsigned startingInd{vertexInd};
+        auto plan{holder.Node1->Position.SampleTrajectory(holder.Node2->Position, this->problem.CtrlInterval)};
+        for (int m{0}; m < plan.size(); ++m) {
+          Point3DPolynom actPoint{plan[m]};
+
+          fileStream << "v" << DELIMITER_OUT;
+          Point3DPolynom temp{actPoint / problem.Env.ScaleFactor}; 
+          temp.PrintPosition(fileStream);
+          fileStream << "\n";
+        }
+        vertexInd += plan.size();
+        vertexRanges.push_back(std::tuple<unsigned, unsigned>(startingInd, vertexInd - 1));
+      }
+
+      for (auto &pair : vertexRanges) {
+        auto [ from, to ] = pair;
+        for (unsigned i{from}; i < to; ++i) {
+          fileStream << "l" << DELIMITER_OUT << i << DELIMITER_OUT << i + 1 << '\n';
+        }
+      }  
+    } else if (file.type == Map) {
+      fileStream << "#Paths" << DELIMITER_OUT << this->problem.Dimension << "\n";
+      for (auto &pair : selectedPaths) {
+        auto [ first, second ] = pair;
+        DistanceHolder<Point3DPolynom> &holder{this->neighboringMatrix(first, second)};
+
+        auto plan{holder.Node1->Position.SampleTrajectory(holder.Node2->Position, this->problem.CtrlInterval)};
+        for (int k{0}; k < plan.size() - 1; ++k) {
+          fileStream << plan[k] / this->problem.Env.ScaleFactor << DELIMITER_OUT << plan[k+1] / this->problem.Env.ScaleFactor << "\n";
+        }
+        fileStream << "\n";
+    }
+    } else {
+      throw std::string("Not implemented");
+    }
+
+    fileStream.flush();
+    fileStream.close();
+  } else {
+    std::stringstream message;
+    message << "Cannot open file at: " << file.fileName;
+    ERROR(message.str());
+  } 
+}
+
+template<> 
+double LazyTSPBase<Point3DPolynom>::getApproxDistance(Node<Point3DPolynom> &start, Node<Point3DPolynom> &goal) {
+  return start.Position.EuclideanDistance(goal.Position);
+}

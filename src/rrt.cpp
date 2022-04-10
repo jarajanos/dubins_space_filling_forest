@@ -10,3 +10,8 @@
  */
 
 #include "rrt.h"
+
+template<> 
+double RapidExpTreeBase<Point3DPolynom>::getApproxDistance(Node<Point3DPolynom> &start, Node<Point3DPolynom> &goal) {
+  return start.Position.EuclideanDistance(goal.Position);
+}

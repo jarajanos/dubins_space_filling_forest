@@ -31,6 +31,7 @@ class LazyTSPBase : public Solver<R> {
     std::deque<Tree<R> *> treesToDel;
     
     void runRRT(DistanceHolder<R> *edge, int &iterations);
+    double getApproxDistance(Node<R> &start, Node<R> &goal);
     virtual void fillPlan(std::deque<R> &plan, Node<R> *lastNode, Node<R> *goal) = 0;
     virtual void processResults(TSPMatrix<R> &matrix, TSPOrder &solution, std::deque<std::tuple<int,int>> &edgePairs) = 0;
     virtual double updateEdge(std::tuple<int, int> selectedEdge, int &iter) = 0;
@@ -41,6 +42,8 @@ class LazyTSPBase : public Solver<R> {
     virtual void savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths) = 0;
     virtual void saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime, const std::deque<std::tuple<int,int>> &selectedEdges) = 0;
 };
+
+template<> double LazyTSPBase<Point3DPolynom>::getApproxDistance(Node<Point3DPolynom> &start, Node<Point3DPolynom> &goal);
 
 template<class R, bool = isDubins<R>::value>
 class LazyTSP : public LazyTSPBase<R> {  
@@ -80,6 +83,7 @@ class LazyTSP<R, true> : public LazyTSPBase<R> {
 
 template<> void LazyTSP<Point2DDubins>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
 template<> void LazyTSP<Point3DDubins>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
+template<> void LazyTSP<Point3DPolynom>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
 
 template<class R>
 LazyTSP<R, false>::LazyTSP(Problem<R> &problem) : LazyTSPBase<R>(problem) {
@@ -337,7 +341,7 @@ void LazyTSPBase<R>::runRRT(DistanceHolder<R> *edge, int &iterations) {
     rrtTree->Flann.PtrsToDel.push_back(pointToAdd.ptr());
 
     // check goal
-    double goalDistance{goal->Distance(*newNode)};
+    double goalDistance{getApproxDistance(*newNode, *goal)};
     if (goalDistance < this->problem.DistTree && this->isPathFree(newNode->Position, goal->Position)) {
       solved = true;
       edge->Distance = goalDistance + newNode->DistanceToRoot();
@@ -352,6 +356,11 @@ void LazyTSPBase<R>::runRRT(DistanceHolder<R> *edge, int &iterations) {
   }
 
   iterations += iter;
+}
+
+template<class R>
+double LazyTSPBase<R>::getApproxDistance(Node<R> &start, Node<R> &goal) {
+  return start.Distance(goal);
 }
 
 template<class R>
@@ -445,24 +454,33 @@ void LazyTSP<R, false>::savePaths(const FileStruct file, const std::deque<std::t
   if (fileStream.is_open()) {
     int numRoots{this->problem.GetNumRoots()};
     if (file.type == Obj) {
-      // fileStream << "o Paths\n";
-      // for (int i{0}; i < this->allNodes.size(); ++i) {
-      //   R temp{this->allNodes[i]->Position / this->problem.Env.ScaleFactor};
-      //   fileStream << "v" << DELIMITER_OUT;
-      //   temp.PrintPosition(fileStream);
-      //   fileStream << "\n";
-      // }
-      
-      // for (auto &pair : selectedPaths) {
-      //   int first, second;
-      //   std::tie(first, second) = pair;
-      //   DistanceHolder<R> &holder{this->neighboringMatrix(first, second)};
+      unsigned vertexInd{1};
+      std::deque<std::tuple<unsigned,unsigned>> vertexRanges;
+      fileStream << "o Paths\n";
+      for (auto &pair : selectedPaths) {
+        auto [ first, second ] = pair;
+        DistanceHolder<R> &holder{this->neighboringMatrix(first, second)};
 
-      //   std::deque<R> &plan{holder.Plan};
-      //   for (int k{0}; k < plan.size() - 1; ++k) {
-      //     fileStream << "l" << DELIMITER_OUT << plan[k]->ID + 1 << DELIMITER_OUT << plan[k+1]->ID + 1 << "\n";
-      //   }
-      // }
+        unsigned startingInd{vertexInd};
+        auto &plan{holder.Plan};
+        for (int m{0}; m < plan.size(); ++m) {
+          R actPoint{plan[m]};
+
+          fileStream << "v" << DELIMITER_OUT;
+          R temp{actPoint / this->problem.Env.ScaleFactor}; 
+          temp.PrintPosition(fileStream);
+          fileStream << "\n";
+        }
+        vertexInd += plan.size();
+        vertexRanges.push_back(std::tuple<unsigned, unsigned>(startingInd, vertexInd - 1));
+      }
+
+      for (auto &pair : vertexRanges) {
+        auto [ from, to ] = pair;
+        for (unsigned i{from}; i < to; ++i) {
+          fileStream << "l" << DELIMITER_OUT << i << DELIMITER_OUT << i + 1 << '\n';
+        }
+      }  
     } else if (file.type == Map) {
       fileStream << "#Paths" << DELIMITER_OUT << this->problem.Dimension << "\n";
       for (auto &pair : selectedPaths) {
