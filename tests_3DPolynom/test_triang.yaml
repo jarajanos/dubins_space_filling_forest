@@ -8,9 +8,8 @@
 
   TSP-solver: {path: ./solver/lkh/LKH-3.0.6/LKH, type: LKH}
   algorithm: {bias: 0.95, dubins-radius: 0.1, dubins-resolution: 2, m2r-ratio: 10, misses: 5}
-  cities: ['[-3.289; 1.164; 1.678; 0; 0]', '[-0.625; 4.185; 0.751; 0; 0]', '[4.168;
-      3.060; 5.156; 0; 0]', '[0.967; -0.527; 1; 0; 0]', '[-4.449; -2.532; 9.431; 0;
-      0]']
+  cities: [ '[4.168; 3.060; 5.156; 0; 0]']
+  goal: '[-4.449; -2.532; 9.431; 0;0]'
   delimiters: {name: _, standard: ' '}
   distances: {collision: 0.01, sampling: 1.6, tree: 2}
   obstacles:

@@ -417,12 +417,13 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
         WARN("Dynamic feasibility of trajectory is checked only for polynomial trajectories");
       }
 
-      subNode = node["free-sampling"];
-      if (!subNode.IsDefined()) {
-        problem.FreeSampling = true;
-      } else {
-        problem.FreeSampling = subNode.as<bool>();
-      }
+      // NOT WORKING PROPERLY
+      // subNode = node["free-sampling"];
+      // if (!subNode.IsDefined()) {
+      //   problem.FreeSampling = true;
+      // } else {
+      //   problem.FreeSampling = subNode.as<bool>();
+      // }
 
       subNode = node["min-thrust"];
       if (!subNode.IsDefined()) {

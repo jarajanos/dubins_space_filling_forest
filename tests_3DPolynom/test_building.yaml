@@ -23,7 +23,7 @@
   obstacles:
   - {path: .//maps//building.obj, position: '[0;0;0;0;0;0;0;0;0]', type: obj}
 
-  dynamics: {free-sampling: false, min-thrust: -1, max-thrust: 1, gravity: 3, segment-time: 4, control-interval: 0.01}
+  dynamics: {min-thrust: -1, max-thrust: 1, gravity: 3, segment-time: 4, control-interval: 0.01}
   
   range: {autodetect: false, pitch: '[-0.5;0.5]', x: '[-6;6]', y: '[-6;6]', z: '[0;14]'}
   robot: {path: ./models/robot_small.obj, type: obj}
