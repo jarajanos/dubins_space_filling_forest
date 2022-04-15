@@ -10,12 +10,12 @@ SOURCES := $(wildcard src/*.cpp)
 SOURCES := $(SOURCES:src/%=%)
 OBJECTS := $(patsubst %.c,%.o, $(patsubst %.cpp,%.o,$(SOURCES)))
 
-INCLUDE := -I. -I./lib/rapid-2.01 -I./lib/ann/ann/include -I./lib/yaml-cpp/include -I./lib/gdip/gdip/include -I./lib/RapidQuadrocopterTrajectories/C++
+INCLUDE := -I. -I./lib/rapid-2.01 -I./lib/flann/src/cpp -I./lib/ann/ann/include -I./lib/yaml-cpp/include -I./lib/gdip/gdip/include -I./lib/RapidQuadrocopterTrajectories/C++
 LIBPATH := -L./lib/ -L./lib/ann/ -L./lib/flann/ -L./lib/rapid-2.01 -L./lib/yaml-cpp/build -L./lib/gdip/gdip/lib -L./lib/RapidQuadrocopterTrajectories/lib
 LIBS := -lgmp -lRAPID -llz4 -lyaml-cpp -lopendubins_core -lstdc++fs -lquad-trajectories
 
 CXXFLAGS := -std=c++17
-CXX := g++
+CXX := g++-8
 
 DBGEXE := $(DBGDIR)/$(TARGET)
 DBGOBJS := $(addprefix $(OBJDIR)/, $(addprefix $(DBGDIR)/, $(OBJECTS)))
@@ -56,7 +56,7 @@ prep:
 	@mkdir -p $(DBGDIR)
 	@mkdir -p $(RELDIR)
 
-install: rapid flann yaml gdip release trajectories
+install: rapid flann yaml gdip trajectories release
 
 solver: concorde lkh
 
@@ -85,7 +85,7 @@ lkh:
 	@cd ./solver/lkh; ./install.sh
 
 trajectories:
-	@echo "Preparing LKH solver..."
+	@echo "Preparing trajectory generator..."
 	@cd ./lib/RapidQuadrocopterTrajectories; make
 
 clean:
