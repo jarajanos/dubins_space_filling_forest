@@ -33,7 +33,7 @@ struct Problem {
   bool ComputeTSP{false};
 
   bool AutoRange{false};
-  bool FreeSampling{true};
+  bool FreeSampling{false};
 
   double DistTree;
   double SamplingDist;

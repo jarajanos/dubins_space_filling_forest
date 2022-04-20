@@ -1,0 +1,48 @@
+TSP-solver:
+  path: ../solver/lkh/LKH-3.0.6/LKH
+  type: LKH
+algorithm:
+  bias: 0.95
+  dubins-radius: 0.1
+  dubins-resolution: 2
+  m2r-ratio: 10
+  misses: 5
+cities:
+- '[0; 0; 1.5; 0; 0; 0; 0; 0; 0]'
+delimiters:
+  name: _
+  standard: ' '
+distances:
+  collision: 0.01
+  sampling: 1.6
+  tree: 2
+dynamics:
+  control-interval: 0.01
+  gravity: 3
+  max-thrust: 1
+  min-thrust: -1
+  segment-time: 4
+goal: '[0; 0; 10.5; 0; 0; 0; 0; 0; 0]'
+obstacles:
+- path: .//maps//building.obj
+  position: '[0;0;0;0;0; 0; 0; 0; 0]'
+  type: obj
+problem:
+  connect-only: false
+  dimension: 3DPolynom
+  iterations: 100000
+  optimize: false
+  solver: sff
+range:
+  autodetect: false
+  pitch: '[-0.5;0.5]'
+  x: '[-6;6]'
+  y: '[-6;6]'
+  z: '[0;14]'
+robot:
+  path: ./models/robot_small.obj
+  type: obj
+save:
+  params:
+    id: sff_pure_100000_0.6_0.95_r0
+    path: output//results.csv

@@ -115,7 +115,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     } else if (!strcmp(value.c_str(), "lazy-sff")) {
       problem.Solver = LazySFF;
     } else {
-      throw std::invalid_argument("unknown solver type in \"problem\" root node, use either sff, rrt or lazy");
+      throw std::invalid_argument("unknown solver type in \"problem\" root node, use either sff, rrt, prm, lazy-rrt or lazy-sff");
     }
 
     subNode = node["optimize"];

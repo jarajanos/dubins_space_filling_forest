@@ -3,7 +3,7 @@
     dimension: 3DDubins
     iterations: 100000 
     optimize: true
-    solver: 'sff'
+    solver: 'lazy-sff'
 
   TSP-solver: 
     path: ./solver/lkh/LKH-3.0.6/LKH

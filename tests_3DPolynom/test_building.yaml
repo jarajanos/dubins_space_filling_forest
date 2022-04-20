@@ -2,8 +2,8 @@
   problem: 
     dimension: 3DPolynom
     iterations: 100000
-    optimize: true
-    solver: 'rrt'
+    optimize: false
+    solver: 'sff'
 
   TSP-solver: 
     path: ./solver/lkh/LKH-3.0.6/LKH
