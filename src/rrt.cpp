@@ -15,3 +15,8 @@ template<>
 double RapidExpTreeBase<Point3DPolynom>::getApproxDistance(Node<Point3DPolynom> &start, Node<Point3DPolynom> &goal) {
   return start.Position.EuclideanDistance(goal.Position);
 }
+
+template<> 
+double RapidExpTreeBase<Point2DPolynom>::getApproxDistance(Node<Point2DPolynom> &start, Node<Point2DPolynom> &goal) {
+  return start.Position.EuclideanDistance(goal.Position);
+}

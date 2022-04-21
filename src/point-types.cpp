@@ -298,6 +298,238 @@ void Point2DDubins::PrintPosition(std::ostream &out) {
   out << (*this)[0] << DELIMITER_OUT << (*this)[1];
 }
 
+Point2DPolynom::Point2DPolynom() : Point2DPolynom(0,0) {
+}
+
+Point2DPolynom::Point2DPolynom(double x, double y) : coords{x, y}, velocity{0, 0}, acceleration{0, 0} {
+}
+
+Point2DPolynom::Point2DPolynom(const std::string &s, double scale) {
+  std::regex r("\\[(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*);\\s*(\\-?[\\d]+[\\.]?[\\d]*)\\]");
+  std::smatch m;
+  std::regex_search(s, m, r);
+  if (m.size() != 7) {
+    throw std::invalid_argument("Unknown format of point");
+  }
+
+  //position
+  for (int i{0}; i < 2; ++i) {
+    coords[i] = std::stod(m[i + 1]) * scale;
+    velocity[i] = std::stod(m[i + 3]) * scale;
+    acceleration[i] = std::stod(m[i + 5]) * scale;
+  }
+}
+
+Point2DPolynom::Point2DPolynom(const Vec2 pos) : Point2DPolynom(pos.x, pos.y) {
+
+}
+
+void Point2DPolynom::SetPosition(double x, double y) {
+  coords[0] = x;
+  coords[1] = y;
+}
+
+void Point2DPolynom::SetPosition(Vec2 vec) {
+  coords[0] = vec.x;
+  coords[1] = vec.y;
+}
+
+void Point2DPolynom::SetVelocity(double x, double y) {
+  velocity[0] = x;
+  velocity[1] = y;
+}
+
+void Point2DPolynom::SetVelocity(Vec2 vec) {
+  velocity[0] = vec.x;
+  velocity[1] = vec.y;
+}
+
+void Point2DPolynom::SetAcceleration(double x, double y) {
+  acceleration[0] = x;
+  acceleration[1] = y;
+}
+
+void Point2DPolynom::SetAcceleration(Vec2 vec) {
+  acceleration[0] = vec.x;
+  acceleration[1] = vec.y;
+}
+
+const double* Point2DPolynom::GetPosition() const {
+  return coords;
+}
+
+const double* Point2DPolynom::GetRawCoords() const {
+  return coords;
+}
+
+const double Point2DPolynom::operator[](int i) const {
+  if (i < 2) {
+    return coords[i];
+  } else if (i < 4) {
+    return velocity[i - 2];
+  } else if (i < 6) {
+    return acceleration[i - 4];
+  }
+
+  return 1;
+}
+
+void Point2DPolynom::operator+=(const Vector &translate) {
+  for (int i{0}; i < 2; ++i) {
+    coords[i] += translate[i];
+  }
+}
+
+bool operator==(const Point2DPolynom &p1, const Point2DPolynom &p2) {
+  bool equal{true};
+  for (int i{0}; i < 6 && equal; ++i) {
+    equal &= inBounds(p1[i], p2[i], EQ_TOLERANCE);
+  }
+  return equal;
+}
+
+bool operator!=(const Point2DPolynom &p1, const Point2DPolynom &p2) {
+  return !(p1 == p2);
+}
+
+bool operator<(const Point2DPolynom &p1, const Point2DPolynom &p2) {
+  for (int i{0}; i < 6; ++i) {
+    if (p1[i] == p2[i]) {
+      continue;
+    }
+
+    return p1[i] < p2[i];
+  }
+  return false;
+}
+
+Point2DPolynom operator/(const Point2DPolynom &p1, const double scale) {
+  Point2DPolynom newPoint{p1};
+  for (int i{0}; i < 2; ++i) {
+    newPoint.coords[i] /= scale;
+  }
+  
+  return newPoint;
+}
+
+double Point2DPolynom::Distance(const Point2DPolynom &other) const {
+  double totalDist{EuclideanDistance(other)};
+  double totalTime{totalDist / AverageVelocity};
+
+  Vec2 pos0{(*this)[0], (*this)[1]};
+  Vec2 vel0{(*this)[2], (*this)[3]};
+  Vec2 acc0{(*this)[4], (*this)[5]};
+
+  Vec2 posf{other[0], other[1]};
+  Vec2 velf{other[2], other[3]};
+  Vec2 accf{other[4], other[5]};
+
+  Vec2 gravity{0,-Gravity};
+  RapidTrajectoryGenerator2D traj(pos0, vel0, acc0, gravity);
+  traj.SetGoalPosition(posf);
+  traj.SetGoalVelocity(velf);
+  traj.SetGoalAcceleration(accf);
+
+  traj.Generate(totalTime);
+
+  return traj.GetCost();
+}
+
+// Euclidean 6D distance
+double Point2DPolynom::EuclideanDistance(const Point2DPolynom &other) const {
+  double distance{0};
+  for (int i{0}; i < 6; ++i) {
+    distance += POW((*this)[i] - other[i]);
+  }
+  
+  distance = sqrt(distance);
+  return distance;
+}
+
+Point2DPolynom Point2DPolynom::GetStateInDistance(Point2DPolynom &other, double dist) const {
+  Point2DPolynom retVal;
+
+  Point2D start{(*this)[0], (*this)[1]};
+  Point2D finish{other[0], other[1]};
+  double totalDist{start.Distance(finish)};
+  double totalTime{totalDist / AverageVelocity};
+
+  Vec2 pos0{(*this)[0], (*this)[1]};
+  Vec2 vel0{(*this)[2], (*this)[3]};
+  Vec2 acc0{(*this)[4], (*this)[5]};
+
+  Vec2 posf{other[0], other[1]};
+  Vec2 velf{other[2], other[3]};
+  Vec2 accf{other[4], other[5]};
+
+  Vec2 gravity{0,-this->Gravity};
+  RapidTrajectoryGenerator2D traj(pos0, vel0, acc0, gravity);
+  traj.SetGoalPosition(posf);
+  traj.SetGoalVelocity(velf);
+  traj.SetGoalAcceleration(accf);
+
+  traj.Generate(totalTime);
+
+  retVal.SetPosition(traj.GetPosition(dist / AverageVelocity));
+  retVal.SetVelocity(traj.GetVelocity(dist / AverageVelocity));
+  retVal.SetAcceleration(traj.GetAcceleration(dist / AverageVelocity));
+
+  return retVal;
+}
+
+std::deque<Point2DPolynom> Point2DPolynom::SampleTrajectory(Point2DPolynom &other, double interval) {
+  std::deque<Point2DPolynom> retVal;
+
+  Point2D start{GetPositionOnly()};
+  Point2D finish{other.GetPositionOnly()};
+  double totalDist{start.Distance(finish)};
+  double totalTime{totalDist / AverageVelocity};
+
+  Vec2 pos0{(*this)[0], (*this)[1]};
+  Vec2 vel0{(*this)[2], (*this)[3]};
+  Vec2 acc0{(*this)[4], (*this)[5]};
+
+  Vec2 posf{other[0], other[1]};
+  Vec2 velf{other[2], other[3]};
+  Vec2 accf{other[4], other[5]};
+
+  Vec2 gravity{0,-this->Gravity};
+  RapidTrajectoryGenerator2D traj(pos0, vel0, acc0, gravity);
+  traj.SetGoalPosition(posf);
+  traj.SetGoalVelocity(velf);
+  traj.SetGoalAcceleration(accf);
+
+  traj.Generate(totalTime);
+
+  double parts{totalTime / interval};
+  for (int i{0}; i < parts; ++i) {
+    Vec2 pos{traj.GetPosition(i * interval)};
+    retVal.emplace_back(pos);
+  }
+
+  return retVal;
+}
+
+void Point2DPolynom::FillRotationMatrix(double (&matrix)[3][3]) const {
+  matrix[0][0] = 1;
+  matrix[0][1] = 0;
+  matrix[0][2] = 0;
+  matrix[1][0] = 0;
+  matrix[1][1] = 1;
+  matrix[1][2] = 0;
+  matrix[2][0] = 0;
+  matrix[2][1] = 0;
+  matrix[2][2] = 1;
+}
+
+void Point2DPolynom::PrintPosition(std::ostream &out) {
+  out << (*this)[0] << DELIMITER_OUT << (*this)[1] << DELIMITER_OUT << "0";
+}
+
+Point2D Point2DPolynom::GetPositionOnly() {
+  return Point2D((*this)[0], (*this)[1]);
+}
+
 Point3D::Point3D() : coords{0, 0, 0} {
 }
 
@@ -673,8 +905,8 @@ Point3DPolynom::Point3DPolynom(const std::string &s, double scale) {
   //position
   for (int i{0}; i < 3; ++i) {
     coords[i] = std::stod(m[i + 1]) * scale;
-    velocity[i] = std::stod(m[i + 4]);
-    acceleration[i] = std::stod(m[i + 7]);
+    velocity[i] = std::stod(m[i + 4]) * scale;
+    acceleration[i] = std::stod(m[i + 7]) * scale;
   }
 }
 
@@ -949,6 +1181,9 @@ PointVector2D::PointVector2D(Point2D p) : PointVector2D(p[0], p[1]) {
 PointVector2D::PointVector2D(Point2DDubins p) : PointVector2D(p[0], p[1]) {
 }
 
+PointVector2D::PointVector2D(Point2DPolynom p) : PointVector2D(p[0], p[1]) {
+}
+
 PointVector2D::PointVector2D(Point2D p1, Point2D p2) : Vector(2) {
   for (int i{0}; i < 2; ++i) {
     this->coords.get()[i] = p2[i] - p1[i];
@@ -956,6 +1191,12 @@ PointVector2D::PointVector2D(Point2D p1, Point2D p2) : Vector(2) {
 }
 
 PointVector2D::PointVector2D(Point2DDubins p1, Point2DDubins p2) : Vector(2) {
+  for (int i{0}; i < 2; ++i) {
+    this->coords.get()[i] = p2[i] - p1[i];
+  }
+}
+
+PointVector2D::PointVector2D(Point2DPolynom p1, Point2DPolynom p2) : Vector(2) {
   for (int i{0}; i < 2; ++i) {
     this->coords.get()[i] = p2[i] - p1[i];
   }
@@ -972,6 +1213,10 @@ std::ostream& operator<<(std::ostream &out, const Point2D &p) {
 
 std::ostream& operator<<(std::ostream &out, const Point2DDubins &p) {
   return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << p.GetHeading();
+}
+
+std::ostream& operator<<(std::ostream &out, const Point2DPolynom &p) {
+  return out << p[0] << DELIMITER_OUT << p[1] << DELIMITER_OUT << "0";
 }
 
 std::ostream& operator<<(std::ostream &out, const Point3D &p) {

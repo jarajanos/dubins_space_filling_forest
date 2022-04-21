@@ -44,6 +44,7 @@ class LazyTSPBase : public Solver<R> {
 };
 
 template<> double LazyTSPBase<Point3DPolynom>::getApproxDistance(Node<Point3DPolynom> &start, Node<Point3DPolynom> &goal);
+template<> double LazyTSPBase<Point2DPolynom>::getApproxDistance(Node<Point2DPolynom> &start, Node<Point2DPolynom> &goal);
 
 template<class R, bool = isDubins<R>::value>
 class LazyTSP : public LazyTSPBase<R> {  
@@ -83,6 +84,7 @@ class LazyTSP<R, true> : public LazyTSPBase<R> {
 
 template<> void LazyTSP<Point2DDubins>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
 template<> void LazyTSP<Point3DDubins>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
+template<> void LazyTSP<Point2DPolynom>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
 template<> void LazyTSP<Point3DPolynom>::savePaths(const FileStruct file, const std::deque<std::tuple<int,int>> &selectedPaths);
 
 template<class R>

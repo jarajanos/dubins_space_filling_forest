@@ -173,6 +173,64 @@ bool RandomGenerator<Point3DPolynom>::RandomPointInDistance(const Point3DPolynom
   return false;
 }
 
+template<>
+bool RandomGenerator<Point2DPolynom>::RandomPointInDistance(const Point2DPolynom& center, Point2DPolynom& point, const double distance) {
+  Vec2 pos0{center[0], center[1]};
+  Vec2 vel0{center[2], center[3]};
+  Vec2 acc0{center[4], center[5]};
+  Vec2 gravity{0,-this->problem.Gravity};
+
+  double dist{std::numeric_limits<double>::max()};
+  Point2DPolynom p;
+  int iter{0};
+  while(dist == std::numeric_limits<double>::max() && iter < maxIter) {
+    ++iter;
+
+    double u{normProb(rndEng)};
+    double v{normProb(rndEng)};
+
+    double norm{sqrt(u*u + v*v)};
+    Vec2 position{center[0] + u * distance / norm, center[1] + v * distance / norm};
+    p = Point2DPolynom(position);
+    if (!limits.IsInLimits(p)) {
+      continue;
+    }
+
+    RapidTrajectoryGenerator2D traj(pos0, vel0, acc0, gravity);
+    traj.SetGoalPosition(position);
+    if (!this->problem.FreeSampling) {
+      std::normal_distribution<double> velDist{problem.AvgVelocity, problem.AvgVelocity * AVG_VEL_STD_MULT};
+      std::uniform_int_distribution<int> signDist{0, 1};
+      Vec2 velocity{TO_SIGN(signDist(rndEng)) * velDist(rndEng), TO_SIGN(signDist(rndEng)) * velDist(rndEng)};
+      p.SetVelocity(velocity.x, velocity.y);
+      traj.SetGoalVelocity(velocity);
+
+      std::uniform_real_distribution<double> accDist{problem.MinThrust, problem.MaxThrust};
+      Vec2 acceleration{accDist(rndEng), accDist(rndEng)};
+      p.SetAcceleration(acceleration.x, acceleration.y);
+      traj.SetGoalAcceleration(acceleration);
+    }
+
+    traj.Generate(this->problem.SegmentTime);
+    if (this->problem.FreeSampling) {
+      Vec2 finalVel{traj.GetVelocity(this->problem.SegmentTime)};
+      Vec2 finalAcc{traj.GetAcceleration(this->problem.SegmentTime)};
+
+      p.SetVelocity(finalVel.x, finalVel.y);
+      p.SetAcceleration(finalAcc.x, finalAcc.y);
+    }
+
+    dist = traj.GetCost();
+  }
+
+  if (iter != maxIter) {
+    point = p;
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * @brief Random space uniformly sampled in the configuration space of particular problem, according to 
  * https://ri.cmu.edu/pub_files/pub4/kuffner_james_2004_1/kuffner_james_2004_1.pdf 
@@ -188,6 +246,20 @@ template<>
 void RandomGenerator<Point2DDubins>::RandomPointInSpace(Point2DDubins& point) {
   point.SetPosition(uniSpaceX(rndEng), uniSpaceY(rndEng));
   point.SetHeading(uniDistAngle(rndEng));
+}
+
+template<>
+void RandomGenerator<Point2DPolynom>::RandomPointInSpace(Point2DPolynom &point) {
+  point.SetPosition(uniSpaceX(rndEng), uniSpaceY(rndEng));
+
+  if (!this->problem.FreeSampling) {
+    std::normal_distribution<double> velDist{problem.AvgVelocity, problem.AvgVelocity * AVG_VEL_STD_MULT};
+    std::uniform_int_distribution<int> signDist{0, 1};
+    point.SetVelocity(TO_SIGN(signDist(rndEng)) * velDist(rndEng), TO_SIGN(signDist(rndEng)) * velDist(rndEng));
+
+    std::uniform_real_distribution<double> accDist{problem.MinThrust, problem.MaxThrust};
+    point.SetAcceleration(accDist(rndEng), accDist(rndEng));
+  }
 }
 
 template<>

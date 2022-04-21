@@ -50,7 +50,9 @@ class SpaceForestBase : public Solver<R> {
 };
 
 template<> bool SpaceForestBase<Point3DPolynom>::checkExpandedTree(Node<Point3DPolynom> *expanded, Point3DPolynom* newPoint, flann::Matrix<float> &matrix);
+template<> bool SpaceForestBase<Point2DPolynom>::checkExpandedTree(Node<Point2DPolynom> *expanded, Point2DPolynom* newPoint, flann::Matrix<float> &matrix);
 template<> bool SpaceForestBase<Point3DPolynom>::checkOtherTrees(Node<Point3DPolynom> *expanded, Point3DPolynom* newPoint, flann::Matrix<float> &matrix, bool &solved);
+template<> bool SpaceForestBase<Point2DPolynom>::checkOtherTrees(Node<Point2DPolynom> *expanded, Point2DPolynom* newPoint, flann::Matrix<float> &matrix, bool &solved);
 
 template<class R, bool = isDubins<R>::value>
 class SpaceForest : public SpaceForestBase<R> {

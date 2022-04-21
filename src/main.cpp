@@ -58,6 +58,11 @@ int main(int argc, char *argv[]) {
     problem.Repetition = repetition;
     problem.Dimension = D3Polynom;
     SolveProblem(config, problem);
+  } else if (dim == "2DPolynom") {
+    Problem<Point2DPolynom> problem;
+    problem.Repetition = repetition;
+    problem.Dimension = D2Polynom;
+    SolveProblem(config, problem);
   } else {
     ERROR("Invalid value of \"dimension\" node in \"problem\" root node.");
     exit(1);
@@ -457,6 +462,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
         problem.Gravity = subNode.as<double>();
       }
       Point3DPolynom::Gravity = problem.Gravity;
+      Point2DPolynom::Gravity = problem.Gravity;
 
       subNode = node["segment-time"];
       if (!subNode.IsDefined() && problem.Dimension == D3Polynom) {
@@ -465,6 +471,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
         problem.SegmentTime = subNode.as<double>();
         problem.AvgVelocity = problem.SamplingDist / problem.SegmentTime;
         Point3DPolynom::AverageVelocity = problem.AvgVelocity;
+        Point2DPolynom::AverageVelocity = problem.AvgVelocity;
       }
 
       subNode = node["control-interval"];

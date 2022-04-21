@@ -41,6 +41,7 @@ class RapidExpTreeBase : public Solver<R> {
 };
 
 template<> double RapidExpTreeBase<Point3DPolynom>::getApproxDistance(Node<Point3DPolynom> &start, Node<Point3DPolynom> &goal);
+template<> double RapidExpTreeBase<Point2DPolynom>::getApproxDistance(Node<Point2DPolynom> &start, Node<Point2DPolynom> &goal);
 
 template<class R, bool = isDubins<R>::value>
 class RapidExpTree : public RapidExpTreeBase<R> {

@@ -22,6 +22,7 @@
 #include "problem.h"
 
 #include "RapidTrajectoryGenerator.h"
+#include "RapidTrajectoryGenerator2D.h"
 using namespace RapidQuadrocopterTrajectoryGenerator;
 
 #define TO_SIGN(A)  ((A) * 2 - 1)
@@ -55,7 +56,7 @@ class RandomGenerator {
 
 template<class R>
 RandomGenerator<R>::RandomGenerator(Problem<R> &problem) 
-  : limits{problem.Env.Limits}, maxIter{problem.MaxIterations}, problem{problem} {
+  : limits{problem.Env.Limits}, maxIter{problem.MaxMisses}, problem{problem} {
   // seed with actual time
   std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds> tSeed{std::chrono::high_resolution_clock::now()};
   std::uint_fast64_t uSeed{static_cast<uint_fast64_t>(tSeed.time_since_epoch().count())};

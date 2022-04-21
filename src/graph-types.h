@@ -218,6 +218,18 @@ class FlannHolder<Node<Point2DDubins>> {
 };
 
 template<>
+class FlannHolder<Node<Point2DPolynom>> {
+  public:
+    //flann::Index<D9Distance<float>> *Index{nullptr};
+    flann::Index<flann::L2<float>> *Index{nullptr};
+    std::deque<float *> PtrsToDel;
+
+    ~FlannHolder();
+
+    void CreateIndex(flann::Matrix<float> &matrix);
+};
+
+template<>
 class FlannHolder<Node<Point3D>> {
   public:
     //flann::Index<D6Distance<float>> *Index;

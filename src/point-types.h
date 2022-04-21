@@ -27,7 +27,9 @@ class Point3DDubins;
 #include "opendubins/dubins3D.h"
 
 #include "RapidTrajectoryGenerator.h"
+#include "RapidTrajectoryGenerator2D.h"
 #include "Vec3.h"
+#include "Vec2.h"
 
 using namespace RapidQuadrocopterTrajectoryGenerator;
 
@@ -86,6 +88,44 @@ class Point2DDubins {
   protected:
     double coords[2];
     double phi;
+};
+
+class Point2DPolynom {
+  public:
+    inline static double AverageVelocity;
+    inline static double Gravity;
+
+    Point2DPolynom();
+    Point2DPolynom(double x, double y);
+    Point2DPolynom(const std::string &s, double scale=1);
+    Point2DPolynom(const Vec2 pos);
+
+    void SetPosition(double x, double y);
+    void SetPosition(Vec2 vec);
+    void SetVelocity(double x, double y);
+    void SetVelocity(Vec2 vec);
+    void SetAcceleration(double x, double y);
+    void SetAcceleration(Vec2 vec);
+    const double* GetPosition() const;
+    const double* GetRawCoords() const;
+    const double operator[](int i) const;
+    void operator+=(const Vector &translate);
+    friend bool operator==(const Point2DPolynom &p1, const Point2DPolynom &p2);
+    friend bool operator!=(const Point2DPolynom &p1, const Point2DPolynom &p2);
+    friend bool operator<(const Point2DPolynom &p1, const Point2DPolynom &p2);
+    friend Point2DPolynom operator/(const Point2DPolynom &p1, const double scale);    // scale position (NOT the rotation)
+    double Distance(const Point2DPolynom &other) const;
+    double EuclideanDistance(const Point2DPolynom &other) const;
+    Point2DPolynom GetStateInDistance(Point2DPolynom &other, double dist) const;
+    std::deque<Point2DPolynom> SampleTrajectory(Point2DPolynom &other, double interval);
+    void FillRotationMatrix(double (&matrix)[3][3]) const;
+    void PrintPosition(std::ostream &out);
+
+    Point2D GetPositionOnly();
+  protected:
+    double coords[2];
+    double velocity[2];
+    double acceleration[2];
 };
 
 class Point3D {
@@ -213,14 +253,17 @@ class PointVector2D : public Vector {
     PointVector2D(double x, double y);
     PointVector2D(Point2D p);
     PointVector2D(Point2DDubins p);
+    PointVector2D(Point2DPolynom p);
     PointVector2D(Point2D p1, Point2D p2);
     PointVector2D(Point2DDubins p1, Point2DDubins p2);
+    PointVector2D(Point2DPolynom p1, Point2DPolynom p2);
     PointVector3D To3DVector() const;
 };
 
 // STREAM OUTPUTS
 std::ostream& operator<<(std::ostream &out, const Point2D &p);
 std::ostream& operator<<(std::ostream &out, const Point2DDubins &p);
+std::ostream& operator<<(std::ostream &out, const Point2DPolynom &p);
 std::ostream& operator<<(std::ostream &out, const Point3D &p);
 std::ostream& operator<<(std::ostream &out, const Point3DDubins &p);
 std::ostream& operator<<(std::ostream &out, const Point3DPolynom &p);

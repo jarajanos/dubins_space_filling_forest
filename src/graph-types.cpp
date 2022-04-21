@@ -113,6 +113,28 @@ FlannHolder<Node<Point3DPolynom>>::~FlannHolder() {
   }
 }
 
+void FlannHolder<Node<Point2DPolynom>>::CreateIndex(flann::Matrix<float> &matrix) {
+  // Distance including velocity and acceleration
+  // !!! CHANGE ALSO IN HEADER FILE & NUMDIMENSIONS IN COMMON.H !!!
+  //Index = new flann::Index<D9Distance<float>>(matrix, flann::KDTreeIndexParams(FLANN_NUM_KD_TREES)); 
+  // Distance including "2D position difference" only
+  Index = new flann::Index<flann::L2<float>>(matrix, flann::KDTreeIndexParams(FLANN_NUM_KD_TREES));
+  Index->buildIndex();
+  this->PtrsToDel.push_back(matrix.ptr());
+}
+
+FlannHolder<Node<Point2DPolynom>>::~FlannHolder() {
+  if (Index != nullptr) {
+    delete Index;
+  }
+  
+  for (auto ptr : PtrsToDel) {
+    if (ptr != nullptr) {
+      delete[] ptr;
+    }
+  }
+}
+
 // does not make sense = only purpose is correct ordering in DistanceHolder - position of Node in argument MAKES sense here, the problem is not symmetric
 template<>
 bool NodeBase<Point2DDubins>::operator<(const NodeBase<Point2DDubins> &l) {
@@ -128,5 +150,10 @@ bool NodeBase<Point3DDubins>::operator<(const NodeBase<Point3DDubins> &l) {
 // does not make sense = only purpose is correct ordering in DistanceHolder - position of Node in argument MAKES sense here, the problem is not symmetric
 template<>
 bool NodeBase<Point3DPolynom>::operator<(const NodeBase<Point3DPolynom> &l) {
+  return true;
+}
+
+template<>
+bool NodeBase<Point2DPolynom>::operator<(const NodeBase<Point2DPolynom> &l) {
   return true;
 }

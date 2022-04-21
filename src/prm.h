@@ -47,6 +47,7 @@ class ProbRoadMaps<R, false> : public ProbRoadMapsBase<R> {
 };
 
 template<> void ProbRoadMaps<Point3DPolynom, false>::saveTrees(const FileStruct file);
+template<> void ProbRoadMaps<Point2DPolynom, false>::saveTrees(const FileStruct file);
 
 template<class R>
 class ProbRoadMaps<R, true> : public ProbRoadMapsBase<R> {

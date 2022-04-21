@@ -94,7 +94,9 @@ class Solver<R, false> : public SolverBase<R> {
 };
 
 template<> void Solver<Point3DPolynom, false>::saveTrees(const FileStruct file);
+template<> void Solver<Point2DPolynom, false>::saveTrees(const FileStruct file);
 template<> void Solver<Point3DPolynom, false>::savePaths(const FileStruct file);
+template<> void Solver<Point2DPolynom, false>::savePaths(const FileStruct file);
 
 template<class R>
 class Solver<R, true> : public SolverBase<R> {

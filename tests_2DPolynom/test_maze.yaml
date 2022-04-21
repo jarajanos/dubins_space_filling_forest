@@ -1,0 +1,70 @@
+---
+  problem:
+    solver: 'sff'
+    optimize: true
+    iterations: 100000
+    dimension: '2DPolynom'
+  
+  delimiters:
+    standard: ' '
+    name: '_'
+
+  robot:
+    path: './models/robot_small.obj'
+    type: 'obj'
+
+  obstacles:
+    - path: './maps/maze.obj'
+      type: 'obj'
+      position: '[0; 0;0; 0; 0; 0]'
+
+  cities:
+    - "[0;0;0;0;0;0]"
+   
+  #cities:
+  #  - "[750; -845;0]"
+
+  goal: "[-844; 850;0;0;0;0]"
+
+  #goal: "[600; -900;0]"
+
+  range:
+    autodetect: true
+
+  distances:
+    collision: 10
+    sampling: 200
+    tree: 200
+
+  dynamics: 
+    min-thrust: -1
+    max-thrust: 1
+    gravity: 0
+    segment-time: 4
+    control-interval: 0.01
+
+  algorithm:
+    m2r-ratio: 10
+    bias: 0.95
+    misses: 5
+    dubins-radius: 30
+    dubins-resolution: 1
+  
+  save:
+    goals:
+      path: 'output/goals.tri'
+      type: 'map'
+    params:
+      path: 'output/params.csv'
+      id: 'sff_maze_polynom'
+    #TSP-file:
+    #  path: 'output/tsp.tsp'
+    #TSP-paths:
+    #  path: 'output/tsp.tri'
+    tree:
+      path: 'output//tree.tri'
+      type: 'map'
+      frequency: 0
+    roadmap:
+      path: 'output//rawPath.tri'
+      type: 'map'

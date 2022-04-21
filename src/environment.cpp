@@ -90,6 +90,20 @@ void Obstacle<Point3DPolynom>::addFacet(int objId, int offset, int faceInts[3]) 
 }
 
 template <>
+void Obstacle<Point2DPolynom>::addFacet(int objId, int offset, int faceInts[3]) {
+  Point3D faceCache[3];
+  Point2DPolynom faceCache2D[3];
+  for (int i{0}; i < 3; ++i) {
+    int pos{faceInts[i] - offset - 1};
+    faceCache[i].SetPosition(this->facePoints[pos][0], this->facePoints[pos][1], 0);
+    faceCache2D[i] = this->facePoints[pos];
+  }
+
+  this->faces.emplace_back(faceCache2D[0], faceCache2D[1], faceCache2D[2]);
+  this->rapidModel->AddTri(faceCache[0].GetRawCoords(), faceCache[1].GetRawCoords(), faceCache[2].GetRawCoords(), this->rapidId++);
+}
+
+template <>
 void Obstacle<Point2D>::addPoint(int objId, double coords[3]) {
   // scale
   for (int i{0}; i < 2; ++i) {
@@ -143,6 +157,18 @@ void Obstacle<Point3DPolynom>::addPoint(int objId, double coords[3]) {
   }
 
   this->facePoints.emplace_back(coords[0], coords[1], coords[2]);
+  updateLocalRange(coords);
+}
+
+template <>
+void Obstacle<Point2DPolynom>::addPoint(int objId, double coords[3]) {
+  // scale
+  for (int i{0}; i < 2; ++i) {
+    coords[i] *= scale;
+  }
+
+  coords[2] = 0;
+  this->facePoints.emplace_back(coords[0], coords[1]);
   updateLocalRange(coords);
 }
 
@@ -291,6 +317,35 @@ void Obstacle<Point3DPolynom>::ParseMapFile(const std::string fileName) {
   modelFile.close();
 }
 
+template <>
+void Obstacle<Point2DPolynom>::ParseMapFile(const std::string fileName) {
+  std::ifstream modelFile(fileName);
+  int index{1};
+  int faceCache[3];
+  double pointCache[3] = {0, 0, 0};
+  std::string line, value;
+
+  while (getline(modelFile, line)) {
+    line = Trim(line);
+    if (!strcmp(line.c_str(), "") || !strncmp(line.c_str(), "#", 1)) {
+      continue;
+    }
+
+    for (int i{0}; i < 3; ++i) {
+      for (int j{0}; j < 2; ++j) {
+        ParseString(line, value, line, this->Delimiter);
+        pointCache[j] = std::stod(value) + Position[j];
+      }
+      addPoint(0, pointCache);
+      faceCache[i] = index + i;
+    }
+    index += 3;
+
+    addFacet(0, 0, faceCache);
+  }
+  modelFile.close();
+}
+
 /**
  * @brief Handler for the RAPID functions for the collision checking
  * 
@@ -360,6 +415,17 @@ bool Obstacle<Point3DPolynom>::Collide(Obstacle<Point3DPolynom> &object1, Point3
   return RAPID_num_contacts != 0;
 }
 
+template <>
+bool Obstacle<Point2DPolynom>::Collide(Obstacle<Point2DPolynom> &object1, Point2DPolynom pos1, Obstacle<Point2DPolynom> &object2, Point2DPolynom pos2) {  
+  PointVector2D vecPos1{pos1}, vecPos2{pos2};
+  double rotMat1[3][3], rotMat2[3][3];
+  pos1.FillRotationMatrix(rotMat1);
+  pos2.FillRotationMatrix(rotMat2);
+
+  RAPID_Collide(rotMat1, (vecPos1.To3DVector()).GetRawCoords(), object1.GetRapidModel().get(), rotMat2, (vecPos2.To3DVector()).GetRawCoords(), object2.GetRapidModel().get());
+  return RAPID_num_contacts != 0;
+}
+
 /**
  * @brief Handler of the base Collide function, tailored for the robot model and its position
  * 
@@ -413,6 +479,16 @@ bool Obstacle<Point3DPolynom>::Collide(Obstacle<Point3DPolynom> &object, Obstacl
   robPos.FillRotationMatrix(rotMat2);
 
   RAPID_Collide(Obstacle<Point3DPolynom>::eyeRotation, vecPos1.GetRawCoords(), object.GetRapidModel().get(), rotMat2, vecPos2.GetRawCoords(), robot.GetRapidModel().get());
+  return RAPID_num_contacts != 0;
+}
+
+template <>
+bool Obstacle<Point2DPolynom>::Collide(Obstacle<Point2DPolynom> &object, Obstacle<Point2DPolynom> &robot, Point2DPolynom robPos) {
+  PointVector2D vecPos1, vecPos2{robPos};
+  double rotMat2[3][3];
+  robPos.FillRotationMatrix(rotMat2);
+
+  RAPID_Collide(Obstacle<Point2DPolynom>::eyeRotation, (vecPos1.To3DVector()).GetRawCoords(), object.GetRapidModel().get(), rotMat2, (vecPos2.To3DVector()).GetRawCoords(), robot.GetRapidModel().get());
   return RAPID_num_contacts != 0;
 }
 

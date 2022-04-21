@@ -62,6 +62,17 @@ bool Range::IsInLimits(Point3DDubins &point) {
 }
 
 template<>
+bool Range::IsInLimits(Point2DPolynom &point) {
+  bool valid{true};
+  for (int i{0}; i < 2; ++i) {
+    valid &= point[i] >= this->mins[i];
+    valid &= point[i] <= this->maxs[i];
+  }
+
+  return valid;
+}
+
+template<>
 bool Range::IsInLimits(Point3DPolynom &point) {
   bool valid{true};
   for (int i{0}; i < 3; ++i) {

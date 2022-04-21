@@ -123,12 +123,13 @@ struct D9Distance {
 enum Dimensions {
   D2 = 0,
   D2Dubins = 1,
-  D3 = 2,
-  D3Dubins = 3,
-  D3Polynom = 4
+  D2Polynom = 2,
+  D3 = 3,
+  D3Dubins = 4,
+  D3Polynom = 5
 };
 
-const static inline size_t NumDimensions[] = { 2, 3, 3, 6, 3 };
+const static inline size_t NumDimensions[] = { 2, 3, 3, 3, 6, 3 };
 
 enum FileType {
   Map,
@@ -628,6 +629,8 @@ inline std::ostream& operator<<(std::ostream &out, const Dimensions &d) {
     return out << "3DDubins";
   } else if (d == D3Polynom) {
     return out << "3DPolynom";
+  } else if (d == D2Polynom) {
+    return out << "2DPolynom";
   } else {
     ERROR("Unimplemented dimension print!");
     return out;
