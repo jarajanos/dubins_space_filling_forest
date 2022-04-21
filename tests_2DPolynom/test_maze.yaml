@@ -2,7 +2,7 @@
   problem:
     solver: 'sff'
     optimize: true
-    iterations: 100000
+    iterations: 1000000
     dimension: '2DPolynom'
   
   delimiters:
@@ -14,33 +14,33 @@
     type: 'obj'
 
   obstacles:
-    - path: './maps/maze.obj'
+    - path: './maps/maze2.obj'
       type: 'obj'
       position: '[0; 0;0; 0; 0; 0]'
 
-  cities:
-    - "[0;0;0;0;0;0]"
-   
   #cities:
-  #  - "[750; -845;0]"
+  #  - "[0;0;0;0;0;0]"
+   
+  cities:
+    - "[750; -845;0;0;0;0]"
 
-  goal: "[-844; 850;0;0;0;0]"
+  #goal: "[-844; 850;0;0;0;0]"
 
-  #goal: "[600; -900;0]"
+  goal: "[600; -900;0;0;0;0]"
 
   range:
     autodetect: true
 
   distances:
     collision: 10
-    sampling: 200
-    tree: 200
+    sampling: 100
+    tree: 100
 
   dynamics: 
-    min-thrust: -1
-    max-thrust: 1
+    min-thrust: -100
+    max-thrust: 100
     gravity: 0
-    segment-time: 4
+    segment-time: 5
     control-interval: 0.01
 
   algorithm:

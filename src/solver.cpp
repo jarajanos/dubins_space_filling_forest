@@ -346,11 +346,18 @@ void Solver<Point2DPolynom, false>::saveTrees(const FileStruct file) {
       }
     } else if (file.type == Map) {
       fileStream << "#Trees" << DELIMITER_OUT << this->problem.Dimension << "\n";
-      for (int i{0}; i < this->trees.size(); ++i) {
-        for (Node<Point2DPolynom> &node : this->trees[i].Leaves) {
-          if (!node.IsRoot()) {
-            fileStream << node.Position / this->problem.Env.ScaleFactor << DELIMITER_OUT << node.Closest->Position / this->problem.Env.ScaleFactor << DELIMITER_OUT << node.SourceTree->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
-          }
+      for (int i{0}; i < this->allNodes.size(); ++i) {
+        Node<Point2DPolynom> &node{*(this->allNodes[i])};
+        if (node.IsRoot()) {
+          continue;
+        }
+
+        auto path{node.Closest->Position.SampleTrajectory(node.Position, this->problem.CtrlInterval)};
+
+        for (int j{0}; j < path.size() - 1; ++j) {
+          Point2DPolynom actPoint{path[j]};
+          Point2DPolynom nextPoint{path[j+1]};
+          fileStream << actPoint / this->problem.Env.ScaleFactor << DELIMITER_OUT << nextPoint / this->problem.Env.ScaleFactor << DELIMITER_OUT << node.SourceTree->Root->ID << DELIMITER_OUT << node.GetAge() << "\n";
         }
       }
     } else {
@@ -512,13 +519,20 @@ void Solver<Point2DPolynom, false>::savePaths(const FileStruct file) {
           }
 
           std::deque<Point2DPolynom> &plan{holder.Plan};
+
           for (int k{0}; k < plan.size() - 1; ++k) {
-            if (plan[k] == plan[k + 1]) {
-              continue;
+            Point2DPolynom actPoint{plan[k]};
+            Point2DPolynom nextPoint{plan[k + 1]};
+
+            std::deque<Point2DPolynom> path{actPoint.SampleTrajectory(nextPoint, this->problem.CtrlInterval)};
+            for (int j{0}; j < path.size() - 1; ++j) {
+              Point2DPolynom act{path[j]};
+              Point2DPolynom next{path[j+1]};
+              fileStream << act / this->problem.Env.ScaleFactor << DELIMITER_OUT << next / this->problem.Env.ScaleFactor << "\n";
             }
-            fileStream << plan[k] / this->problem.Env.ScaleFactor << DELIMITER_OUT << plan[k+1] / this->problem.Env.ScaleFactor << "\n";
+          
+            fileStream << "\n";
           }
-          fileStream << "\n";
         }
       }
     } else {

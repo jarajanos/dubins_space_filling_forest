@@ -418,7 +418,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
     // parse dynamics
     node = config["dynamics"];
     if (node.IsDefined()) {
-      if (problem.Dimension != D3Polynom) {
+      if (problem.Dimension != D3Polynom && problem.Dimension != D2Polynom) {
         WARN("Dynamic feasibility of trajectory is checked only for polynomial trajectories");
       }
 

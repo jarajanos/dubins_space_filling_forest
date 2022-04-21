@@ -35,8 +35,8 @@
     tree: 200
 
   dynamics: 
-    min-thrust: -1
-    max-thrust: 1
+    min-thrust: -100
+    max-thrust: 100
     gravity: 0
     segment-time: 4
     control-interval: 0.01
