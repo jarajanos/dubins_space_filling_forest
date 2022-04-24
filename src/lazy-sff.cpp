@@ -151,7 +151,7 @@ void LazySpaceForest<Point3DDubins>::Solve() {
       }
     // single goal
     } else {
-      DistanceHolder<Point3D> &solution{baseSolver.GetNeighboringMatrix()(0,0)};
+      DistanceHolder<Point3D> &solution{baseSolver.GetNeighboringMatrix()(0,1)};
 
       // distance matrix of size of all nodes in the path
       std::vector<std::vector<std::vector<double>>> dtpMatrix;
@@ -173,7 +173,7 @@ void LazySpaceForest<Point3DDubins>::Solve() {
         pathPoints.push_back(finish);
         for (int j{0}; j < this->problem.DubinsResolution; ++j) {
           for (int k{0}; k < this->problem.DubinsResolution; ++k) {
-            Point3DDubins tempStart{start}, tempFinish{finish};
+            Point3DDubins tempStart{finish}, tempFinish{start};
             tempStart.SetHeading(j, this->problem.DubinsResolution);
             tempFinish.SetHeading(k, this->problem.DubinsResolution);
             if (this->isPathFree(tempStart, tempFinish)) {
@@ -187,8 +187,8 @@ void LazySpaceForest<Point3DDubins>::Solve() {
 
       // dijkstra
       std::vector<std::vector<DtpNode>> index;
-      index.resize(numNodes + 1);
-      for (int i{0}; i < numNodes + 1; ++i) {
+      index.resize(numNodes);
+      for (int i{0}; i < numNodes; ++i) {
         index[i].resize(this->problem.DubinsResolution);
         for (int j{0}; j < this->problem.DubinsResolution; ++j) {
           index[i][j].Position = i;
@@ -212,9 +212,10 @@ void LazySpaceForest<Point3DDubins>::Solve() {
         DtpNode *actNode{heap.Get(0)};
         heap.Pop();
 
-        if (actNode->Position == numNodes) {
+        if (actNode->Position == numNodes - 1) {
           // found path
           finalNode = actNode;
+          break;
         }
 
         int nextPos{actNode->Position + 1};

@@ -3,20 +3,20 @@
     dimension: 3DDubins
     iterations: 100000 
     optimize: true
-    solver: 'lazy-rrt'
+    solver: 'lazy-sff'
 
   TSP-solver: 
     path: ./solver/lkh/LKH-3.0.6/LKH
     type: LKH
 
   algorithm: {bias: 0, dubins-radius: 0.1, dubins-resolution: 2, m2r-ratio: 10, misses: 5}
-  cities: ['[0; 0; 1.5; 0; 0]', '[0; 0; 4.5; 0; 0]', '[0; 0; 7.5; 0; 0]', '[0; 0; 10.5;
-      0; 0]', '[-4.7906588520729745;4.04232199006648;3.884648680541506;0;0]']
+  #cities: ['[0; 0; 1.5; 0; 0]', '[0; 0; 4.5; 0; 0]', '[0; 0; 7.5; 0; 0]', '[0; 0; 10.5;
+  #    0; 0]', '[-4.7906588520729745;4.04232199006648;3.884648680541506;0;0]']
   
-  #cities:
-  #  - '[0; 0; 1.5; 0; 0]'
+  cities:
+    - '[0; 0; 1.5; 0; 0]'
   
-  #goal: '[0; 0; 10.5; 0; 0]'
+  goal: '[0; 0; 10.5; 0; 0]'
 
   delimiters: {name: _, standard: ' '}
   distances: {collision: 0.01, sampling: 1.6, tree: 2}
@@ -36,8 +36,8 @@
     TSP-file:
       path: 'output/tsp.tsp'
     TSP-paths:
-      path: 'output/tsp.tri'
-      type: 'map'
+      path: 'output/tsp.obj'
+      type: 'obj'
     tree:
       path: 'output//tree5_normal_building.tri'
       type: 'map'
