@@ -32,44 +32,144 @@ void LazySpaceForest<Point3DDubins>::Solve() {
   baseSolver.PureSolve(iter, solved, elapsedTime);
 
   if (solved) {
-    auto normalPaths{baseSolver.GetNeighboringMatrix()};
-    TSPOrder baseTsp{baseSolver.GetTSPSolution()};
-    int numRoots{this->problem.GetNumRoots()};
-    int sumPoints{0};
+    // multi-goal
+    if (!this->problem.HasGoal) {
+      auto normalPaths{baseSolver.GetNeighboringMatrix()};
+      TSPOrder baseTsp{baseSolver.GetTSPSolution()};
+      int numRoots{this->problem.GetNumRoots()};
+      int sumPoints{0};
 
-    for (int i{0}; i < numRoots; ++i) {
-      int actNode{baseTsp[i]};
-      int nextNode{baseTsp[(i + 1) % numRoots]};
+      for (int i{0}; i < numRoots; ++i) {
+        int actNode{baseTsp[i]};
+        int nextNode{baseTsp[(i + 1) % numRoots]};
 
-      auto link{normalPaths(actNode, nextNode)};
-      sumPoints += link.Plan.size();
-    }
-
-    // distance matrix of size sum of all nodes in TSP path - numRoots (duplicates) + 1 (intensional duplicate of first node)
-    std::vector<std::vector<std::vector<double>>> dtpMatrix;
-    int numNodes{sumPoints - numRoots};
-    dtpMatrix.resize(numNodes);
-    for (int i{0}; i < numNodes; ++i) {
-      dtpMatrix[i].resize(this->problem.DubinsResolution);
-      for (int j{0}; j < this->problem.DubinsResolution; ++j) {
-        dtpMatrix[i][j].resize(this->problem.DubinsResolution, -1);
+        auto link{normalPaths(actNode, nextNode)};
+        sumPoints += link.Plan.size();
       }
-    }
 
-    // fill in matrix with dubins distances
-    int idx{0};
-    Point3DDubins start;
-    for (int i{0}; i < numRoots; ++i) {
-      int actNode{baseTsp[i]};
-      int nextNode{baseTsp[(i + 1) % numRoots]};
-
-      auto link{normalPaths(actNode, nextNode)};
-      if (i == 0) {
-        start = link.Plan[0];
-        pathPoints.push_back(start);
+      // distance matrix of size sum of all nodes in TSP path - numRoots (duplicates) + 1 (intensional duplicate of first node)
+      std::vector<std::vector<std::vector<double>>> dtpMatrix;
+      int numNodes{sumPoints - numRoots};
+      dtpMatrix.resize(numNodes);
+      for (int i{0}; i < numNodes; ++i) {
+        dtpMatrix[i].resize(this->problem.DubinsResolution);
+        for (int j{0}; j < this->problem.DubinsResolution; ++j) {
+          dtpMatrix[i][j].resize(this->problem.DubinsResolution, -1);
+        }
       }
-      for (int l{1}; l < link.Plan.size(); ++l) {
-        Point3DDubins finish{link.Plan[l]};
+
+      // fill in matrix with dubins distances
+      int idx{0};
+      Point3DDubins start;
+      for (int i{0}; i < numRoots; ++i) {
+        int actNode{baseTsp[i]};
+        int nextNode{baseTsp[(i + 1) % numRoots]};
+
+        auto link{normalPaths(actNode, nextNode)};
+        if (i == 0) {
+          start = link.Plan[0];
+          pathPoints.push_back(start);
+        }
+        for (int l{1}; l < link.Plan.size(); ++l) {
+          Point3DDubins finish{link.Plan[l]};
+          pathPoints.push_back(finish);
+          for (int j{0}; j < this->problem.DubinsResolution; ++j) {
+            for (int k{0}; k < this->problem.DubinsResolution; ++k) {
+              Point3DDubins tempStart{start}, tempFinish{finish};
+              tempStart.SetHeading(j, this->problem.DubinsResolution);
+              tempFinish.SetHeading(k, this->problem.DubinsResolution);
+              if (this->isPathFree(tempStart, tempFinish)) {
+                dtpMatrix[idx][j][k] = tempStart.Distance(tempFinish);
+              }
+            }
+          }
+          start = finish;
+          idx += 1;
+        }
+      }
+
+      // dijkstra
+      std::vector<std::vector<DtpNode>> index;
+      index.resize(numNodes + 1);
+      for (int i{0}; i < numNodes + 1; ++i) {
+        index[i].resize(this->problem.DubinsResolution);
+        for (int j{0}; j < this->problem.DubinsResolution; ++j) {
+          index[i][j].Position = i;
+          index[i][j].ActAngle = j;
+        } 
+      }
+
+      std::deque<DtpNode> initialNull;
+      Heap<DtpNode> heap{initialNull, nullptr, false};
+      
+      // initialize
+      for (int i{0}; i < this->problem.DubinsResolution; ++i) {
+        index[0][i].Distance = 0;
+        index[0][i].FirstAngle = i;
+        index[0][i].LastAngle = i;
+        heap.Push(&(index[0][i]));
+      }
+
+      DtpNode *finalNode{nullptr};
+      while (!heap.Empty()) {
+        DtpNode *actNode{heap.Get(0)};
+        heap.Pop();
+
+        if (actNode->Position == numNodes) {
+          if (actNode->ActAngle == actNode->FirstAngle) {
+            // found path
+            finalNode = actNode;
+            break;
+          }
+
+          // invalid connection
+          continue;
+        }
+
+        int nextPos{actNode->Position + 1};
+        for (int i{0}; i < this->problem.DubinsResolution; ++i) {
+          double dist{dtpMatrix[actNode->Position][actNode->ActAngle][i]};
+          if (index[nextPos][i].FirstAngle == -1 && dist != -1) {
+            index[nextPos][i].FirstAngle = actNode->FirstAngle;
+            index[nextPos][i].LastAngle = actNode->ActAngle;
+            index[nextPos][i].Distance = actNode->Distance + dist;
+            heap.Push(&(index[nextPos][i]));
+          }
+        }
+      }
+
+      if (finalNode == nullptr) {
+        solved = false;
+      } else {
+        DtpNode *node{finalNode};
+        int order{node->Position};
+        this->gatspSolution.push_front(std::tuple<int, int>(order--, node->LastAngle));
+        for (; order >= 0; --order) {
+          node = &(index[order][node->LastAngle]);
+          this->gatspSolution.push_front(std::tuple<int, int>(order, node->LastAngle));
+        }
+      }
+    // single goal
+    } else {
+      DistanceHolder<Point3D> &solution{baseSolver.GetNeighboringMatrix()(0,0)};
+
+      // distance matrix of size of all nodes in the path
+      std::vector<std::vector<std::vector<double>>> dtpMatrix;
+      int numNodes{solution.Plan.size()};
+      dtpMatrix.resize(numNodes);
+      for (int i{0}; i < numNodes; ++i) {
+        dtpMatrix[i].resize(this->problem.DubinsResolution);
+        for (int j{0}; j < this->problem.DubinsResolution; ++j) {
+          dtpMatrix[i][j].resize(this->problem.DubinsResolution, -1);
+        }
+      }
+
+      // fill in matrix with dubins distances
+      int idx{0};
+      Point3DDubins start{solution.Plan[0]};
+      pathPoints.push_back(start);
+      for (int l{1}; l < numNodes; ++l) {
+        Point3DDubins finish{solution.Plan[l]};
         pathPoints.push_back(finish);
         for (int j{0}; j < this->problem.DubinsResolution; ++j) {
           for (int k{0}; k < this->problem.DubinsResolution; ++k) {
@@ -84,67 +184,61 @@ void LazySpaceForest<Point3DDubins>::Solve() {
         start = finish;
         idx += 1;
       }
-    }
 
-    // dijkstra
-    std::vector<std::vector<DtpNode>> index;
-    index.resize(numNodes + 1);
-    for (int i{0}; i < numNodes + 1; ++i) {
-      index[i].resize(this->problem.DubinsResolution);
-      for (int j{0}; j < this->problem.DubinsResolution; ++j) {
-        index[i][j].Position = i;
-        index[i][j].ActAngle = j;
-      } 
-    }
+      // dijkstra
+      std::vector<std::vector<DtpNode>> index;
+      index.resize(numNodes + 1);
+      for (int i{0}; i < numNodes + 1; ++i) {
+        index[i].resize(this->problem.DubinsResolution);
+        for (int j{0}; j < this->problem.DubinsResolution; ++j) {
+          index[i][j].Position = i;
+          index[i][j].ActAngle = j;
+        } 
+      }
 
-    std::deque<DtpNode> initialNull;
-    Heap<DtpNode> heap{initialNull, nullptr, false};
-    
-    // initialize
-    for (int i{0}; i < this->problem.DubinsResolution; ++i) {
-      index[0][i].Distance = 0;
-      index[0][i].FirstAngle = i;
-      index[0][i].LastAngle = i;
-      heap.Push(&(index[0][i]));
-    }
+      std::deque<DtpNode> initialNull;
+      Heap<DtpNode> heap{initialNull, nullptr, false};
+      
+      // initialize
+      for (int i{0}; i < this->problem.DubinsResolution; ++i) {
+        index[0][i].Distance = 0;
+        index[0][i].FirstAngle = i;
+        index[0][i].LastAngle = i;
+        heap.Push(&(index[0][i]));
+      }
 
-    DtpNode *finalNode{nullptr};
-    while (!heap.Empty()) {
-      DtpNode *actNode{heap.Get(0)};
-      heap.Pop();
+      DtpNode *finalNode{nullptr};
+      while (!heap.Empty()) {
+        DtpNode *actNode{heap.Get(0)};
+        heap.Pop();
 
-      if (actNode->Position == numNodes) {
-        if (actNode->ActAngle == actNode->FirstAngle) {
+        if (actNode->Position == numNodes) {
           // found path
           finalNode = actNode;
-          break;
         }
 
-        // invalid connection
-        continue;
-      }
-
-      int nextPos{actNode->Position + 1};
-      for (int i{0}; i < this->problem.DubinsResolution; ++i) {
-        double dist{dtpMatrix[actNode->Position][actNode->ActAngle][i]};
-        if (index[nextPos][i].FirstAngle == -1 && dist != -1) {
-          index[nextPos][i].FirstAngle = actNode->FirstAngle;
-          index[nextPos][i].LastAngle = actNode->ActAngle;
-          index[nextPos][i].Distance = actNode->Distance + dist;
-          heap.Push(&(index[nextPos][i]));
+        int nextPos{actNode->Position + 1};
+        for (int i{0}; i < this->problem.DubinsResolution; ++i) {
+          double dist{dtpMatrix[actNode->Position][actNode->ActAngle][i]};
+          if (index[nextPos][i].FirstAngle == -1 && dist != -1) {
+            index[nextPos][i].FirstAngle = actNode->FirstAngle;
+            index[nextPos][i].LastAngle = actNode->ActAngle;
+            index[nextPos][i].Distance = actNode->Distance + dist;
+            heap.Push(&(index[nextPos][i]));
+          }
         }
       }
-    }
 
-    if (finalNode == nullptr) {
-      solved = false;
-    } else {
-      DtpNode *node{finalNode};
-      int order{node->Position};
-      this->gatspSolution.push_front(std::tuple<int, int>(order--, node->LastAngle));
-      for (; order >= 0; --order) {
-        node = &(index[order][node->LastAngle]);
-        this->gatspSolution.push_front(std::tuple<int, int>(order, node->LastAngle));
+      if (finalNode == nullptr) {
+        solved = false;
+      } else {
+        DtpNode *node{finalNode};
+        int order{node->Position};
+        this->gatspSolution.push_front(std::tuple<int, int>(order--, node->LastAngle));
+        for (; order >= 0; --order) {
+          node = &(index[order][node->LastAngle]);
+          this->gatspSolution.push_front(std::tuple<int, int>(order, node->LastAngle));
+        }
       }
     }
   }

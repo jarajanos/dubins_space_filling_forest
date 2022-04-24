@@ -113,6 +113,8 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
       problem.Solver = SFF;
     } else if (!strcmp(value.c_str(), "rrt")) {
       problem.Solver = RRT;
+    } else if (!strcmp(value.c_str(), "lazy-tsp")) {
+      problem.Solver = LazyRRT;
     } else if (!strcmp(value.c_str(), "lazy-rrt")) {
       problem.Solver = LazyRRT;
     } else if (!strcmp(value.c_str(), "prm")) {
