@@ -25,19 +25,21 @@ class LazySpaceForest : public Solver<R> {
 
   protected:
     std::deque<Point3DDubins> pathPoints;
+    double finalDistance{std::numeric_limits<double>::max()};
+
     void getPaths() override;    
 
     void saveTspPaths(const FileStruct file) override;
+    void saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime);
 };
 
-template<> void LazySpaceForest<Point2DDubins>::Solve();
 template<> void LazySpaceForest<Point3DDubins>::Solve();
-template<> void LazySpaceForest<Point2DDubins>::saveTspPaths(const FileStruct file);
 template<> void LazySpaceForest<Point3DDubins>::saveTspPaths(const FileStruct file);
+template<> void LazySpaceForest<Point3DDubins>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime);
 
 template<class R>
 void LazySpaceForest<R>::Solve() {
-  ERROR("Lazy-SFF defined for Dubins problems only!");
+  ERROR("Lazy-SFF defined for 3D Dubins problems only!");
 }
 
 template<class R>
@@ -47,6 +49,11 @@ void LazySpaceForest<R>::getPaths() {
 
 template<class R>
 void LazySpaceForest<R>::saveTspPaths(const FileStruct file) {
+
+}
+
+template<class R>
+void LazySpaceForest<R>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime) {
 
 }
 

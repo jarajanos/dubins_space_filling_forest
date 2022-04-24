@@ -142,6 +142,7 @@ void LazySpaceForest<Point3DDubins>::Solve() {
         solved = false;
       } else {
         DtpNode *node{finalNode};
+        this->finalDistance = node->Distance;
         int order{node->Position};
         this->gatspSolution.push_front(std::tuple<int, int>(order--, node->LastAngle));
         for (; order >= 0; --order) {
@@ -234,6 +235,7 @@ void LazySpaceForest<Point3DDubins>::Solve() {
         solved = false;
       } else {
         DtpNode *node{finalNode};
+        this->finalDistance = node->Distance;
         int order{node->Position};
         this->gatspSolution.push_front(std::tuple<int, int>(order--, node->LastAngle));
         for (; order >= 0; --order) {
@@ -279,16 +281,18 @@ void LazySpaceForest<Point3DDubins>::saveTspPaths(const FileStruct file) {
     int numAngles{this->problem.DubinsResolution};
     if (file.type == Obj) {
       fileStream << "o TspPaths\n";
-      int vertexCnt{0};
-      int numPoints{static_cast<int>(pathPoints.size())};
+      unsigned vertexInd{1};
+      std::deque<std::tuple<unsigned,unsigned>> vertexRanges;
+      int numPoints{static_cast<int>(pathPoints.size()) - 1};
       for (int i{0}; i < numPoints; ++i) {
         auto [ actNode, actAngle ] = this->gatspSolution[i];
-        auto [ nextNode, nextAngle ] = this->gatspSolution[(i + 1) % numRoots];
+        auto [ nextNode, nextAngle ] = this->gatspSolution[i + 1];
 
-        Point3DDubins tempStart{this->pathPoints[actNode]}, tempFinish{this->pathPoints[nextNode]};
-        tempStart.SetHeading(actAngle, this->problem.DubinsResolution);
-        tempFinish.SetHeading(nextAngle, this->problem.DubinsResolution);
+        Point3DDubins tempStart{this->pathPoints[nextNode]}, tempFinish{this->pathPoints[actNode]};
+        tempStart.SetHeading(nextAngle, this->problem.DubinsResolution);
+        tempFinish.SetHeading(actAngle, this->problem.DubinsResolution);
         auto pathSeg{tempStart.SampleDubinsPathTo(tempFinish, this->problem.CollisionDist)};
+        unsigned startingInd{vertexInd};
         for (int m{0}; m < pathSeg.size(); ++m) {
           Point3DDubins actPoint{pathSeg[m]};
 
@@ -296,12 +300,16 @@ void LazySpaceForest<Point3DDubins>::saveTspPaths(const FileStruct file) {
           Point3DDubins temp{actPoint / this->problem.Env.ScaleFactor}; 
           temp.PrintPosition(fileStream);
           fileStream << "\n";
-          ++vertexCnt;
-        }  
+        } 
+        vertexInd += pathSeg.size();
+        vertexRanges.push_back(std::tuple<unsigned, unsigned>(startingInd, vertexInd - 1)); 
       }
       
-      for (int i{1}; i < vertexCnt; ++i) {
+      for (auto &pair : vertexRanges) {
+        auto [ from, to ] = pair;
+        for (unsigned i{from}; i < to; ++i) {
           fileStream << "l" << DELIMITER_OUT << i << DELIMITER_OUT << i + 1 << '\n';
+        }
       }
     } else if (file.type == Map) {
       fileStream << "#TspPaths" << DELIMITER_OUT << this->problem.Dimension << "\n";
@@ -334,4 +342,49 @@ void LazySpaceForest<Point3DDubins>::saveTspPaths(const FileStruct file) {
     message << "Cannot open file at: " << file.fileName;
     WARN(message.str());
   }  
+}
+
+template <>
+void LazySpaceForest<Point3DDubins>::saveParams(const FileStruct file, const int iterations, const bool solved, const std::chrono::duration<double> elapsedTime) {
+  INFO("Saving parameters");
+  std::ofstream fileStream{file.fileName.c_str(), std::ios_base::openmode::_S_app};
+  if (!fileStream.good()) {
+    std::stringstream message;
+    message << "Cannot create file at: " << file.fileName;
+
+    WARN(message.str());
+    return;
+  }
+
+  if (fileStream.is_open()) {
+    fileStream << this->problem.ID << CSV_DELIMITER;
+    fileStream << this->problem.Repetition << CSV_DELIMITER;
+    fileStream << iterations << CSV_DELIMITER;
+    fileStream << (solved ? "solved" : "unsolved") << CSV_DELIMITER;
+  
+    fileStream << "[" << CSV_NO_PATH << "]" << CSV_DELIMITER << "[";
+  
+    // do not print distance matrix
+    if (finalDistance != std::numeric_limits<double>::max()) {
+      fileStream << finalDistance / this->problem.Env.ScaleFactor << CSV_DELIMITER;
+    } else {
+      fileStream << CSV_NO_PATH;
+    } 
+    fileStream << "]" << CSV_DELIMITER;
+    
+    if (finalDistance != std::numeric_limits<double>::max()) {
+      fileStream << finalDistance / this->problem.Env.ScaleFactor << CSV_DELIMITER;
+    } else {
+      fileStream << CSV_NO_PATH << CSV_DELIMITER;
+    }
+
+    fileStream << elapsedTime.count() << "\n";
+
+    fileStream.flush();
+    fileStream.close();
+  } else {
+    std::stringstream message;
+    message << "Cannot open file at: " << file.fileName;
+    WARN(message.str());
+  }
 }
