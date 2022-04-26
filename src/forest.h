@@ -539,10 +539,6 @@ template<class R>
 void SpaceForestBase<R>::checkIterationSaves(const int iter) {
   Solver<R>::checkIterationSaves(iter);
 
-  if (iter % 100 == 0) {
-    INFO("ITER " << iter);
-  }
-
   if (this->problem.SaveFreq[SaveFrontiers] != 0 && iter % this->problem.SaveFreq[SaveFrontiers] == 0) {
     std::string prefix{"iter_" + std::to_string(iter) + "_"};
     this->saveFrontiers(PrefixFileName(this->problem.FileNames[SaveFrontiers], prefix));
