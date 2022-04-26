@@ -469,7 +469,7 @@ void RapidExpTree<R, true>::getPaths() {
 
     link.UpdateDistance();
 
-    this->neighboringMatrix.AddLink(link, link.Node1->SourceTree->Root->ID, link.Node2->SourceTree->Root->ID, 0, 0);
+    this->neighboringMatrix.AddLink(link, link.Node1->SourceTree->Root->ID, link.Node2->SourceTree->Root->ID, 0, 0, true);
   }
 }
 

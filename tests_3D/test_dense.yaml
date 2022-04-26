@@ -1,18 +1,18 @@
 ---
   TSP-solver:
-    type: Concorde
+    type: LKH
   algorithm:
-    bias: 0.95
+    bias: 0
     dubins-radius: 2
     dubins-resolution: 2
     m2r-ratio: 10
     misses: 5
   cities:
   - '[1500; 1600; 423; 0; 0]'
-  - '[100; 100;64; 0; 0]'
-  - '[500; 1700;319; 0; 0]'
-  - '[1440; 330;752; 0; 0]'
-  - '[765; 828;549; 0; 0]'
+  goal: '[100; 100;64; 0; 0]'
+  #- '[500; 1700;319; 0; 0]'
+  #- '[1440; 330;752; 0; 0]'
+  #- '[765; 828;549; 0; 0]'
   delimiters:
     name: _
     standard: ' '
@@ -28,7 +28,7 @@
     dimension: 3DDubins
     iterations: 100000
     optimize: true
-    solver: sff
+    solver: rrt
   range:
     autodetect: true
     pitch: '[-0.5;0.5]'
