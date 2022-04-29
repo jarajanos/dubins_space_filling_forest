@@ -483,7 +483,7 @@ void ParseFile(YAML::Node &config, Problem<R> &problem) {
       } else {
         problem.CtrlInterval = subNode.as<double>();
       }
-    } else if (problem.Dimension == D3Polynom) {
+    } else if (problem.Dimension == D3Polynom || problem.Dimension == D2Polynom) {
       throw std::invalid_argument("missing specification of dynamics in configuration file");
     }
 

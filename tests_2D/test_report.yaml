@@ -1,9 +1,9 @@
 ---
   problem:
-    solver: 'rrt'
-    optimize: true
-    iterations: 10000
-    dimension: '2D'
+    solver: 'sff'
+    optimize: false
+    iterations: 10
+    dimension: '2DPolynom'
   
   delimiters:
     standard: ' '
@@ -16,13 +16,15 @@
   TSP-solver:
     type: 'LKH'
 
-  obstacles:
-    - path: './maps/report_env.tri'
-      type: 'map'
-      position: '[0; 0]'
+  #obstacles:
+  #  - path: './maps/report_env.tri'
+  #    type: 'map'
+  #    position: '[0; 0]'
+
+  dynamics: {min-thrust: -1, max-thrust: 1, gravity: 0, segment-time: 4, control-interval: 0.01}
 
   cities:
-    - "[-40; -32]"
+    - "[-40; -32;0;0;0;0]"
 
   acities:
     - "[-40; -32]"
@@ -32,23 +34,25 @@
     - "[10; 33]"
     - "[-10;-33]"
 
-  goal: "[42;33]"
+  goal: "[42;33;0;0;0;0]"
 
   range:
-    autodetect: true
+    autodetect: false
+    x: "[-50;50]"
+    y: "[-50;50]"
 
   distances:
     collision: 0.1
-    sampling: 1
-    tree: 1
+    sampling: 10
+    tree: 20
 
   algorithm:
     m2r-ratio: 10
     bias: 0
     misses: 5
     dubins-radius: 10
-    dubins-resolution: 1
-    prm-connections: 20
+    dubins-resolution: 2
+    prm-connections: 2
   
   save:
     goals:
@@ -59,9 +63,9 @@
       id: 'sff_dubins'
     #TSP-file:
     #  path: 'output/tsp.tsp'
-    #TSP-paths:
-    #  path: 'output/tsp.tri'
-    #  type: 'map'
+    TSP-paths:
+      path: 'output/tsp.tri'
+      type: 'map'
     tree:
       path: 'output//tree.tri'
       type: 'map'
