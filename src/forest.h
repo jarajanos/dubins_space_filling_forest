@@ -642,7 +642,7 @@ bool SpaceForest<R, false>::checkBorders(int id1, int id2) {
   auto link{this->borders(id1, id2)}; 
   if (link.empty()) {
     return false;
-  } else if (link[0].IsValid) {
+  } else if (link[0].IsValid || this->problem.HasGoal) {
     return true;
   } else {
     while (!link.empty()) {
@@ -686,7 +686,7 @@ void SpaceForest<R, false>::getPaths() {
 
       std::deque<DistanceHolder<R>> &borderPoints{this->borders(i, j)};
       for (DistanceHolder<R> &dist : borderPoints) {
-        if (dist.IsValid || this->isPathFree(dist.Node1->Position, dist.Node2->Position)) {
+        if (dist.IsValid || this->problem.HasGoal || this->isPathFree(dist.Node1->Position, dist.Node2->Position)) {
           this->neighboringMatrix(i, j) = dist;
           break;
         }

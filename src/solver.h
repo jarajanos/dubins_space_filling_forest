@@ -417,7 +417,7 @@ void SolverBase<R>::checkIterationSaves(const int iter) {
 
   if (this->problem.SaveFreq[SaveTSPFile] != 0 && iter % this->problem.SaveFreq[SaveTSPFile] == 0) {
     std::string prefix{"iter_" + std::to_string(iter) + "_"};
-    this->saveTsp(PrefixFileName(this->problem.FileNames[SaveParams], prefix));
+    this->saveTsp(PrefixFileName(this->problem.FileNames[SaveTSPFile], prefix));
   }
 }
 

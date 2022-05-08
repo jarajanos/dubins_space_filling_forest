@@ -1,9 +1,9 @@
 ---
   problem:
-    solver: 'rrt'
+    solver: 'sff'
     optimize: true
-    iterations: 10000
-    dimension: '2DDubins'
+    iterations: 100000
+    dimension: '2DPolynom'
   
   delimiters:
     standard: ' '
@@ -19,27 +19,27 @@
   obstacles:
     - path: './maps/dense.tri'
       type: 'map'
-      position: '[0; 0;0]'
+      position: '[0; 0;0;0;0;0]'
 
   cities:
-    - "[100; 100;0]"
+    - "[100; 100;0;0;0;0]"
 
   acities:
-    - "[100; 100;0]"
-    - "[1500; 1600;0]"
-    - "[500; 1700;0]"
-    - "[1440; 330;0]"
-    - "[962; 828;0]"
-    - "[1624; 1057;0]"
+    - "[100; 100;0;0;0;0]"
+    - "[1500; 1600;0;0;0;0]"
+    - "[500; 1700;0;0;0;0]"
+    - "[1440; 330;0;0;0;0]"
+    - "[962; 828;0;0;0;0]"
+    - "[1624; 1057;0;0;0;0]"
 
-  goal: "[1500; 1600;0.8]"
+  goal: "[1500; 1600;0.8;0;0;0]"
 
   range:
     autodetect: true
 
   distances:
     collision: 5
-    sampling: 50
+    sampling: 100
     tree: 100
 
   algorithm:
@@ -48,6 +48,13 @@
     misses: 5
     dubins-radius: 30
     dubins-resolution: 4
+
+  dynamics: 
+    min-thrust: -100
+    max-thrust: 100
+    gravity: 0
+    segment-time: 4
+    control-interval: 0.01
   
   save:
     goals:
